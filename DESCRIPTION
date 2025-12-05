@@ -1,0 +1,21 @@
+Type: Project
+Package: Rdata
+Title: Voice-Driven Data Analysis Project
+Version: 0.1.0
+Authors@R: person("AI", "Developer", email = "dev@example.com", role = c("aut", "cre"))
+Description: R project repository for voice-driven data analysis demonstrations,
+    including interactive visualizations, charts, data models, and web-based reports.
+License: MIT
+Encoding: UTF-8
+Depends:
+    R (>= 4.0.0)
+Imports:
+    tidyverse,
+    plotly,
+    htmlwidgets,
+    shiny,
+    flexdashboard,
+    rmarkdown,
+    knitr,
+    DT,
+    leaflet

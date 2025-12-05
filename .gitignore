@@ -1,0 +1,39 @@
+# R-specific
+.Rhistory
+.Rapp.history
+.RData
+.Ruserdata
+*.Rproj.user/
+
+# renv
+renv/library/
+renv/staging/
+renv/python/
+renv/sandbox/
+
+# Output files (uncomment to ignore generated outputs)
+# output/
+# reports/*.html
+
+# Environment
+.Renviron
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*~
+*.swp
+*.swo
+
+# Quarto
+/.quarto/
+*_cache/
+*_files/

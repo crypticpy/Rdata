@@ -1,0 +1,150 @@
+---
+title: "Data Visualization Report"
+author: "Data Analysis Team"
+date: today
+format:
+  html:
+    theme: flatly
+    toc: true
+    toc-location: left
+    code-fold: true
+    code-summary: "Show code"
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+# Overview
+
+This report demonstrates interactive data visualization using R with Plotly and ggplot2.
+
+```{r}
+#| label: libraries
+library(tidyverse)
+library(plotly)
+library(DT)
+```
+
+# Data Loading
+
+```{r}
+#| label: load-data
+iris_df <- read_csv("../data/raw/iris.csv", show_col_types = FALSE)
+mtcars_df <- read_csv("../data/raw/mtcars.csv", show_col_types = FALSE)
+```
+
+# Iris Dataset Analysis
+
+## Interactive Scatter Plot
+
+```{r}
+#| label: iris-scatter
+#| fig-width: 10
+#| fig-height: 6
+p <- ggplot(iris_df, aes(x = Sepal.Length, y = Sepal.Width, color = Species)) +
+  geom_point(size = 3, alpha = 0.7) +
+  labs(
+    title = "Iris: Sepal Dimensions by Species",
+    x = "Sepal Length (cm)",
+    y = "Sepal Width (cm)"
+  ) +
+  theme_minimal() +
+  scale_color_brewer(palette = "Set2")
+
+ggplotly(p)
+```
+
+## Species Distribution
+
+```{r}
+#| label: iris-bar
+species_counts <- iris_df %>%
+  count(Species)
+
+p <- ggplot(species_counts, aes(x = Species, y = n, fill = Species)) +
+  geom_col() +
+  labs(title = "Sample Count by Species", y = "Count") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set2") +
+  theme(legend.position = "none")
+
+ggplotly(p)
+```
+
+## Data Table
+
+```{r}
+#| label: iris-table
+datatable(
+  iris_df,
+  options = list(pageLength = 10, scrollX = TRUE),
+  caption = "Iris Dataset"
+)
+```
+
+# MTCars Analysis
+
+## MPG vs Horsepower
+
+```{r}
+#| label: mtcars-scatter
+#| fig-width: 10
+#| fig-height: 6
+p <- ggplot(mtcars_df, aes(x = hp, y = mpg, size = wt, color = factor(cyl))) +
+  geom_point(alpha = 0.7) +
+  labs(
+    title = "Fuel Efficiency vs Horsepower",
+    x = "Horsepower",
+    y = "Miles per Gallon",
+    color = "Cylinders",
+    size = "Weight (1000 lbs)"
+  ) +
+  theme_minimal() +
+  scale_color_brewer(palette = "Dark2")
+
+ggplotly(p)
+```
+
+## Boxplot: MPG by Cylinders
+
+```{r}
+#| label: mtcars-box
+p <- ggplot(mtcars_df, aes(x = factor(cyl), y = mpg, fill = factor(cyl))) +
+  geom_boxplot() +
+  labs(
+    title = "MPG Distribution by Cylinder Count",
+    x = "Number of Cylinders",
+    y = "Miles per Gallon"
+  ) +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Blues") +
+  theme(legend.position = "none")
+
+ggplotly(p)
+```
+
+# Summary Statistics
+
+```{r}
+#| label: summary-stats
+mtcars_summary <- mtcars_df %>%
+  group_by(cyl) %>%
+  summarise(
+    Count = n(),
+    `Avg MPG` = round(mean(mpg), 2),
+    `Avg HP` = round(mean(hp), 2),
+    `Avg Weight` = round(mean(wt), 2),
+    .groups = "drop"
+  )
+
+datatable(
+  mtcars_summary,
+  options = list(dom = 't'),
+  caption = "Summary Statistics by Cylinder Count"
+)
+```
+
+---
+
+*Report generated with Quarto on `r Sys.time()`*
