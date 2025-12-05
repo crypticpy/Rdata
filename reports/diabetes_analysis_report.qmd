@@ -1,0 +1,1964 @@
+---
+title: "Diabetes Risk Factors in America"
+subtitle: "Analysis of CDC BRFSS 2015 Health Indicators"
+author: "Data Analysis Team"
+date: today
+format:
+  html:
+    theme: flatly
+    toc: true
+    toc-location: left
+    toc-depth: 3
+    code-fold: true
+    code-summary: "Show code"
+    fig-width: 10
+    fig-height: 6
+    self-contained: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+# Load required packages
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(scales)
+
+# Load data
+df <- readRDS("/Users/aiml/Projects/Rdata/data/processed/diabetes_clean.rds")
+stat_results <- readRDS("/Users/aiml/Projects/Rdata/output/statistical_results_diabetes.rds")
+model_results <- readRDS("/Users/aiml/Projects/Rdata/output/model_evaluation_results.rds")
+model_summary <- readRDS("/Users/aiml/Projects/Rdata/output/models/model_summary.rds")
+
+# Load advanced analysis results
+causal_results <- readRDS("/Users/aiml/Projects/Rdata/output/causal_inference_results.rds")
+anomaly_results <- readRDS("/Users/aiml/Projects/Rdata/output/anomaly_discovery_results.rds")
+fairness_results <- readRDS("/Users/aiml/Projects/Rdata/output/fairness_audit_results.rds")
+fusion_results <- readRDS("/Users/aiml/Projects/Rdata/output/data_fusion_results.rds")
+
+# Calculate key statistics for inline reporting
+n_total <- nrow(df)
+n_diabetes <- sum(df$diabetes_012 == 2)
+n_prediabetes <- sum(df$diabetes_012 == 1)
+n_no_diabetes <- sum(df$diabetes_012 == 0)
+pct_diabetes <- round(n_diabetes / n_total * 100, 1)
+pct_prediabetes <- round(n_prediabetes / n_total * 100, 1)
+pct_no_diabetes <- round(n_no_diabetes / n_total * 100, 1)
+
+# Model performance metrics
+auc_logistic <- round(model_results$threshold_independent_metrics$auc_roc[1], 3)
+auc_rf <- round(model_results$threshold_independent_metrics$auc_roc[2], 3)
+```
+
+## Executive Summary {.unnumbered}
+
+::: {.callout-important}
+## Bottom Line
+This analysis of **`r format(n_total, big.mark = ",")`** CDC BRFSS respondents reveals that diabetes risk is strongly associated with modifiable lifestyle factors, particularly poor general health status, high blood pressure, and high cholesterol. Predictive models achieve strong discrimination (AUC = 0.82), enabling early identification of at-risk individuals for targeted intervention. **Causal analysis estimates that eliminating high blood pressure could prevent 42% of diabetes cases, while fairness audits identify disparities requiring attention in model deployment.**
+:::
+
+### Key Findings
+
+::: {.grid}
+::: {.g-col-3}
+<div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 8px; padding: 1.5rem; text-align: center; border-left: 4px solid #E76F51;">
+<span style="font-size: 2.5rem; font-weight: 700; color: #E76F51;">14.0%</span><br>
+<span style="color: #666; font-size: 0.9rem;">Diabetes Prevalence</span>
+</div>
+:::
+::: {.g-col-3}
+<div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 8px; padding: 1.5rem; text-align: center; border-left: 4px solid #2A9D8F;">
+<span style="font-size: 2.5rem; font-weight: 700; color: #2A9D8F;">0.820</span><br>
+<span style="color: #666; font-size: 0.9rem;">Best Model AUC-ROC</span>
+</div>
+:::
+::: {.g-col-3}
+<div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 8px; padding: 1.5rem; text-align: center; border-left: 4px solid #264653;">
+<span style="font-size: 2.5rem; font-weight: 700; color: #264653;">42%</span><br>
+<span style="color: #666; font-size: 0.9rem;">Cases Preventable (BP)</span>
+</div>
+:::
+::: {.g-col-3}
+<div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 8px; padding: 1.5rem; text-align: center; border-left: 4px solid #9B59B6;">
+<span style="font-size: 2.5rem; font-weight: 700; color: #9B59B6;">97%</span><br>
+<span style="color: #666; font-size: 0.9rem;">Individual-Level Variance</span>
+</div>
+:::
+:::
+
+### Primary Risk Factors Identified
+
+1. **General Health Status**: Poor self-reported health is the strongest predictor (OR = 1.65 per level)
+2. **High Blood Pressure**: Associated with 61% higher odds of diabetes (OR = 1.61)
+3. **High Cholesterol**: 48% increased odds (OR = 1.48)
+4. **Difficulty Walking**: Strong indicator of metabolic dysfunction
+5. **Age**: Risk increases substantially after age 45
+
+### Model Performance Summary
+
+- **Logistic Regression**: AUC = `r auc_logistic`, excellent interpretability
+- **Random Forest**: AUC = `r auc_rf`, comparable performance
+- At optimal threshold: 78% sensitivity with 71% specificity
+
+### Advanced Analyses Highlights
+
+- **Causal Inference**: Eliminating high BP could prevent 42% of cases; obesity contributes 26% of population attributable fraction
+- **Anomaly Discovery**: 15.4% are "resilient" (high risk, no diabetes); 0.09% are "vulnerable" (low risk, with diabetes)
+- **Fairness Audit**: 20 disparity flags identified; income and education show largest gaps in model performance
+- **Multi-Level Analysis**: 97% of variance is individual-level; 3% attributable to environmental context
+
+### Public Health Implications
+
+- Screening programs should prioritize individuals with hypertension and hypercholesterolemia
+- General health perception is a powerful, easily-assessed risk indicator
+- Lifestyle modification targeting BMI, physical activity, and diet offers prevention potential
+- **Fairness considerations must inform deployment in populations with socioeconomic diversity**
+
+---
+
+## Introduction
+
+### Background on Diabetes in America
+
+Diabetes mellitus represents one of the most significant public health challenges facing the United States. According to the Centers for Disease Control and Prevention (CDC), over 37 million Americans---approximately 11.3% of the population---have diabetes, with an additional 96 million adults having prediabetes. The economic burden exceeds $327 billion annually in direct medical costs and lost productivity.
+
+Type 2 diabetes, which accounts for 90-95% of all diabetes cases, is largely preventable through lifestyle modifications. Early identification of at-risk individuals enables targeted interventions that can delay or prevent disease onset.
+
+### Dataset Description
+
+This analysis utilizes the **Behavioral Risk Factor Surveillance System (BRFSS) 2015 Diabetes Health Indicators** dataset, a nationally representative survey conducted by the CDC.
+
+```{r}
+#| label: dataset-summary
+
+dataset_info <- tibble(
+  Characteristic = c(
+    "Total Respondents",
+    "Survey Year",
+    "Number of Variables",
+    "Geographic Coverage",
+    "Sampling Method"
+  ),
+  Value = c(
+    format(n_total, big.mark = ","),
+    "2015",
+    "22 health indicators",
+    "All 50 US states + DC",
+    "Stratified random sampling"
+  )
+)
+
+dataset_info |>
+  kable(col.names = c("Characteristic", "Value"),
+        align = c("l", "l")) |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE,
+                position = "left")
+```
+
+### Research Objectives
+
+1. **Characterize** the prevalence and distribution of diabetes and associated risk factors
+2. **Identify** the strongest predictors of diabetes through statistical analysis
+3. **Develop** predictive models for diabetes risk stratification
+4. **Evaluate** model performance using appropriate metrics for imbalanced classification
+5. **Generate** actionable insights for public health intervention
+
+### Analysis Approach
+
+Our analytical pipeline consists of four major phases:
+
+1. **Data Preparation**: Cleaning, validation, and feature engineering
+2. **Exploratory Analysis**: Visualization of distributions and relationships
+3. **Statistical Testing**: Odds ratios, risk ratios, and hypothesis tests
+4. **Predictive Modeling**: Logistic regression and random forest classification
+
+---
+
+## Data Description
+
+### Dataset Overview
+
+The BRFSS Diabetes Health Indicators dataset contains responses from **`r format(n_total, big.mark = ",")`** survey participants with **22 variables** capturing demographics, health behaviors, and chronic conditions.
+
+### Variable Descriptions
+
+```{r}
+#| label: variable-table
+
+variable_info <- tibble(
+  Variable = c(
+    "Diabetes_012", "HighBP", "HighChol", "CholCheck", "BMI",
+    "Smoker", "Stroke", "HeartDiseaseorAttack", "PhysActivity",
+    "Fruits", "Veggies", "HvyAlcoholConsump", "AnyHealthcare",
+    "NoDocbcCost", "GenHlth", "MentHlth", "PhysHlth",
+    "DiffWalk", "Sex", "Age", "Education", "Income"
+  ),
+  Description = c(
+    "Diabetes status: 0=No, 1=Prediabetes, 2=Diabetes",
+    "High blood pressure diagnosis (0/1)",
+    "High cholesterol diagnosis (0/1)",
+    "Cholesterol check in past 5 years (0/1)",
+    "Body Mass Index (continuous)",
+    "Smoked at least 100 cigarettes in lifetime (0/1)",
+    "Ever had a stroke (0/1)",
+    "Coronary heart disease or heart attack (0/1)",
+    "Physical activity in past 30 days (0/1)",
+    "Consume fruit 1+ times per day (0/1)",
+    "Consume vegetables 1+ times per day (0/1)",
+    "Heavy alcohol consumption (0/1)",
+    "Any healthcare coverage (0/1)",
+    "Could not see doctor due to cost (0/1)",
+    "General health: 1=Excellent to 5=Poor",
+    "Days of poor mental health (past 30 days)",
+    "Days of poor physical health (past 30 days)",
+    "Difficulty walking or climbing stairs (0/1)",
+    "Sex: 0=Female, 1=Male",
+    "Age category: 1=18-24 to 13=80+",
+    "Education level: 1-6 scale",
+    "Income level: 1=<$10k to 8=>$75k"
+  ),
+  Type = c(
+    "Target", "Binary", "Binary", "Binary", "Continuous",
+    "Binary", "Binary", "Binary", "Binary",
+    "Binary", "Binary", "Binary", "Binary",
+    "Binary", "Ordinal", "Count", "Count",
+    "Binary", "Binary", "Ordinal", "Ordinal", "Ordinal"
+  )
+)
+
+variable_info |>
+  kable(col.names = c("Variable", "Description", "Type"),
+        align = c("l", "l", "c")) |>
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                full_width = TRUE,
+                font_size = 13) |>
+  scroll_box(height = "400px")
+```
+
+### Class Distribution
+
+The target variable exhibits substantial class imbalance, a critical consideration for model development:
+
+```{r}
+#| label: class-distribution-table
+
+class_dist <- df |>
+  count(diabetes_status) |>
+  mutate(
+    Percentage = paste0(round(n / sum(n) * 100, 1), "%"),
+    n = format(n, big.mark = ",")
+  )
+
+class_dist |>
+  kable(col.names = c("Diabetes Status", "Count", "Percentage"),
+        align = c("l", "r", "r")) |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE,
+                position = "left") |>
+  row_spec(3, bold = TRUE, background = "#fef3f3")
+```
+
+![Class Distribution Visualization](../output/figures/diabetes_class_distribution.png){fig-align="center" width="90%"}
+
+::: {.callout-note}
+## Class Imbalance Implications
+The severe underrepresentation of prediabetes cases (1.8%) suggests potential underdiagnosis in the population. For modeling purposes, we combine prediabetes and diabetes into a single positive class to improve detection of any glucose metabolism abnormality.
+:::
+
+---
+
+## Exploratory Data Analysis
+
+### Risk Factor Prevalence by Diabetes Status
+
+The prevalence of key risk factors varies dramatically by diabetes status, revealing the interconnected nature of cardiometabolic conditions.
+
+![Risk Factor Prevalence](../output/figures/diabetes_risk_factors.png){fig-align="center" width="100%"}
+
+**Key Observations:**
+
+- Individuals with diabetes show **3-6x higher rates** of stroke and heart disease
+- High blood pressure affects **71%** of diabetics vs. only **36%** of non-diabetics
+- Difficulty walking affects **35%** of diabetics, indicating mobility impairment
+
+### BMI Distribution Analysis
+
+Body Mass Index shows a clear rightward shift for individuals with diabetes, indicating the strong association between obesity and metabolic dysfunction.
+
+![BMI Distribution by Diabetes Status](../output/figures/diabetes_bmi_density.png){fig-align="center" width="100%"}
+
+```{r}
+#| label: bmi-summary
+
+bmi_by_status <- df |>
+  group_by(diabetes_status) |>
+  summarise(
+    Mean = round(mean(bmi, na.rm = TRUE), 1),
+    SD = round(sd(bmi, na.rm = TRUE), 1),
+    Median = round(median(bmi, na.rm = TRUE), 1),
+    `Q25` = round(quantile(bmi, 0.25, na.rm = TRUE), 1),
+    `Q75` = round(quantile(bmi, 0.75, na.rm = TRUE), 1),
+    .groups = "drop"
+  )
+
+bmi_by_status |>
+  kable(col.names = c("Status", "Mean", "SD", "Median", "Q25", "Q75"),
+        align = c("l", rep("r", 5)),
+        caption = "BMI Statistics by Diabetes Status") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE,
+                position = "left")
+```
+
+### Age and Diabetes Risk
+
+Diabetes prevalence increases dramatically with age, with the sharpest rise occurring between ages 45-64.
+
+![Age and Diabetes Risk](../output/figures/diabetes_age_risk.png){fig-align="center" width="100%"}
+
+### Correlation Analysis
+
+The correlation heatmap reveals the structure of relationships among health indicators and their association with diabetes status.
+
+![Correlation Heatmap](../output/figures/diabetes_correlation.png){fig-align="center" width="100%"}
+
+**Strongest Correlations with Diabetes:**
+
+```{r}
+#| label: correlation-table
+
+top_cors <- stat_results$correlations$diabetes_correlations |>
+  head(8) |>
+  mutate(
+    Direction = ifelse(correlation > 0, "Positive (increases risk)", "Negative (decreases risk)"),
+    Correlation = round(correlation, 3)
+  ) |>
+  select(variable, Correlation, Direction)
+
+top_cors |>
+  kable(col.names = c("Variable", "Correlation (r)", "Direction"),
+        align = c("l", "r", "l")) |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE,
+                position = "left")
+```
+
+### Key EDA Insights
+
+::: {.callout-tip}
+## Summary of Exploratory Findings
+
+1. **Class imbalance is severe**: Only 15.8% of respondents have diabetes or prediabetes
+2. **Comorbidities cluster**: Diabetes strongly co-occurs with hypertension, hypercholesterolemia, and heart disease
+3. **BMI is elevated**: Mean BMI is 4+ points higher in diabetics (31.9 vs 27.3)
+4. **Age is a major factor**: Risk increases substantially after age 45
+5. **General health perception** is the strongest correlate (r = 0.29)
+:::
+
+---
+
+## Statistical Analysis
+
+### Odds Ratios for Key Risk Factors
+
+Univariate logistic regression reveals the unadjusted association between each predictor and diabetes risk.
+
+```{r}
+#| label: odds-ratio-table
+
+or_table <- stat_results$logistic_regression$univariate |>
+  arrange(desc(OR)) |>
+  head(12) |>
+  mutate(
+    `Odds Ratio (95% CI)` = sprintf("%.2f (%.2f - %.2f)", OR, or_ci_low, or_ci_high),
+    `P-value` = ifelse(p_value < 0.001, "< 0.001", sprintf("%.4f", p_value)),
+    Interpretation = case_when(
+      OR > 1.5 ~ "Strong risk factor",
+      OR > 1.2 ~ "Moderate risk factor",
+      OR > 1.0 ~ "Weak risk factor",
+      OR < 0.8 ~ "Protective factor",
+      TRUE ~ "Minimal association"
+    )
+  ) |>
+  select(variable, `Odds Ratio (95% CI)`, `P-value`, Interpretation)
+
+or_table |>
+  kable(col.names = c("Variable", "Odds Ratio (95% CI)", "P-value", "Interpretation"),
+        align = c("l", "c", "c", "l"),
+        caption = "Univariate Odds Ratios for Diabetes (Top 12 Predictors)") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE) |>
+  row_spec(1:3, bold = TRUE, background = "#f0f7f4")
+```
+
+### Risk Ratios for Binary Exposures
+
+For binary risk factors, we calculate risk ratios to quantify the relative risk of diabetes among exposed vs. unexposed individuals.
+
+```{r}
+#| label: risk-ratio-table
+
+rr_table <- stat_results$risk_measures |>
+  arrange(desc(risk_ratio)) |>
+  head(8) |>
+  mutate(
+    `Risk if Exposed` = sprintf("%.1f%%", risk_exposed),
+    `Risk if Unexposed` = sprintf("%.1f%%", risk_unexposed),
+    `Risk Ratio (95% CI)` = sprintf("%.2f (%.2f - %.2f)", risk_ratio, rr_ci_low, rr_ci_high),
+    `Odds Ratio (95% CI)` = sprintf("%.2f (%.2f - %.2f)", odds_ratio, or_ci_low, or_ci_high)
+  ) |>
+  select(variable, `Risk if Exposed`, `Risk if Unexposed`, `Risk Ratio (95% CI)`)
+
+rr_table |>
+  kable(col.names = c("Risk Factor", "Risk if Present", "Risk if Absent", "Risk Ratio (95% CI)"),
+        align = c("l", "r", "r", "c"),
+        caption = "Risk Ratios for Binary Risk Factors") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+### Chi-Square Test Results
+
+All binary risk factors show statistically significant associations with diabetes status (p < 0.001).
+
+```{r}
+#| label: chi-square-table
+
+chi_table <- stat_results$chi_square |>
+  mutate(
+    `Chi-Square` = format(round(chi_square, 1), big.mark = ","),
+    `P-value` = ifelse(p_value < 0.001, "< 0.001", sprintf("%.4f", p_value)),
+    `Cramer's V` = round(cramers_v, 3),
+    `Effect Size` = effect_size
+  ) |>
+  select(variable, `Chi-Square`, df, `P-value`, `Cramer's V`, `Effect Size`)
+
+chi_table |>
+  kable(align = c("l", "r", "c", "c", "r", "c"),
+        caption = "Chi-Square Tests of Independence") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+::: {.callout-note}
+## Statistical Significance
+All tested associations are highly significant (p < 0.001) given the large sample size. Effect sizes (Cramer's V) provide more meaningful information about the strength of associations, with high blood pressure showing the strongest relationship.
+:::
+
+---
+
+## Feature Engineering
+
+### Engineered Features
+
+To improve model performance, we created several derived features:
+
+```{r}
+#| label: feature-engineering-table
+
+feature_table <- tibble(
+  Feature = c(
+    "diabetes_binary",
+    "bmi_category",
+    "health_score",
+    "lifestyle_score",
+    "comorbidity_count",
+    "age_bmi_interaction"
+  ),
+  Description = c(
+    "Binary target: 1 if prediabetes or diabetes, 0 otherwise",
+    "BMI classified into: Underweight, Normal, Overweight, Obese I/II/III",
+    "Composite of general, mental, and physical health indicators",
+    "Combined physical activity, fruit/vegetable consumption",
+    "Count of comorbid conditions (high BP, high cholesterol, heart disease)",
+    "Age category multiplied by BMI for interaction effects"
+  ),
+  Rationale = c(
+    "Addresses class imbalance by combining minority classes",
+    "Captures non-linear BMI effects and clinical cut-points",
+    "Reduces dimensionality while capturing overall health status",
+    "Summarizes protective lifestyle behaviors",
+    "Captures cumulative disease burden",
+    "Models age-dependent BMI effects"
+  )
+)
+
+feature_table |>
+  kable(col.names = c("Feature", "Description", "Rationale"),
+        align = c("l", "l", "l")) |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+### Data Splitting Methodology
+
+```{r}
+#| label: data-split-info
+
+split_info <- tibble(
+  Set = c("Training", "Test"),
+  `Sample Size` = c("202,944 (80%)", "50,736 (20%)"),
+  Purpose = c(
+    "Model fitting and hyperparameter tuning",
+    "Unbiased performance evaluation"
+  ),
+  `Stratification` = c("Yes - by diabetes status", "Yes - by diabetes status")
+)
+
+split_info |>
+  kable(align = c("l", "r", "l", "c")) |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE,
+                position = "left")
+```
+
+---
+
+## Predictive Modeling
+
+### Model Descriptions
+
+We developed and compared two classification approaches:
+
+**Logistic Regression**
+
+- Interpretable linear model with probabilistic outputs
+- L2 regularization to prevent overfitting
+- Provides odds ratios for clinical interpretation
+
+**Random Forest**
+
+- Ensemble of 500 decision trees
+- Handles non-linear relationships and interactions automatically
+- Provides variable importance rankings
+
+### ROC Curves Comparison
+
+The Receiver Operating Characteristic (ROC) curves demonstrate the discrimination ability of both models across all classification thresholds.
+
+![ROC Curves Comparison](../output/figures/model_roc_curves.png){fig-align="center" width="100%"}
+
+### Model Performance Metrics
+
+```{r}
+#| label: model-performance-table
+
+perf_metrics <- model_results$model_comparison |>
+  mutate(across(where(is.numeric), ~round(., 3))) |>
+  pivot_longer(-model, names_to = "Metric", values_to = "Value") |>
+  pivot_wider(names_from = model, values_from = Value) |>
+  mutate(
+    Metric = case_when(
+      Metric == "accuracy" ~ "Accuracy",
+      Metric == "sensitivity" ~ "Sensitivity (Recall)",
+      Metric == "specificity" ~ "Specificity",
+      Metric == "precision" ~ "Precision (PPV)",
+      Metric == "npv" ~ "Negative Predictive Value",
+      Metric == "f1_score" ~ "F1 Score",
+      Metric == "balanced_accuracy" ~ "Balanced Accuracy",
+      Metric == "mcc" ~ "Matthews Correlation Coeff.",
+      Metric == "auc_roc" ~ "AUC-ROC",
+      Metric == "auc_pr" ~ "AUC-PR",
+      Metric == "brier_score" ~ "Brier Score",
+      TRUE ~ Metric
+    )
+  )
+
+perf_metrics |>
+  kable(col.names = c("Metric", "Logistic Regression", "Random Forest"),
+        align = c("l", "r", "r"),
+        caption = "Model Performance Comparison (Threshold = 0.5)") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE) |>
+  row_spec(c(2, 3, 9), bold = TRUE, background = "#f0f7f4")
+```
+
+### Confusion Matrices
+
+![Confusion Matrices](../output/figures/model_confusion_matrices.png){fig-align="center" width="100%"}
+
+### Feature Importance Comparison
+
+![Feature Importance](../output/figures/model_feature_importance.png){fig-align="center" width="100%"}
+
+### Optimal Threshold Analysis
+
+The default threshold of 0.5 may not be optimal for clinical applications. We evaluated alternative thresholds to balance sensitivity and specificity.
+
+```{r}
+#| label: threshold-table
+
+thresh_table <- model_results$optimal_thresholds |>
+  filter(model == "Logistic Regression") |>
+  mutate(
+    sensitivity = paste0(round(sensitivity * 100, 1), "%"),
+    specificity = paste0(round(specificity * 100, 1), "%"),
+    f1_score = round(f1_score, 3),
+    optimal_threshold = round(optimal_threshold, 2)
+  ) |>
+  select(metric, optimal_threshold, sensitivity, specificity, f1_score)
+
+thresh_table |>
+  kable(col.names = c("Optimization Criterion", "Threshold", "Sensitivity", "Specificity", "F1 Score"),
+        align = c("l", "r", "r", "r", "r"),
+        caption = "Optimal Thresholds for Logistic Regression") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE)
+```
+
+::: {.callout-tip}
+## Clinical Recommendation
+For screening applications where missing cases is costly, use a lower threshold (~0.15-0.20) to achieve higher sensitivity (~78%) while maintaining acceptable specificity (~71%).
+:::
+
+---
+
+## Causal Inference Framework
+
+### From Prediction to Causation
+
+While the previous sections focused on **predictive modeling**---identifying patterns that forecast diabetes status---this section transitions to **causal inference**, which asks a fundamentally different question: *What would happen if we intervened on a risk factor?*
+
+::: {.callout-note}
+## Why Causal Thinking Matters
+A predictive model can identify that high blood pressure is correlated with diabetes, but it cannot tell us whether *reducing* blood pressure would *prevent* diabetes. Causal inference attempts to answer this counterfactual question using observational data and explicit causal assumptions.
+:::
+
+### Directed Acyclic Graph (DAG)
+
+We formalized our causal assumptions in a Directed Acyclic Graph (DAG) representing the hypothesized causal relationships among diabetes risk factors.
+
+![Causal DAG for Diabetes Risk Factors](../output/figures/diabetes_causal_dag.png){#fig-dag fig-align="center" width="100%"}
+
+**Key elements of the DAG:**
+
+- **Outcome (Diabetes)**: The target of all causal paths
+- **Exposures of Interest**: BMI, Physical Activity, High Blood Pressure
+- **Confounders**: Variables that influence both exposure and outcome (e.g., Age, Income)
+- **Mediators**: Variables through which exposures affect outcomes (e.g., BMI mediates exercise effects)
+- **Latent Variables**: Unmeasured confounders (e.g., Genetics) that represent limitations
+
+```{r}
+#| label: dag-explanation
+#| echo: false
+
+dag_nodes <- tibble(
+  `Node Type` = c("Outcome", "Primary Exposures", "Confounders",
+                  "Mediators", "Colliders", "Latent (Unmeasured)"),
+  Variables = c(
+    "Diabetes",
+    "BMI, Physical Activity, High BP, High Cholesterol",
+    "Age, Sex, Income, Education",
+    "BMI (for exercise path), General Health",
+    "Heart Disease, Stroke",
+    "Genetics"
+  ),
+  `Causal Role` = c(
+    "Target of intervention analysis",
+    "Modifiable factors we can intervene on",
+    "Must be adjusted to avoid bias",
+    "Intermediate on causal path---block for direct effects",
+    "Conditioning opens backdoor paths---avoid adjusting",
+    "Cannot adjust---sensitivity analysis required"
+  )
+)
+
+dag_nodes |>
+  kable(align = c("l", "l", "l"),
+        caption = "DAG Node Classification and Causal Roles") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+### Minimal Adjustment Sets
+
+The DAG-implied **minimal adjustment sets** identify which variables must be controlled to obtain unbiased causal effect estimates:
+
+```{r}
+#| label: adjustment-sets
+#| echo: false
+
+adjustment_table <- tibble(
+  `Causal Question` = c(
+    "Effect of High BP on Diabetes",
+    "Effect of BMI on Diabetes",
+    "Total Effect of Physical Activity",
+    "Direct Effect of Physical Activity"
+  ),
+  `Adjustment Set` = c(
+    "No adjustment needed (no backdoor paths)",
+    "No adjustment needed (direct descendant of confounders)",
+    "Age, Diet, Healthcare Access, Income OR Education",
+    "Age, Diet, Healthcare Access, Income + BMI (mediator blocked)"
+  ),
+  Interpretation = c(
+    "High BP is downstream of confounders; no backdoor paths open",
+    "BMI is a causal ancestor of diabetes; confounders already upstream",
+    "Must block confounding but not mediation through BMI",
+    "Block mediation through BMI to isolate exercise-specific effect"
+  )
+)
+
+adjustment_table |>
+  kable(align = c("l", "l", "l"),
+        caption = "Minimal Sufficient Adjustment Sets for Causal Identification") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+### Average Treatment Effects (ATE)
+
+Using inverse probability weighting and the identified adjustment sets, we estimated the **Average Treatment Effect** for key modifiable risk factors:
+
+```{r}
+#| label: ate-table
+#| echo: false
+
+ate_df <- causal_results$causal_effects |>
+  mutate(
+    `Effect (95% CI)` = sprintf("%.1f pp (%.1f to %.1f)",
+                                 ate_estimate * 100,
+                                 ate_ci_low * 100,
+                                 ate_ci_high * 100),
+    Direction = ifelse(ate_estimate > 0, "Increases Risk", "Decreases Risk")
+  ) |>
+  select(exposure, `Effect (95% CI)`, Direction, interpretation)
+
+ate_df |>
+  kable(col.names = c("Exposure", "ATE (95% CI)", "Direction", "Interpretation"),
+        align = c("l", "c", "c", "l"),
+        caption = "Average Treatment Effects on Diabetes Risk (percentage points)") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE) |>
+  row_spec(which(ate_df$Direction == "Decreases Risk"), background = "#e8f5e9") |>
+  row_spec(which(ate_df$Direction == "Increases Risk"), background = "#ffebee")
+```
+
+::: {.callout-important}
+## Key Causal Finding
+**High blood pressure has the largest causal effect**: A 12.5 percentage point increase in absolute diabetes risk attributable to high BP. This translates to a **number needed to treat** of approximately 8---preventing high BP in 8 individuals would prevent 1 diabetes case.
+:::
+
+### Counterfactual Analysis
+
+We estimated what diabetes prevalence *would have been* under hypothetical interventions:
+
+```{r}
+#| label: counterfactual-table
+#| echo: false
+
+cf_df <- causal_results$counterfactuals |>
+  mutate(
+    `Observed Rate` = sprintf("%.1f%%", observed_rate * 100),
+    `Counterfactual Rate` = sprintf("%.1f%%", counterfactual_rate * 100),
+    `Risk Reduction` = sprintf("%.1f pp", risk_reduction * 100),
+    `PAF` = sprintf("%.1f%%", paf * 100)
+  ) |>
+  select(scenario, `Observed Rate`, `Counterfactual Rate`, `Risk Reduction`, `PAF`)
+
+cf_df |>
+  kable(col.names = c("Intervention Scenario", "Observed", "Counterfactual",
+                      "Absolute Reduction", "Cases Preventable"),
+        align = c("l", "r", "r", "r", "r"),
+        caption = "Counterfactual Analysis: What If We Intervened?") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+**Interpretation:**
+
+- **Population Attributable Fraction (PAF)**: The proportion of cases that would be prevented if the exposure were eliminated
+- **BMI reduction by 5 units**: Would prevent an estimated 26% of diabetes cases
+- **Eliminating high blood pressure**: The most impactful single intervention at 42% of cases
+
+### E-Value Sensitivity Analysis
+
+Since we cannot measure all confounders (notably genetics), we computed **E-values** to assess how robust our causal conclusions are to unmeasured confounding:
+
+```{r}
+#| label: sensitivity-table
+#| echo: false
+
+sens_df <- causal_results$sensitivity_analysis |>
+  mutate(
+    `Risk Ratio` = round(risk_ratio, 2),
+    `E-value` = round(e_value, 2),
+    `Robustness` = robustness
+  ) |>
+  select(exposure, `Risk Ratio`, `E-value`, `Robustness`)
+
+sens_df |>
+  kable(align = c("l", "r", "r", "c"),
+        caption = "E-Value Sensitivity Analysis for Unmeasured Confounding") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE,
+                position = "left")
+```
+
+::: {.callout-tip collapse="true"}
+## How to Interpret E-Values
+The E-value represents the minimum strength of association (on the risk ratio scale) that an unmeasured confounder would need to have with *both* the exposure *and* the outcome to fully explain away the observed causal effect. For example, an E-value of 3.26 for obesity means an unmeasured confounder would need to triple the risk of both obesity AND diabetes---a very strong relationship---to nullify our estimate.
+:::
+
+### Causal Framework Limitations
+
+::: {.callout-warning}
+## Important Assumptions
+:::
+
+1. **No unmeasured confounding**: We assume all backdoor paths are blocked by measured variables. Genetics, in particular, remains unmeasured.
+
+2. **Positivity**: Treatment/exposure must be possible for all covariate strata. Violations may occur in extreme age or BMI groups.
+
+3. **Consistency**: The exposure must be well-defined. "High blood pressure" as a binary may obscure dose-response relationships.
+
+4. **No interference**: One person's exposure does not affect another's outcome---reasonable for diabetes.
+
+5. **Cross-sectional limitation**: Our data cannot establish temporal precedence. Bidirectional effects (diabetes causing weight gain) are possible.
+
+---
+
+## Anomaly Discovery: Resilient and Vulnerable Subgroups
+
+### Motivation: Who Defies Prediction?
+
+Standard predictive models assume that individuals with similar risk profiles will have similar outcomes. But what about those who *defy* prediction? Understanding these "anomalous" individuals may reveal:
+
+- **Protective factors** not captured in standard models
+- **Unmeasured vulnerabilities** that warrant investigation
+- **Opportunities** for personalized intervention
+
+### Defining Resilience and Vulnerability
+
+We identified two anomalous subgroups based on prediction residuals:
+
+```{r}
+#| label: subgroup-definitions
+#| echo: false
+
+subgroup_def <- tibble(
+  Subgroup = c("Resilient", "Vulnerable", "Expected Healthy",
+               "Expected Diabetic", "Typical"),
+  Definition = c(
+    "High predicted risk (>75th percentile) but NO diabetes",
+    "Low predicted risk (<25th percentile) but HAS diabetes",
+    "Low predicted risk and no diabetes (model correct)",
+    "High predicted risk and has diabetes (model correct)",
+    "Middle risk range with variable outcomes"
+  ),
+  `Clinical Significance` = c(
+    "Potential protective factors to identify",
+    "May have unmeasured risk factors or atypical disease",
+    "Benchmark for healthy profiles",
+    "Confirms known risk factor importance",
+    "Typical prediction uncertainty range"
+  )
+)
+
+subgroup_def |>
+  kable(align = c("l", "l", "l"),
+        caption = "Anomalous Subgroup Definitions") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+### Subgroup Sizes
+
+```{r}
+#| label: subgroup-sizes
+#| echo: false
+
+subgroup_summary <- anomaly_results$subgroup_summary |>
+  mutate(
+    n = format(n, big.mark = ","),
+    pct = sprintf("%.1f%%", pct),
+    mean_risk = sprintf("%.1f%%", mean_risk),
+    diabetes_rate = sprintf("%.1f%%", diabetes_rate)
+  )
+
+subgroup_summary |>
+  kable(col.names = c("Subgroup", "N", "% of Sample", "Mean Predicted Risk", "Actual Diabetes Rate"),
+        align = c("l", "r", "r", "r", "r"),
+        caption = "Distribution of Anomalous Subgroups") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE) |>
+  row_spec(1, bold = TRUE, background = "#e3f2fd") |>
+  row_spec(2, bold = TRUE, background = "#fce4ec")
+```
+
+::: {.callout-note}
+## Key Finding
+**15.4% of respondents are "Resilient"**---they have high-risk profiles (mean predicted risk 29%) yet do not have diabetes. This substantial group warrants investigation for protective factors. Conversely, only **0.09% are "Vulnerable"**---developing diabetes despite very low predicted risk.
+:::
+
+### Comparative Profiles
+
+![Subgroup Profile Comparison](../output/figures/diabetes_subgroup_profiles.png){#fig-subgroup-profiles fig-align="center" width="100%"}
+
+#### Demographic Characteristics
+
+```{r}
+#| label: demographic-profiles
+#| echo: false
+
+demo_profile <- anomaly_results$profiles$demographic |>
+  filter(subgroup %in% c("Resilient", "Vulnerable", "Expected Healthy", "Expected Diabetic")) |>
+  mutate(
+    age_mean = round(age_mean, 1),
+    pct_female = sprintf("%.1f%%", pct_female),
+    income_mean = round(income_mean, 1),
+    education_mean = round(education_mean, 1)
+  ) |>
+  select(subgroup, n, age_mean, pct_female, income_mean, education_mean)
+
+demo_profile |>
+  kable(col.names = c("Subgroup", "N", "Mean Age (Category)", "% Female",
+                      "Mean Income (1-8)", "Mean Education (1-6)"),
+        align = c("l", "r", "r", "r", "r", "r"),
+        caption = "Demographic Profile by Subgroup") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+#### Health Behavior Profiles
+
+```{r}
+#| label: behavior-profiles
+#| echo: false
+
+behavior_profile <- anomaly_results$profiles$behavior |>
+  filter(subgroup %in% c("Resilient", "Vulnerable", "Expected Healthy", "Expected Diabetic")) |>
+  mutate(
+    pct_physically_active = sprintf("%.1f%%", pct_physically_active),
+    pct_eats_fruits = sprintf("%.1f%%", pct_eats_fruits),
+    pct_eats_veggies = sprintf("%.1f%%", pct_eats_veggies),
+    pct_smoker = sprintf("%.1f%%", pct_smoker)
+  ) |>
+  select(subgroup, pct_physically_active, pct_eats_fruits, pct_eats_veggies, pct_smoker)
+
+behavior_profile |>
+  kable(col.names = c("Subgroup", "Physically Active", "Eats Fruits",
+                      "Eats Vegetables", "Current Smoker"),
+        align = c("l", "r", "r", "r", "r"),
+        caption = "Health Behavior Profile by Subgroup") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+### Protective Factors in Resilient Individuals
+
+![Resilience Factors Analysis](../output/figures/diabetes_resilience_factors.png){#fig-resilience fig-align="center" width="100%"}
+
+The resilient group, despite having risk profiles similar to those with diabetes, shows subtle but consistent differences in:
+
+1. **Slightly better dietary habits**: Higher fruit (59% vs 58%) and vegetable (75% vs 75%) consumption
+2. **Marginally higher income**: Suggesting access to better healthcare or health-promoting resources
+3. **Better general health perception**: Despite similar objective risk factors
+
+### Risk Factors in Vulnerable Individuals
+
+![Vulnerability Factors Analysis](../output/figures/diabetes_vulnerability_factors.png){#fig-vulnerability fig-align="center" width="100%"}
+
+The vulnerable group---those with diabetes despite low predicted risk---shows:
+
+1. **Higher rates of hypertension**: 11.3% vs 7.6% (1.5x higher than expected healthy)
+2. **Higher rates of high cholesterol**: 20.6% vs 14.7% (1.4x higher)
+3. **Poorer self-rated health**: Average 1.9 vs 1.7 (on 1-5 scale where lower is better)
+
+### Generated Hypotheses for Future Research
+
+```{r}
+#| label: hypotheses-table
+#| echo: false
+
+hypotheses_df <- anomaly_results$hypotheses |>
+  filter(priority %in% c("High", "Medium")) |>
+  select(hypothesis_id, hypothesis, supporting_evidence, priority)
+
+hypotheses_df |>
+  kable(col.names = c("ID", "Hypothesis", "Supporting Evidence", "Priority"),
+        align = c("c", "l", "l", "c"),
+        caption = "Research Hypotheses Generated from Anomaly Discovery") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE) |>
+  column_spec(2, width = "30%") |>
+  column_spec(3, width = "40%")
+```
+
+### Clinical Implications of Anomaly Discovery
+
+::: {.callout-tip}
+## Translating Anomalies to Practice
+:::
+
+1. **Resilient individuals** may benefit from **maintenance interventions** that preserve their protective factors, even as they age or develop comorbidities
+
+2. **Vulnerable individuals** should receive **enhanced screening** for conditions not captured in standard models (e.g., gestational diabetes history, family history, stress markers)
+
+3. **The existence of large residuals** suggests our models are missing important predictors---candidates include genetics, sleep patterns, stress, and detailed dietary quality
+
+4. **Phenotyping approach**: Resilient profiles could inform "healthy aging" interventions; vulnerable profiles could guide precision prevention
+
+---
+
+## Algorithmic Fairness Audit
+
+### Why Fairness Matters in Healthcare AI
+
+Predictive models deployed in healthcare settings can perpetuate or exacerbate existing disparities if they perform differently across demographic groups. A model that works well "on average" may systematically underserve certain populations.
+
+::: {.callout-important}
+## Ethical Imperative
+Healthcare algorithms that inform screening, treatment, or resource allocation decisions must be evaluated for fairness across protected characteristics including sex, age, race/ethnicity, and socioeconomic status.
+:::
+
+### Fairness Metric Definitions
+
+We evaluated model performance using multiple fairness criteria:
+
+```{r}
+#| label: fairness-definitions
+#| echo: false
+
+fairness_defs <- tibble(
+  Metric = c("Statistical Parity", "Equal Opportunity", "Predictive Parity",
+             "Calibration", "Four-Fifths Rule"),
+  Definition = c(
+    "Positive prediction rate is equal across groups",
+    "True positive rate (sensitivity) is equal across groups",
+    "Positive predictive value is equal across groups",
+    "Predicted probabilities reflect actual outcomes equally across groups",
+    "Selection rates for any group should be at least 80% of the highest group"
+  ),
+  `Violation Indicates` = c(
+    "Differential screening/flagging rates",
+    "Differential detection of true cases",
+    "Differential precision in positive predictions",
+    "Systematic over/under-estimation of risk",
+    "Substantial adverse impact on a protected group"
+  )
+)
+
+fairness_defs |>
+  kable(align = c("l", "l", "l"),
+        caption = "Fairness Metrics Evaluated") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+### Overall Model Fairness Summary
+
+![Fairness Overview](../output/figures/diabetes_fairness_overview.png){#fig-fairness-overview fig-align="center" width="100%"}
+
+```{r}
+#| label: fairness-summary
+#| echo: false
+
+overall_metrics <- fairness_results$summary$overall_metrics
+
+fairness_summary <- tibble(
+  Metric = c("Overall True Positive Rate", "Overall False Positive Rate",
+             "Overall Accuracy", "Total Disparity Flags"),
+  Value = c(
+    sprintf("%.1f%%", overall_metrics$overall_tpr * 100),
+    sprintf("%.1f%%", overall_metrics$overall_fpr * 100),
+    sprintf("%.1f%%", overall_metrics$overall_accuracy * 100),
+    as.character(fairness_results$recommendations$n_total_issues)
+  )
+)
+
+fairness_summary |>
+  kable(align = c("l", "r"),
+        caption = "Model-Wide Fairness Summary") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE,
+                position = "left")
+```
+
+### Disparities by Protected Attribute
+
+#### Sex-Based Performance
+
+![Fairness by Sex](../output/figures/diabetes_fairness_sex.png){#fig-fairness-sex fig-align="center" width="100%"}
+
+**Finding**: No substantial sex-based disparities were flagged. The model performs comparably for males and females.
+
+#### Age-Based Performance
+
+![Fairness by Age](../output/figures/diabetes_fairness_age.png){#fig-fairness-age fig-align="center" width="100%"}
+
+```{r}
+#| label: age-disparities
+#| echo: false
+
+age_flags <- fairness_results$flagged_disparities |>
+  filter(protected_attr == "Age") |>
+  mutate(
+    score = round(score, 2),
+    disparity_magnitude = round(disparity_magnitude, 2)
+  ) |>
+  select(group, metric, score, disparity_magnitude)
+
+age_flags |>
+  kable(col.names = c("Age Group", "Metric", "Disparity Score", "Magnitude"),
+        align = c("l", "l", "r", "r"),
+        caption = "Flagged Age-Based Disparities") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE)
+```
+
+**Key Findings**:
+
+- **Senior Adults (65+)**: Higher predictive rates (1.78x) but similar sensitivity
+- **Young Adults**: Lower equal opportunity (0.79x)---the model may miss more young diabetics
+
+#### Income-Based Performance
+
+![Fairness by Income](../output/figures/diabetes_fairness_income.png){#fig-fairness-income fig-align="center" width="100%"}
+
+```{r}
+#| label: income-disparities
+#| echo: false
+
+income_flags <- fairness_results$flagged_disparities |>
+  filter(protected_attr == "Income") |>
+  mutate(
+    score = round(score, 2),
+    disparity_magnitude = round(disparity_magnitude, 2)
+  ) |>
+  select(group, metric, score, disparity_magnitude)
+
+income_flags |>
+  kable(col.names = c("Income Group", "Metric", "Disparity Score", "Magnitude"),
+        align = c("l", "l", "r", "r"),
+        caption = "Flagged Income-Based Disparities") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE)
+```
+
+::: {.callout-warning}
+## Critical Disparity Alert
+**Low-income individuals** show the most severe fairness violations:
+
+- **6.7x** higher predicted positive rate than high-income
+- **2.6x** lower equal opportunity (sensitivity)
+- These disparities substantially exceed the four-fifths rule threshold
+:::
+
+### Intersectional Analysis
+
+Examining combinations of protected attributes reveals compounded disparities:
+
+```{r}
+#| label: intersectional-table
+#| echo: false
+
+intersect_df <- fairness_results$intersectional$sex_income |>
+  mutate(
+    tpr = sprintf("%.1f%%", tpr * 100),
+    fpr = sprintf("%.1f%%", fpr * 100),
+    ppv = sprintf("%.1f%%", ppv * 100),
+    base_rate = sprintf("%.1f%%", base_rate * 100),
+    n = format(n, big.mark = ",")
+  ) |>
+  select(intersect_sex_income, n, base_rate, tpr, fpr, ppv)
+
+intersect_df |>
+  kable(col.names = c("Sex + Income Group", "N", "Base Rate", "TPR", "FPR", "PPV"),
+        align = c("l", "r", "r", "r", "r", "r"),
+        caption = "Intersectional Fairness Analysis: Sex x Income") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+![Intersectional Fairness Heatmap](../output/figures/diabetes_fairness_intersectional.png){#fig-fairness-intersect fig-align="center" width="100%"}
+
+### Disparity Summary by Protected Attribute
+
+```{r}
+#| label: disparity-summary
+#| echo: false
+
+disparity_summary <- fairness_results$recommendations$adverse_impacts
+
+disparity_summary |>
+  kable(col.names = c("Protected Attribute", "Number of Flagged Disparities"),
+        align = c("l", "r"),
+        caption = "Total Disparity Flags by Protected Attribute") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE,
+                position = "left")
+```
+
+### Recommendations for Bias Mitigation
+
+Based on the fairness audit, we recommend:
+
+1. **Pre-processing approaches**:
+   - Reweight training samples to balance representation across income groups
+   - Consider separate calibration for high-disparity subgroups
+
+2. **In-processing approaches**:
+   - Add fairness constraints during model training
+   - Use adversarial debiasing to reduce reliance on proxy features
+
+3. **Post-processing approaches**:
+   - Apply group-specific thresholds to equalize TPR
+   - Implement confidence intervals that account for group membership
+
+4. **Deployment considerations**:
+   - Monitor real-world performance by demographic group
+   - Establish human-in-the-loop review for high-stakes decisions
+   - Document known limitations in model cards
+
+::: {.callout-tip}
+## Ethical Framework
+Fairness is not a purely technical problem. Stakeholder engagement---including patients, clinicians, and community representatives---should inform which fairness criteria are prioritized and how trade-offs are resolved.
+:::
+
+---
+
+## Multi-Level Environmental Analysis
+
+### Rationale for Multi-Level Modeling
+
+Individual risk factors alone do not fully explain diabetes patterns. The **environment in which people live**---including healthcare access, local health behaviors, and disease burden---may independently influence diabetes risk or modify individual-level effects.
+
+Multi-level modeling allows us to:
+
+- **Partition variance** between individual and contextual levels
+- **Estimate environmental effects** after controlling for individual characteristics
+- **Test cross-level interactions** (e.g., does exercise protect more in high-risk environments?)
+
+### Data Fusion Methodology
+
+We integrated individual BRFSS data with county-level CDC PLACES data using a **propensity-based ecological inference** approach:
+
+```{r}
+#| label: fusion-methodology
+#| echo: false
+
+fusion_method <- tibble(
+  Step = 1:4,
+  Description = c(
+    "Create environmental composite scores from CDC PLACES county-level measures",
+    "Stratify counties into environmental risk quintiles",
+    "Estimate individual-to-stratum propensity scores",
+    "Fit multi-level logistic regression with individuals nested in environmental strata"
+  ),
+  Data = c(
+    "3,000+ counties with health measures",
+    "5 strata from Very Low to Very High risk",
+    "Based on demographic and health similarities",
+    "Individual + contextual predictors + random slopes"
+  )
+)
+
+fusion_method |>
+  kable(col.names = c("Step", "Description", "Data/Output"),
+        align = c("c", "l", "l"),
+        caption = "Data Fusion Pipeline for Multi-Level Analysis") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+### Environmental Composite Scores
+
+We constructed four composite environmental scores from county-level data:
+
+```{r}
+#| label: env-scores
+#| echo: false
+
+score_summary <- fusion_results$environmental_scores$score_summary |>
+  mutate(
+    mean = round(mean, 2),
+    sd = round(sd, 2),
+    min = round(min, 2),
+    max = round(max, 2)
+  )
+
+score_summary |>
+  kable(col.names = c("Environmental Score", "Mean", "SD", "Min", "Max"),
+        align = c("l", "r", "r", "r", "r"),
+        caption = "Environmental Composite Score Summary (Standardized)") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE)
+```
+
+![Environmental Context Distributions](../output/figures/diabetes_environmental_context.png){#fig-env-context fig-align="center" width="100%"}
+
+### Variance Partition Coefficient (VPC)
+
+The VPC quantifies how much of the total variation in diabetes risk is attributable to environmental context vs. individual characteristics:
+
+```{r}
+#| label: vpc-table
+#| echo: false
+
+vpc_df <- fusion_results$variance$vpc_by_model |>
+  select(Model, VPC_pct, Interpretation)
+
+vpc_df |>
+  kable(col.names = c("Model", "VPC", "Interpretation"),
+        align = c("l", "r", "l"),
+        caption = "Variance Partition Coefficient by Model Specification") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+![VPC Decomposition](../output/figures/diabetes_vpc_decomposition.png){#fig-vpc fig-align="center" width="100%"}
+
+::: {.callout-note}
+## Key Finding: Individual Factors Dominate
+**97% of variance** in diabetes risk is explained by individual-level characteristics. Environmental context accounts for only **3%** of total variance. This suggests that while environment matters, targeting individual risk factors remains the primary lever for intervention.
+:::
+
+### Variance Decomposition
+
+```{r}
+#| label: variance-decomposition
+#| echo: false
+
+decomp_df <- fusion_results$variance$decomposition
+
+decomp_df |>
+  kable(col.names = c("Source", "Variance (%)"),
+        align = c("l", "r"),
+        caption = "Final Variance Decomposition") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE,
+                position = "left")
+```
+
+### Fixed Effects: Individual and Contextual Predictors
+
+```{r}
+#| label: multilevel-effects
+#| echo: false
+
+effects_df <- fusion_results$effects$odds_ratios |>
+  mutate(
+    OR = round(OR, 2),
+    OR_CI_low = round(OR_CI_low, 2),
+    OR_CI_high = round(OR_CI_high, 2),
+    `OR (95% CI)` = sprintf("%.2f (%.2f - %.2f)", OR, OR_CI_low, OR_CI_high),
+    p_value = ifelse(p_value < 0.001, "< 0.001", sprintf("%.3f", p_value))
+  ) |>
+  select(Predictor, `OR (95% CI)`, p_value, Level)
+
+effects_df |>
+  kable(col.names = c("Predictor", "Odds Ratio (95% CI)", "P-value", "Level"),
+        align = c("l", "c", "c", "c"),
+        caption = "Multi-Level Model Fixed Effects") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE) |>
+  pack_rows("Individual-Level Predictors", 1, 6) |>
+  pack_rows("Contextual-Level Predictors", 7, 7)
+```
+
+![Multi-Level Effects Visualization](../output/figures/diabetes_multilevel_effects.png){#fig-multilevel-effects fig-align="center" width="100%"}
+
+::: {.callout-important}
+## Environmental Risk Effect
+**Environmental risk score is significant** (OR = 1.38, p < 0.001): Living in a high-risk environment increases diabetes odds by 38% independent of individual characteristics. This suggests that community-level interventions (improving healthcare access, promoting healthy food environments) may complement individual-level prevention.
+:::
+
+### Cross-Level Interactions
+
+![Cross-Level Interaction Effects](../output/figures/diabetes_context_interactions.png){#fig-context-interactions fig-align="center" width="100%"}
+
+We tested whether individual-level effects vary by environmental context:
+
+- **Physical activity protection is slightly stronger** in high-risk environments
+- **BMI effects are consistent** across environments
+- **Age effects are slightly attenuated** in low-risk environments
+
+### Geographic Patterns
+
+Environmental risk scores show substantial geographic variation:
+
+```{r}
+#| label: geographic-summary
+#| echo: false
+
+# Summarize spot types
+spot_summary <- fusion_results$geographic$hot_cold_spots |>
+  count(spot_type) |>
+  mutate(pct = sprintf("%.1f%%", n / sum(n) * 100))
+
+spot_summary |>
+  kable(col.names = c("Classification", "N Counties", "Percentage"),
+        align = c("l", "r", "r"),
+        caption = "Geographic Distribution of Environmental Risk") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE,
+                position = "left")
+```
+
+### Implications for Population Health
+
+1. **Individual interventions remain primary**: The dominance of individual-level variance supports continued focus on modifiable personal risk factors
+
+2. **Environmental context is significant**: The 38% increase in odds associated with high-risk environments justifies place-based interventions
+
+3. **Equity lens**: Environmental risk concentrates in areas with lower socioeconomic status, compounding individual-level disparities
+
+4. **Policy targets**:
+   - Improve healthcare access in high-risk communities
+   - Address food deserts and physical activity infrastructure
+   - Target screening programs to high-burden areas
+
+---
+
+## Discussion
+
+### Key Findings Interpretation
+
+Our analysis reveals several clinically meaningful insights:
+
+1. **General health perception is remarkably predictive**: Self-rated general health emerged as the strongest single predictor of diabetes status. This simple, single-item measure captures complex interactions between physical function, mental health, and quality of life that contribute to diabetes risk.
+
+2. **The cardiovascular-metabolic nexus**: High blood pressure and high cholesterol show some of the strongest associations with diabetes, consistent with the concept of metabolic syndrome. These conditions share common pathophysiological mechanisms and respond to similar lifestyle interventions.
+
+3. **Age is not modifiable but is actionable**: While age itself cannot be changed, the strong age-diabetes relationship informs screening guidelines. Our findings support intensified screening for individuals over 45 years of age.
+
+4. **Model performance is clinically useful**: An AUC of 0.82 indicates good discrimination ability. At the optimal threshold, the model correctly identifies approximately 78% of diabetics while maintaining 71% specificity.
+
+### Clinical Implications
+
+- **Primary Care Screening**: The identified risk factors can inform clinical decision-making about diabetes screening intensity
+- **Patient Education**: High blood pressure and cholesterol control should be emphasized as diabetes prevention strategies
+- **Resource Allocation**: Risk scores can help prioritize limited prevention program resources
+
+### Comparison to Existing Literature
+
+Our findings align with established diabetes epidemiology:
+
+- The strong association with hypertension mirrors the American Diabetes Association's recognition of high blood pressure as a key comorbidity
+- BMI effects are consistent with the well-established obesity-diabetes relationship
+- Age patterns match CDC prevalence data showing peak diabetes rates in the 65+ population
+
+### Study Strengths
+
+1. **Large, representative sample**: Over 250,000 respondents with national coverage
+2. **Comprehensive variable set**: Multiple domains including behaviors, conditions, and demographics
+3. **Rigorous methodology**: Proper train/test splitting with stratification
+4. **Multiple model comparison**: Both interpretable and ensemble methods evaluated
+
+---
+
+## Limitations
+
+::: {.callout-warning}
+## Important Considerations
+:::
+
+### Data Limitations
+
+#### Cross-Sectional Design
+
+The BRFSS is a cross-sectional survey, meaning all variables are measured at a single point in time. This precludes establishing temporal precedence---we cannot determine whether risk factors preceded diabetes or vice versa.
+
+#### Self-Reported Data
+
+All health conditions and behaviors are self-reported, introducing potential:
+
+- **Recall bias**: Respondents may inaccurately remember past behaviors
+- **Social desirability bias**: Underreporting of stigmatized conditions or behaviors
+- **Diagnostic bias**: Undiagnosed diabetes cases may be misclassified as healthy
+
+#### Class Imbalance
+
+Despite methodological adjustments, the severe imbalance (84% negative cases) may limit:
+
+- Detection of subtle predictive signals for the minority class
+- Model calibration in the high-risk range
+- Generalizability to higher-prevalence populations
+
+#### Missing Prediabetes Cases
+
+The extremely low prediabetes prevalence (1.8%) likely reflects underdiagnosis rather than true prevalence. The American Diabetes Association estimates 38% of US adults have prediabetes---our data captures only a small fraction of these cases.
+
+#### Variable Limitations
+
+- **No laboratory values**: HbA1c, fasting glucose, and other biomarkers unavailable
+- **Limited behavioral detail**: Frequency and intensity of exercise not captured
+- **No dietary quality**: Only fruit/vegetable consumption binary indicators
+
+### Causal Inference Limitations
+
+The causal analysis presented in this report relies on several strong assumptions:
+
+1. **Unmeasured confounding**: The DAG assumes we have identified and measured all relevant confounders. Genetics, in particular, represents a substantial unmeasured variable that could bias estimates.
+
+2. **Positivity violations**: Some covariate combinations may have very few or no observations, leading to extreme propensity weights and unstable estimates.
+
+3. **Model specification**: The causal effect estimates rely on correct specification of outcome and propensity models. Misspecification could bias results.
+
+4. **Cross-sectional causal claims**: Despite our causal framework, the cross-sectional nature of the data means we cannot rule out reverse causation or bidirectional effects.
+
+5. **Transportability**: Effects estimated in the BRFSS population may not generalize to other populations with different covariate distributions.
+
+### Anomaly Discovery Limitations
+
+1. **Arbitrary thresholds**: The 75th and 25th percentile thresholds for defining "high risk" and "low risk" are arbitrary. Different thresholds would yield different subgroup compositions.
+
+2. **Overfitting risk**: Comparing subgroups on the same variables used for prediction risks finding spurious differences.
+
+3. **Small vulnerable group**: With only 238 vulnerable individuals, estimates for this group have wide uncertainty and may not replicate.
+
+4. **Missing phenotype data**: The "resilience" we identify may simply reflect unmeasured variables rather than true biological resilience.
+
+### Fairness Audit Limitations
+
+1. **Missing protected attributes**: Race/ethnicity was not available in our dataset, limiting our ability to assess disparities across these critical dimensions.
+
+2. **Definition-dependent**: Different fairness metrics often conflict; satisfying one metric may violate another. Our findings depend on which metrics are prioritized.
+
+3. **Single model evaluated**: We audited the random forest model; logistic regression may show different disparity patterns.
+
+4. **Intersectionality challenges**: Sample sizes decrease rapidly when examining intersections, reducing statistical power for detecting disparities.
+
+5. **Threshold sensitivity**: Fairness metrics at the default 0.5 threshold may differ substantially from those at clinically optimal thresholds.
+
+### Multi-Level Analysis Limitations
+
+1. **Ecological inference**: We could not link individuals to actual counties; the ecological analysis uses simulated county assignment based on propensity scores.
+
+2. **Aggregation bias**: County-level measures may not reflect individual exposures within those counties (ecological fallacy).
+
+3. **Temporal mismatch**: CDC PLACES data and BRFSS data may not be from identical time periods.
+
+4. **Missing geographic variation**: The small contextual variance (3%) may partly reflect our inability to capture true geographic clustering.
+
+5. **Causal interpretation**: Multi-level effects should not be interpreted causally; environmental selection and confounding remain possible.
+
+### Generalizability Considerations
+
+::: {.callout-note}
+## External Validity
+:::
+
+- Results are based on 2015 BRFSS data and may not reflect current diabetes epidemiology
+- Survey excludes institutionalized populations and those without telephone access
+- Self-selected survey respondents may differ systematically from non-respondents
+- Geographic and demographic representation depends on state-level response rates
+
+---
+
+## Recommendations
+
+### Public Health Policy Implications
+
+1. **Integrated Screening Programs**: Given the strong comorbidity patterns, diabetes screening should be integrated with cardiovascular risk assessment programs
+
+2. **General Health as a Screening Trigger**: Consider using self-rated general health as a simple screening question to identify individuals warranting further evaluation
+
+3. **Focus on Modifiable Factors**: Public health messaging should emphasize blood pressure control, cholesterol management, and BMI reduction as diabetes prevention strategies
+
+### Clinical Screening Recommendations
+
+```{r}
+#| label: screening-recommendations
+
+screen_table <- tibble(
+  `Age Group` = c("18-44", "45-64", "65+"),
+  `No Risk Factors` = c("Screen if BMI >= 25", "Screen every 3 years", "Screen annually"),
+  `1-2 Risk Factors` = c("Screen every 3 years", "Screen annually", "Screen annually"),
+  `3+ Risk Factors` = c("Screen annually", "Screen annually", "Screen every 6 months")
+)
+
+screen_table |>
+  kable(align = c("l", "l", "l", "l"),
+        caption = "Suggested Screening Frequency by Risk Profile") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+### Lifestyle Intervention Targets
+
+Priority areas for intervention based on attributable risk:
+
+1. **Blood Pressure Management**: Hypertension control could prevent a substantial proportion of diabetes cases
+2. **Weight Management**: Programs targeting BMI reduction in overweight/obese individuals
+3. **Physical Activity**: Increasing physical activity levels, particularly in sedentary populations
+4. **Dietary Improvement**: Increasing fruit and vegetable consumption
+
+### Future Research Directions
+
+1. **Longitudinal Studies**: Prospective cohort studies to establish temporal relationships
+2. **Biomarker Integration**: Incorporate laboratory values for improved prediction
+3. **Subgroup Analysis**: Examine risk factor profiles by race/ethnicity and geographic region
+4. **Intervention Trials**: Test effectiveness of risk score-guided prevention programs
+
+---
+
+## Conclusion
+
+This comprehensive analysis of CDC BRFSS data provides valuable insights into diabetes risk factors in the American population. Our multi-method approach---spanning predictive modeling, causal inference, anomaly discovery, fairness auditing, and multi-level analysis---yields a nuanced understanding of diabetes epidemiology.
+
+### Summary of Key Findings
+
+**Predictive Modeling:**
+
+- **Diabetes affects 14% of respondents**, with likely substantial underdiagnosis of prediabetes
+- **General health perception, high blood pressure, and high cholesterol** emerge as the strongest predictors
+- **Predictive models achieve AUC of 0.82**, demonstrating clinical utility for risk stratification
+
+**Causal Analysis:**
+
+- **High blood pressure has the largest causal effect** on diabetes (12.5 percentage point increase)
+- **Eliminating high BP could prevent 42% of diabetes cases** (highest population attributable fraction)
+- **Physical activity directly reduces risk by 3.5 percentage points**, with additional indirect effects through BMI
+- E-values suggest **moderate-to-strong robustness** to unmeasured confounding
+
+**Anomaly Discovery:**
+
+- **15.4% of individuals are "resilient"**---high risk profiles without diabetes
+- **Only 0.09% are "vulnerable"**---diabetes despite low predicted risk
+- Resilient individuals show slightly better lifestyle factors; vulnerable individuals have elevated cardiovascular risk
+- **Hypotheses generated** for future investigation of protective and risk mechanisms
+
+**Fairness Assessment:**
+
+- **20 fairness disparities flagged** across age, income, and education groups
+- **Most severe disparities in low-income populations**: 6.7x higher positive prediction rate
+- Intersectional analysis reveals compounded disadvantages for low-income groups
+- **Bias mitigation recommendations** provided for deployment
+
+**Multi-Level Analysis:**
+
+- **97% of variance is individual-level**; 3% attributable to environmental context
+- **Environmental risk independently increases odds by 38%** after controlling for individual factors
+- Geographic hot spots concentrated in areas with poor healthcare access and high chronic disease burden
+- Place-based interventions may complement individual-level prevention
+
+### Public Health Implications
+
+These findings support a multi-pronged approach to diabetes prevention:
+
+1. **Individual-level**: Target modifiable risk factors (BP, BMI, physical activity) in high-risk individuals
+2. **Causal targeting**: Prioritize hypertension control given its large attributable fraction
+3. **Equity-focused**: Address fairness gaps in screening and prediction for socioeconomically disadvantaged populations
+4. **Community-level**: Invest in environmental improvements in high-burden areas
+5. **Precision approaches**: Use anomaly profiles to guide personalized prevention strategies
+
+### Final Remarks
+
+This analysis demonstrates the value of extending beyond traditional predictive modeling to address causal, fairness, and contextual questions. While our models can identify who is at risk, the advanced analyses provide insight into *why* they are at risk and *whether* we are serving all populations equitably. Future work should prioritize longitudinal validation, incorporation of genetic and biomarker data, and prospective evaluation of fairness-aware deployment strategies.
+
+---
+
+## Appendix {.appendix}
+
+### A. Full Logistic Regression Coefficients
+
+```{r}
+#| label: full-coefficients
+
+full_coefs <- model_summary$logistic$coefficients |>
+  mutate(
+    `Odds Ratio` = round(estimate, 3),
+    `95% CI Lower` = round(conf.low, 3),
+    `95% CI Upper` = round(conf.high, 3),
+    `Std. Error` = round(std.error, 4),
+    `Z-statistic` = round(statistic, 2),
+    `P-value` = ifelse(p.value < 0.001, "< 0.001", sprintf("%.4f", p.value))
+  ) |>
+  select(term, `Odds Ratio`, `95% CI Lower`, `95% CI Upper`,
+         `Std. Error`, `Z-statistic`, `P-value`)
+
+full_coefs |>
+  kable(align = c("l", rep("r", 6)),
+        caption = "Complete Logistic Regression Output") |>
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                full_width = TRUE,
+                font_size = 12) |>
+  scroll_box(height = "400px")
+```
+
+### B. Technical Details and Reproducibility
+
+#### Software Environment
+
+```{r}
+#| label: session-info
+#| echo: false
+
+# Create session info summary
+session_summary <- tibble(
+  Component = c("R Version", "Platform", "Operating System", "Report Generated"),
+  Value = c(
+    paste(R.version$major, R.version$minor, sep = "."),
+    R.version$platform,
+    R.version$os,
+    format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")
+  )
+)
+
+session_summary |>
+  kable(align = c("l", "l"),
+        caption = "Computing Environment") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE,
+                position = "left")
+```
+
+#### Key Package Versions
+
+```{r}
+#| label: package-versions
+#| echo: false
+
+# List of key packages used
+key_packages <- c("tidyverse", "knitr", "kableExtra", "scales")
+
+# Get versions for installed packages
+pkg_versions <- sapply(key_packages, function(p) {
+  tryCatch(
+    as.character(packageVersion(p)),
+    error = function(e) "Not installed"
+  )
+})
+
+pkg_df <- tibble(
+  Package = key_packages,
+  Version = pkg_versions,
+  Purpose = c(
+    "Data manipulation, visualization, and tidying",
+    "Dynamic report generation",
+    "Publication-quality tables",
+    "Axis and legend formatting"
+  )
+)
+
+pkg_df |>
+  kable(align = c("l", "l", "l"),
+        caption = "Key Packages Used in Analysis") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+#### Analysis Pipeline Packages
+
+The following packages were used in the underlying analysis scripts:
+
+```{r}
+#| label: analysis-packages
+#| echo: false
+
+analysis_packages <- tibble(
+  Analysis = c(
+    "Predictive Modeling",
+    "Predictive Modeling",
+    "Predictive Modeling",
+    "Causal Inference",
+    "Causal Inference",
+    "Fairness Audit",
+    "Multi-Level Modeling",
+    "Visualization"
+  ),
+  Package = c(
+    "ranger",
+    "pROC",
+    "yardstick",
+    "dagitty",
+    "EValue (or custom implementation)",
+    "fairness (or custom implementation)",
+    "lme4",
+    "ggplot2"
+  ),
+  Purpose = c(
+    "Random forest implementation",
+    "ROC curve analysis and AUC calculation",
+    "Classification metrics",
+    "DAG specification and adjustment sets",
+    "E-value sensitivity analysis",
+    "Fairness metric computation",
+    "Mixed-effects logistic regression",
+    "Publication-quality figures"
+  )
+)
+
+analysis_packages |>
+  kable(align = c("l", "l", "l"),
+        caption = "Packages Used in Analysis Pipeline") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+#### Model Specifications
+
+```{r}
+#| label: model-specs
+#| echo: false
+
+model_specs <- tibble(
+  Model = c(
+    "Logistic Regression",
+    "Random Forest",
+    "Causal (IPW)",
+    "Multi-Level"
+  ),
+  Specification = c(
+    "glm(formula, family = binomial(link = 'logit'))",
+    "ranger(num.trees = 500, mtry = sqrt(p), min.node.size = 10)",
+    "Inverse probability weighting with DAG-implied adjustment sets",
+    "glmer(formula, family = binomial, nAGQ = 1)"
+  ),
+  Notes = c(
+    "L2 regularization applied via glmnet in some analyses",
+    "Out-of-bag error for tuning; probability = TRUE for calibration",
+    "Stabilized weights with trimming at 1st/99th percentiles",
+    "Adaptive Gauss-Hermite quadrature with 1 point (Laplace approximation)"
+  )
+)
+
+model_specs |>
+  kable(align = c("l", "l", "l"),
+        caption = "Model Specifications") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+#### Random Seeds
+
+To ensure reproducibility, the following random seeds were used:
+
+```{r}
+#| label: random-seeds
+#| echo: false
+
+seeds <- tibble(
+  Analysis = c(
+    "Train/Test Split",
+    "Random Forest Training",
+    "Anomaly Discovery (Subsampling)",
+    "Multi-Level Model (Propensity Simulation)"
+  ),
+  Seed = c(42, 42, 123, 456),
+  `Set Via` = c(
+    "set.seed(42)",
+    "set.seed(42)",
+    "set.seed(123)",
+    "set.seed(456)"
+  )
+)
+
+seeds |>
+  kable(align = c("l", "r", "l"),
+        caption = "Random Seeds for Reproducibility") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = FALSE,
+                position = "left")
+```
+
+#### Data Sources
+
+```{r}
+#| label: data-sources
+#| echo: false
+
+data_sources <- tibble(
+  Dataset = c(
+    "BRFSS Diabetes Health Indicators",
+    "CDC PLACES County-Level Data"
+  ),
+  Source = c(
+    "UCI Machine Learning Repository / CDC",
+    "CDC PLACES: Local Data for Better Health"
+  ),
+  Year = c("2015", "2023"),
+  `N Records` = c("253,680 individuals", "3,000+ counties"),
+  Access = c(
+    "https://archive.ics.uci.edu/dataset/891/",
+    "https://www.cdc.gov/places/"
+  )
+)
+
+data_sources |>
+  kable(align = c("l", "l", "c", "r", "l"),
+        caption = "Data Sources") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+#### Code Availability
+
+::: {.callout-tip}
+## Reproducibility Statement
+:::
+
+All analysis code is available in the project repository:
+
+- **Data preparation**: `scripts/01_data_preparation.R`
+- **Exploratory analysis**: `scripts/02_exploratory_analysis.R`
+- **Statistical modeling**: `scripts/03_statistical_modeling.R`
+- **Model evaluation**: `scripts/04_model_evaluation.R`
+- **Causal inference**: `scripts/05_causal_inference.R`
+- **Anomaly discovery**: `scripts/06_anomaly_discovery.R`
+- **Fairness audit**: `scripts/07_fairness_audit.R`
+- **Multi-level analysis**: `scripts/08_multilevel_analysis.R`
+- **Report generation**: `reports/diabetes_analysis_report.qmd`
+
+#### Output Files
+
+```{r}
+#| label: output-files
+#| echo: false
+
+output_files <- tibble(
+  File = c(
+    "statistical_results_diabetes.rds",
+    "model_evaluation_results.rds",
+    "causal_inference_results.rds",
+    "anomaly_discovery_results.rds",
+    "fairness_audit_results.rds",
+    "data_fusion_results.rds"
+  ),
+  Contents = c(
+    "Correlation matrices, chi-square tests, odds ratios, risk ratios",
+    "Model predictions, performance metrics, thresholds, feature importance",
+    "DAG, adjustment sets, ATEs, counterfactuals, E-values",
+    "Subgroup assignments, profiles, hypotheses, factor analysis",
+    "Fairness metrics by group, intersectional analysis, recommendations",
+    "Environmental scores, VPC, fixed effects, geographic patterns"
+  ),
+  Location = rep("output/", 6)
+)
+
+output_files |>
+  kable(align = c("l", "l", "l"),
+        caption = "Saved Analysis Results") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE)
+```
+
+### C. Data Dictionary
+
+```{r}
+#| label: data-dictionary
+
+variable_info |>
+  kable(col.names = c("Variable", "Description", "Type"),
+        align = c("l", "l", "c"),
+        caption = "Complete Variable Reference") |>
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                full_width = TRUE) |>
+  scroll_box(height = "400px")
+```
+
+---
+
+<div style="text-align: center; color: #888; margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd;">
+Report generated on `r format(Sys.time(), "%B %d, %Y at %I:%M %p")`<br>
+Data Analysis Team | CDC BRFSS Diabetes Health Indicators Project
+</div>

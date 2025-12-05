@@ -37,3 +37,6 @@ renv/sandbox/
 /.quarto/
 *_cache/
 *_files/
+
+# Archives
+*.zip
