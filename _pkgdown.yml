@@ -1,0 +1,46 @@
+url: https://user.github.io/rdataviz
+
+template:
+  bootstrap: 5
+  bootswatch: flatly
+  bslib:
+    primary: "#0D9488"
+
+navbar:
+  structure:
+    left: [intro, reference, articles, news]
+    right: [search, github]
+
+reference:
+  - title: Themes
+    desc: ggplot2 and plotly theming functions
+    contents:
+      - theme_worldclass
+      - apply_plotly_theme
+
+  - title: Color Palettes
+    desc: Colorblind-safe color palettes
+    contents:
+      - chart_colors
+      - diabetes_colors
+      - risk_gradient
+      - subgroup_colors
+      - get_theme_colors
+
+  - title: Scale Functions
+    desc: ggplot2 scale functions for rdataviz palettes
+    contents:
+      - scale_fill_rdataviz
+      - scale_color_rdataviz
+      - scale_fill_risk
+
+articles:
+  - title: Getting Started
+    navbar: ~
+    contents:
+      - rdataviz
+
+news:
+  releases:
+    - text: "Version 0.1.0"
+      href: news/index.html

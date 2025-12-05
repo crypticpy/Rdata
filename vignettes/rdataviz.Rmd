@@ -1,0 +1,137 @@
+---
+title: "Getting Started with rdataviz"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with rdataviz}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+## Introduction
+
+rdataviz provides publication-quality themes and colorblind-safe palettes for R data visualization. This vignette covers the basics of using the package.
+## Installation
+
+```{r eval=FALSE}
+# Install from GitHub
+remotes::install_github("user/rdataviz")
+```
+
+## Basic Usage
+
+```{r setup}
+library(rdataviz)
+library(ggplot2)
+```
+
+### Applying the Theme
+
+The main theme function is `theme_worldclass()`:
+
+```{r theme-example}
+ggplot(mtcars, aes(wt, mpg, color = factor(cyl))) +
+  geom_point(size = 3) +
+  labs(
+    title = "Weight vs Fuel Efficiency",
+    subtitle = "Data from Motor Trend magazine, 1974",
+    x = "Weight (1000 lbs)",
+    y = "Miles per Gallon",
+    color = "Cylinders"
+  ) +
+  scale_color_rdataviz() +
+  theme_worldclass(dark_mode = FALSE)
+```
+
+### Dark Mode
+
+For presentations or dashboards with dark backgrounds, use `dark_mode = TRUE`.
+Note: Dark mode is optimized for display on dark backgrounds (Shiny apps, slides).
+
+```{r dark-mode, eval=FALSE}
+# Same plot with dark mode (not rendered in vignette)
+ggplot(mtcars, aes(wt, mpg, color = factor(cyl))) +
+  geom_point(size = 3) +
+  scale_color_rdataviz() +
+  theme_worldclass(dark_mode = TRUE)
+```
+
+## Color Palettes
+
+### Categorical Data
+
+Use `scale_fill_rdataviz()` or `scale_color_rdataviz()`:
+
+```{r categorical}
+ggplot(iris, aes(Species, Sepal.Length, fill = Species)) +
+  geom_boxplot() +
+  scale_fill_rdataviz() +
+  theme_worldclass(dark_mode = FALSE) +
+  labs(title = "Sepal Length by Species")
+```
+
+### Health/Risk Data
+
+Use the diabetes palette for health status:
+
+```{r health}
+health_data <- data.frame(
+  status = c("No Diabetes", "Prediabetes", "Diabetes"),
+  count = c(850, 100, 50)
+)
+
+ggplot(health_data, aes(status, count, fill = status)) +
+  geom_col() +
+  scale_fill_rdataviz("diabetes") +
+  theme_worldclass(dark_mode = FALSE) +
+  labs(title = "Health Status Distribution")
+```
+
+### Continuous Risk Gradient
+
+For heatmaps or continuous risk scores:
+
+```{r risk}
+risk_data <- expand.grid(x = 1:10, y = 1:10)
+risk_data$value <- (risk_data$x + risk_data$y) / 20
+
+ggplot(risk_data, aes(x, y, fill = value)) +
+  geom_tile() +
+  scale_fill_risk() +
+  theme_worldclass(dark_mode = FALSE) +
+  labs(title = "Risk Heatmap")
+```
+
+## Available Palettes
+
+| Palette | Colors | Use Case |
+|---------|--------|----------|
+| `chart_colors` | 10 | General categorical data |
+| `diabetes_colors` | 3 | Health status (healthy/warning/risk) |
+| `risk_gradient` | 6 | Sequential risk levels |
+| `subgroup_colors` | 5 | Population subgroups |
+
+## Theme Customization
+
+Adjust base size for different contexts:
+
+```{r customization}
+# Larger text for presentations
+ggplot(mtcars, aes(wt, mpg)) +
+  geom_point() +
+  theme_worldclass(base_size = 18, dark_mode = FALSE)
+```
+
+## Learn More
+
+- See `?theme_worldclass` for all theme options
+- See `?scale_fill_rdataviz` for scale functions
+- See `?get_theme_colors` for programmatic color access
