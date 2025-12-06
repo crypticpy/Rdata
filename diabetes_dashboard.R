@@ -9,6 +9,7 @@
 
 # Load packages ---------------------------------------------------------------
 library(shiny)
+library(shinyjs)
 library(bslib)
 library(bsicons)
 library(tidyverse)
@@ -20,133 +21,103 @@ library(ranger)
 library(pROC)
 library(shinycssloaders)  # Loading spinners for plots
 
-# Set theme for ggplot2 - Dark Mode Optimized --------------------------------
-theme_worldclass <- function(dark_mode = TRUE) {
-  if (dark_mode) {
-    bg_color <- "transparent"
-    text_color <- "#F5F0E8"
-    subtitle_color <- "#94A3B8"
-    axis_color <- "#94A3B8"
-    grid_color <- "rgba(255,255,255,0.08)"
-    strip_color <- "#F5F0E8"
-  } else {
-    bg_color <- "white"
-    text_color <- "#0F172A"
-    subtitle_color <- "#64748B"
-    axis_color <- "#334155"
-    grid_color <- "#E2E8F0"
-    strip_color <- "#0F172A"
-  }
-
-  theme_minimal(base_size = 14, base_family = "Inter") +
+# Set theme for ggplot2 - Clinical Premium (Light Mode) ----------------------
+theme_dashboard <- function() {
+  theme_minimal(base_size = 14, base_family = "DM Sans") +
     theme(
       plot.title = element_text(
-        size = 18,
+        size = 16,
         face = "bold",
-        color = text_color,
-        margin = margin(b = 12)
+        color = "#1A1A2E",
+        family = "Playfair Display"
       ),
       plot.subtitle = element_text(
-        size = 13,
-        color = subtitle_color,
-        margin = margin(b = 16)
+        size = 12,
+        color = "#64748B",
+        margin = margin(b = 15)
       ),
       plot.caption = element_text(
-        size = 11,
-        color = subtitle_color,
+        size = 10,
+        color = "#94A3B8",
         hjust = 0
       ),
       panel.grid.minor = element_blank(),
-      panel.grid.major = element_line(color = grid_color, linewidth = 0.5),
-      axis.title = element_text(size = 13, color = axis_color),
-      axis.text = element_text(size = 12, color = axis_color),
+      panel.grid.major = element_line(color = "#F0F0F0", linewidth = 0.3),
+      axis.title = element_text(size = 11, color = "#64748B", face = "plain"),
+      axis.text = element_text(size = 10, color = "#64748B"),
       legend.position = "bottom",
-      legend.title = element_text(size = 12, face = "bold", color = text_color),
-      legend.text = element_text(size = 11, color = subtitle_color),
+      legend.title = element_text(size = 11, face = "bold", color = "#1A1A2E"),
+      legend.text = element_text(size = 10, color = "#64748B"),
       legend.background = element_rect(fill = "transparent", color = NA),
       legend.key = element_rect(fill = "transparent", color = NA),
-      strip.text = element_text(size = 12, face = "bold", color = strip_color),
+      strip.text = element_text(size = 12, face = "bold", color = "#1A1A2E"),
       plot.margin = margin(20, 20, 20, 20),
-      plot.background = element_rect(fill = bg_color, color = NA),
-      panel.background = element_rect(fill = bg_color, color = NA)
+      plot.background = element_rect(fill = "transparent", color = NA),
+      panel.background = element_rect(fill = "transparent", color = NA)
     )
 }
 
 # Alias for backward compatibility
-theme_dashboard <- theme_worldclass
+theme_worldclass <- theme_dashboard
 
-# Set dark mode as default
-theme_set(theme_worldclass(dark_mode = TRUE))
+# Set Clinical Premium theme as default
+theme_set(theme_dashboard())
 
-# Theme-aware Plotly layout helper -------------------------------------------
-apply_plotly_theme <- function(p, dark_mode = TRUE) {
-  if (dark_mode) {
-    p |> layout(
-      paper_bgcolor = "transparent",
-      plot_bgcolor = "transparent",
-      font = list(color = "#F5F0E8", family = "Outfit"),
-      legend = list(
-        font = list(color = "#E2E8F0", size = 12),
-        bgcolor = "transparent"
-      ),
-      xaxis = list(
-        color = "#94A3B8",
-        gridcolor = "rgba(255,255,255,0.08)",
-        zerolinecolor = "rgba(255,255,255,0.1)",
-        tickfont = list(color = "#94A3B8")
-      ),
-      yaxis = list(
-        color = "#94A3B8",
-        gridcolor = "rgba(255,255,255,0.08)",
-        zerolinecolor = "rgba(255,255,255,0.1)",
-        tickfont = list(color = "#94A3B8")
-      )
-    )
-  } else {
-    p |> layout(
-      paper_bgcolor = "#FFFFFF",
-      plot_bgcolor = "#FFFFFF",
-      font = list(color = "#0F172A", family = "Outfit"),
-      legend = list(
-        font = list(color = "#334155", size = 12),
-        bgcolor = "rgba(255,255,255,0.9)"
-      ),
-      xaxis = list(
-        color = "#64748B",
-        gridcolor = "rgba(0,0,0,0.08)",
-        zerolinecolor = "rgba(0,0,0,0.1)",
-        tickfont = list(color = "#64748B")
-      ),
-      yaxis = list(
-        color = "#64748B",
-        gridcolor = "rgba(0,0,0,0.08)",
-        zerolinecolor = "rgba(0,0,0,0.1)",
-        tickfont = list(color = "#64748B")
-      )
-    )
-  }
+# Plotly theme helper - Clinical Premium (Light Mode) -------------------------
+apply_plotly_theme <- function(p) {
+  p |> layout(
+    paper_bgcolor = "transparent",
+    plot_bgcolor = "transparent",
+    font = list(color = "#1A1A2E", family = "DM Sans", size = 12),
+    title = list(font = list(family = "Playfair Display", size = 16, color = "#1A1A2E")),
+    legend = list(
+      font = list(color = "#64748B", size = 11, family = "DM Sans"),
+      bgcolor = "transparent",
+      borderwidth = 0
+    ),
+    xaxis = list(
+      color = "#64748B",
+      gridcolor = "#F0F0F0",
+      zerolinecolor = "#E8E8E8",
+      tickfont = list(color = "#64748B", family = "DM Sans", size = 11),
+      titlefont = list(color = "#64748B", family = "DM Sans", size = 12)
+    ),
+    yaxis = list(
+      color = "#64748B",
+      gridcolor = "#F0F0F0",
+      zerolinecolor = "#E8E8E8",
+      tickfont = list(color = "#64748B", family = "DM Sans", size = 11),
+      titlefont = list(color = "#64748B", family = "DM Sans", size = 12)
+    ),
+    hoverlabel = list(
+      bgcolor = "#FFFFFF",
+      bordercolor = "#E85D4C",
+      font = list(color = "#1A1A2E", family = "DM Sans", size = 12)
+    ),
+    colorway = c("#E85D4C", "#0D9488", "#F59E0B", "#0891B2", "#8B5CF6")
+  ) |> config(displayModeBar = FALSE)
 }
 
 # Backward compatibility alias
-plotly_dark_layout <- function(p) apply_plotly_theme(p, dark_mode = TRUE)
+plotly_dark_layout <- apply_plotly_theme
 
-# Color palettes - Clinical Elegance "Slate & Teal" --------------------------
+# Color palettes - Clinical Premium (Coral & Teal) ----------------------------
 diabetes_colors <- c(
-  "No Diabetes" = "#10B981",   # Emerald
-  "Prediabetes" = "#F59E0B",   # Amber
-  "Diabetes" = "#F43F5E"       # Rose
+  "No Diabetes" = "#0D9488",   # Teal (Clinical Premium success)
+  "Prediabetes" = "#F59E0B",   # Amber (warning)
+  "Diabetes" = "#E85D4C"       # Coral (Clinical Premium primary)
 )
 
-# Teal-focused chart colors
+# Clinical Premium chart colors
 chart_colors <- c(
-  "#0D9488", "#0EA5E9", "#10B981", "#F59E0B", "#F43F5E",
-  "#8B5CF6", "#EC4899", "#14B8A6", "#6366F1", "#84CC16"
+  "#E85D4C", "#0D9488", "#F59E0B", "#0891B2", "#8B5CF6",
+  "#EC4899", "#059669", "#EF4444", "#6366F1", "#14B8A6"
 )
 
-risk_gradient <- c("#10B981", "#22C55E", "#84CC16", "#EAB308", "#F59E0B", "#F43F5E")
+risk_gradient <- c("#0D9488", "#059669", "#84CC16", "#EAB308", "#F59E0B", "#E85D4C")
 
-# Spinner color for loading states
-spinner_color <- "#0D9488"  # Teal primary
+# Spinner color for loading states - Coral
+spinner_color <- "#E85D4C"
 
 # Load and preprocess data at startup -----------------------------------------
 cat("Loading data...\n")
@@ -273,46 +244,47 @@ cat("Data preprocessing complete!\n")
 ui <- page_fillable(
   theme = bs_theme(
     version = 5,
-    # MIDNIGHT LUXE EDITORIAL - Dark mode with warm accents
-    bg = "#0C1222",        # Deep midnight
-    fg = "#F5F0E8",        # Warm cream
-    primary = "#FF6B6B",   # Coral accent
-    secondary = "#94A3B8", # Cool gray
-    success = "#4ADE80",   # Mint green
-    warning = "#FBBF24",   # Golden amber
-    danger = "#FB7185",    # Soft rose
-    info = "#38BDF8",      # Sky blue
-    base_font = font_google("Outfit"),
-    heading_font = font_google("Fraunces"),
-    code_font = font_google("DM Mono"),
-    "navbar-bg" = "#080D19",
-    "navbar-dark-color" = "#E2E8F0",
-    "navbar-dark-hover-color" = "#FF6B6B",
+    preset = "bootstrap",
+    # Clinical Premium - Light Theme
+    bg = "#FFFFFF",        # White background
+    fg = "#1A1A2E",        # Charcoal text
+    primary = "#E85D4C",   # Coral (Clinical Premium primary)
+    secondary = "#64748B", # Slate gray
+    success = "#0D9488",   # Teal
+    warning = "#F59E0B",   # Amber
+    danger = "#DC2626",    # Red
+    info = "#0891B2",      # Cyan
+    base_font = font_google("DM Sans"),
+    heading_font = font_google("Playfair Display"),
+    code_font = font_google("IBM Plex Mono"),
+    "navbar-bg" = "#FFFFFF",
+    "navbar-light-color" = "#1A1A2E",
     "card-border-width" = "1px",
-    "card-border-color" = "rgba(255,255,255,0.08)",
-    "card-bg" = "#151D2E",
+    "card-border-color" = "#E8E8E8",
+    "card-bg" = "#FFFFFF",
     "border-radius" = "1rem",
-    "card-spacer-y" = "1.75rem",
-    "card-spacer-x" = "1.75rem",
-    "body-bg" = "#0C1222",
-    "input-bg" = "#1A2332",
-    "input-border-color" = "rgba(255,255,255,0.1)",
-    "input-color" = "#F5F0E8",
-    "table-bg" = "transparent",
-    "table-color" = "#E2E8F0"
+    "card-spacer-y" = "1.5rem",
+    "card-spacer-x" = "1.5rem",
+    "body-bg" = "#FFFFFF",
+    "input-bg" = "#FFFFFF",
+    "input-border-color" = "#E8E8E8",
+    "input-color" = "#1A1A2E",
+    "table-bg" = "#FFFFFF",
+    "table-color" = "#1A1A2E"
   ),
   fillable = TRUE,
 
   header = tagList(
     # Loading screen
+    useShinyjs(),
     useWaiter(),
     waiterShowOnLoad(
       html = tagList(
         spin_orbiter(),
-        tags$h4("Loading Dashboard...", style = "color: white; margin-top: 20px;"),
-        tags$p("Preparing 253,680 records for analysis", style = "color: #94A3B8;")
+        tags$h4("Loading Dashboard...", style = "color: #1A1A2E; margin-top: 20px; font-family: 'Playfair Display', serif;"),
+        tags$p("Preparing 253,680 records for analysis", style = "color: #64748B;")
       ),
-      color = "#1E293B"
+      color = "#FFFFFF"
     ),
 
     # MIDNIGHT LUXE EDITORIAL - World-Class Design System
@@ -325,24 +297,50 @@ ui <- page_fillable(
            Blending: Clinical Precision + Editorial Elegance + Tech Sophistication
            ================================================================ */
 
-        /* === CSS VARIABLES === */
+        /* === CSS VARIABLES - Clinical Premium Light Theme === */
         :root {
-          --midnight: #0C1222;
-          --midnight-light: #151D2E;
-          --midnight-lighter: #1A2332;
-          --cream: #F5F0E8;
-          --cream-muted: #E2DED6;
-          --coral: #FF6B6B;
-          --coral-glow: rgba(255, 107, 107, 0.15);
-          --mint: #4ADE80;
-          --amber: #FBBF24;
-          --rose: #FB7185;
-          --sky: #38BDF8;
-          --glass: rgba(255, 255, 255, 0.03);
-          --glass-border: rgba(255, 255, 255, 0.08);
-          --text-primary: #F5F0E8;
-          --text-secondary: #94A3B8;
-          --text-muted: #94A3B8;  /* FIXED: Was #64748B - insufficient contrast */
+          /* Primary Brand Colors */
+          --coral: #E85D4C;
+          --coral-light: #FFF0EE;
+          --coral-dark: #C94A3A;
+          --coral-glow: rgba(232, 93, 76, 0.15);
+          --teal: #0D9488;
+          --teal-light: #ECFDF5;
+
+          /* Neutrals - Light Theme */
+          --midnight: #FFFFFF;
+          --midnight-light: #FAFAFA;
+          --midnight-lighter: #FFFFFF;
+          --cream: #1A1A2E;
+          --cream-muted: #3C3C3C;
+          --charcoal: #1A1A2E;
+          --slate: #64748B;
+          --border: #E8E8E8;
+
+          /* Semantic Colors */
+          --mint: #0D9488;
+          --amber: #F59E0B;
+          --rose: #DC2626;
+          --sky: #0891B2;
+
+          /* Glass Effects (Light) */
+          --glass: rgba(0, 0, 0, 0.02);
+          --glass-border: rgba(0, 0, 0, 0.06);
+          --glass-bg: rgba(0, 0, 0, 0.02);
+
+          /* Text Colors */
+          --text-primary: #1A1A2E;
+          --text-secondary: #64748B;
+          --text-muted: #94A3B8;
+          --muted: #94A3B8;
+          --ghost: #CBD5E1;
+          --midnight-darker: #FFFFFF;
+
+          /* Shadows */
+          --shadow-sm: 0 2px 8px rgba(26, 26, 46, 0.04);
+          --shadow-md: 0 4px 24px rgba(26, 26, 46, 0.06);
+          --shadow-lg: 0 8px 32px rgba(26, 26, 46, 0.08);
+          --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         /* === UTILITY COLOR CLASSES === */
@@ -358,35 +356,28 @@ ui <- page_fillable(
         .bg-rose { background-color: var(--rose) !important; }
         .bg-sky { background-color: var(--sky) !important; }
 
-        /* === GLOBAL STYLES === */
+        /* === GLOBAL STYLES - Clinical Premium Light Theme === */
         body {
-          background: linear-gradient(180deg, #0C1222 0%, #0A0F1A 100%);
-          color: var(--cream);
-          font-family: 'Outfit', sans-serif;
+          background: #FFFFFF !important;
+          color: var(--charcoal) !important;
+          font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
           font-size: 15px;
           letter-spacing: 0.01em;
           min-height: 100vh;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
         }
 
-        /* Subtle noise texture overlay */
+        /* No texture overlay for clean light mode */
         body::before {
-          content: '';
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-image: url(\"data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\");
-          opacity: 0.015;
-          pointer-events: none;
-          z-index: -1;
+          display: none !important;
         }
 
-        /* === TYPOGRAPHY === */
-        h1, h2, h3, h4, h5, .display-heading {
-          font-family: 'Fraunces', serif;
+        /* === TYPOGRAPHY - Clinical Premium === */
+        h1, h2, h3, h4, h5, .display-heading, .card-header, .value-box-title {
+          font-family: 'Playfair Display', Georgia, serif !important;
           font-weight: 600;
-          color: var(--cream);
+          color: var(--charcoal) !important;
           letter-spacing: -0.02em;
         }
 
@@ -432,172 +423,157 @@ ui <- page_fillable(
           box-shadow: 0 4px 20px rgba(255, 107, 107, 0.3);
         }
 
-        /* === CARDS - Glassmorphism === */
+        /* === CARDS - Clinical Premium Light === */
         .card {
-          background: linear-gradient(145deg, rgba(21, 29, 46, 0.8) 0%, rgba(26, 35, 50, 0.6) 100%) !important;
-          backdrop-filter: blur(10px);
-          border: 1px solid var(--glass-border) !important;
-          border-radius: 1.25rem !important;
-          box-shadow:
-            0 4px 24px rgba(0, 0, 0, 0.3),
-            0 1px 2px rgba(0, 0, 0, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          background: #FFFFFF !important;
+          border: 1px solid var(--border) !important;
+          border-radius: 16px !important;
+          box-shadow: var(--shadow-sm) !important;
+          transition: var(--transition);
           overflow: hidden;
         }
         .card:hover {
-          transform: translateY(-4px);
-          border-color: rgba(255, 107, 107, 0.2) !important;
-          box-shadow:
-            0 12px 40px rgba(0, 0, 0, 0.4),
-            0 0 0 1px rgba(255, 107, 107, 0.1),
-            inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-md) !important;
         }
         .card-header {
-          font-family: 'Fraunces', serif;
-          font-size: 1.25rem;
+          font-family: 'Playfair Display', serif !important;
+          font-size: 1.1rem;
           font-weight: 600;
-          color: var(--cream);
-          background: transparent !important;
-          border-bottom: 1px solid var(--glass-border) !important;
-          padding: 1.25rem 1.75rem;
+          color: var(--charcoal) !important;
+          background: #FAFAFA !important;
+          border-bottom: 1px solid var(--border) !important;
+          padding: 1.25rem 1.5rem;
           letter-spacing: -0.01em;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+        .card-header .bi {
+          color: var(--coral) !important;
         }
         .card-body {
-          padding: 1.75rem;
-          color: var(--text-secondary);
+          padding: 1.5rem;
+          color: var(--charcoal);
         }
 
-        /* === VALUE BOXES - Statement Pieces === */
-        .value-box {
-          background: linear-gradient(145deg, rgba(21, 29, 46, 0.95) 0%, rgba(26, 35, 50, 0.85) 100%) !important;
-          border: 1px solid var(--glass-border) !important;
-          border-radius: 1.25rem !important;
-          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25) !important;
-          transition: all 0.4s ease;
-          overflow: hidden;
+        /* === VALUE BOXES - Clinical Premium KPIs === */
+        .value-box,
+        .bslib-value-box {
+          background: #FFFFFF !important;
+          border: 1px solid var(--border) !important;
+          border-radius: 16px !important;
+          box-shadow: var(--shadow-sm) !important;
+          transition: var(--transition);
+          overflow: visible !important;
           position: relative;
-          z-index: 1;  /* FIXED: Ensure below dropdown menus */
-        }
-        .value-box::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 4px;
-          background: linear-gradient(90deg, var(--coral), var(--amber), var(--mint));
-          opacity: 1;  /* FIXED: Always visible now */
-          transition: height 0.3s ease;
-        }
-        .value-box:hover::before {
-          height: 5px;
+          z-index: 1;
         }
         .value-box:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
+          transform: translateY(-3px);
+          box-shadow: var(--shadow-md) !important;
         }
         .value-box .value-box-title {
-          font-family: 'Outfit', sans-serif;
-          font-size: 0.9rem;  /* INCREASED for better readability */
+          font-family: 'DM Sans', sans-serif !important;
+          font-size: 0.75rem;
           font-weight: 600;
           text-transform: uppercase;
-          letter-spacing: 0.08em;
-          color: var(--cream) !important;  /* FIXED: Maximum contrast */
-          opacity: 1;
+          letter-spacing: 0.15em;
+          color: var(--slate) !important;
+          margin-bottom: 0.5rem;
         }
         .value-box .value-box-value {
-          font-family: 'Fraunces', serif;
+          font-family: 'Playfair Display', serif !important;
           font-size: 2.5rem;
           font-weight: 700;
-          color: var(--cream);
+          color: var(--charcoal) !important;
           letter-spacing: -0.03em;
+          line-height: 1.1;
         }
-        /* Description text inside value boxes */
         .value-box p {
-          font-size: 0.8rem;
-          color: var(--text-secondary) !important;
-          margin-top: 0.25rem;
-          opacity: 0.9;
+          font-size: 0.85rem;
+          color: var(--slate) !important;
+          margin-top: 0.5rem;
+        }
+        .value-box .value-box-showcase {
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         .value-box .value-box-showcase .bi {
-          font-size: 3rem !important;
-          opacity: 1;
+          font-size: 2.5rem !important;
+          opacity: 0.9;
         }
-        /* Color-coded value box icons and accents by theme */
-        .value-box.bg-primary .value-box-showcase .bi { color: var(--sky) !important; font-size: 3rem !important; filter: drop-shadow(0 2px 8px rgba(56, 189, 248, 0.4)); }
-        .value-box.bg-danger .value-box-showcase .bi { color: var(--rose) !important; font-size: 3rem !important; filter: drop-shadow(0 2px 8px rgba(251, 113, 133, 0.4)); }
-        .value-box.bg-success .value-box-showcase .bi { color: var(--mint) !important; font-size: 3rem !important; filter: drop-shadow(0 2px 8px rgba(74, 222, 128, 0.4)); }
-        .value-box.bg-warning .value-box-showcase .bi { color: var(--amber) !important; font-size: 3rem !important; filter: drop-shadow(0 2px 8px rgba(251, 191, 36, 0.4)); }
-        .value-box.bg-info .value-box-showcase .bi { color: var(--sky) !important; font-size: 3rem !important; filter: drop-shadow(0 2px 8px rgba(56, 189, 248, 0.4)); }
-        /* Distinctive colored border accent on top for each theme - always visible */
-        .value-box.bg-primary::before { background: linear-gradient(90deg, var(--sky), var(--sky), transparent) !important; opacity: 1 !important; height: 5px; }
-        .value-box.bg-danger::before { background: linear-gradient(90deg, var(--rose), var(--rose), transparent) !important; opacity: 1 !important; height: 5px; }
-        .value-box.bg-success::before { background: linear-gradient(90deg, var(--mint), var(--mint), transparent) !important; opacity: 1 !important; height: 5px; }
-        .value-box.bg-warning::before { background: linear-gradient(90deg, var(--amber), var(--amber), transparent) !important; opacity: 1 !important; height: 5px; }
-        /* Subtle left border accent matching the top bar */
-        .value-box.bg-primary { border-left: 3px solid var(--sky) !important; background: linear-gradient(145deg, rgba(56, 189, 248, 0.08) 0%, rgba(21, 29, 46, 0.95) 100%) !important; }
-        .value-box.bg-danger { border-left: 3px solid var(--rose) !important; background: linear-gradient(145deg, rgba(251, 113, 133, 0.08) 0%, rgba(21, 29, 46, 0.95) 100%) !important; }
-        .value-box.bg-success { border-left: 3px solid var(--mint) !important; background: linear-gradient(145deg, rgba(74, 222, 128, 0.08) 0%, rgba(21, 29, 46, 0.95) 100%) !important; }
-        .value-box.bg-warning { border-left: 3px solid var(--amber) !important; background: linear-gradient(145deg, rgba(251, 191, 36, 0.08) 0%, rgba(21, 29, 46, 0.95) 100%) !important; }
+        /* Color-coded value boxes with left border - Clinical Premium */
+        .value-box.bg-primary { border-left: 5px solid var(--coral) !important; background: #FFFFFF !important; }
+        .value-box.bg-primary .bi { color: var(--coral) !important; }
+        .value-box.bg-danger { border-left: 5px solid #DC2626 !important; background: #FFFFFF !important; }
+        .value-box.bg-danger .bi { color: #DC2626 !important; }
+        .value-box.bg-success { border-left: 5px solid var(--teal) !important; background: #FFFFFF !important; }
+        .value-box.bg-success .bi { color: var(--teal) !important; }
+        .value-box.bg-warning { border-left: 5px solid var(--amber) !important; background: #FFFFFF !important; }
+        .value-box.bg-warning .bi { color: var(--amber) !important; }
+        .value-box.bg-info { border-left: 5px solid var(--sky) !important; background: #FFFFFF !important; }
+        .value-box.bg-info .bi { color: var(--sky) !important; }
 
-        /* === DATA TABLES - Editorial Style === */
+        /* === DATA TABLES - Clinical Premium === */
         .dataTables_wrapper {
           font-size: 14px;
-          color: var(--text-secondary);
+          color: var(--charcoal);
         }
         table.dataTable {
           border-collapse: separate;
           border-spacing: 0;
+          background: #FFFFFF !important;
         }
         table.dataTable thead th {
-          font-family: 'Outfit', sans-serif;
+          font-family: 'DM Sans', sans-serif;
           font-weight: 600;
-          font-size: 0.8rem;  /* INCREASED from 0.75rem */
+          font-size: 0.8rem;
           text-transform: uppercase;
           letter-spacing: 0.08em;
-          color: var(--text-secondary);  /* FIXED: was text-muted - better contrast */
-          background: var(--midnight-lighter) !important;
+          color: var(--slate);
+          background: #F7F5F3 !important;
           border-bottom: 2px solid var(--coral) !important;
           padding: 1rem 1.25rem;
         }
         table.dataTable tbody td {
-          background: transparent;
-          border-bottom: 1px solid var(--glass-border);
+          background: #FFFFFF;
+          border-bottom: 1px solid var(--border);
           padding: 1rem 1.25rem;
-          color: var(--text-secondary);
+          color: var(--charcoal);
         }
         table.dataTable tbody tr:hover td {
-          background: var(--coral-glow) !important;
-          color: var(--cream);
+          background: #FFF0EE !important;
+          color: var(--charcoal);
         }
         .dataTables_filter input {
-          background: var(--midnight-lighter) !important;
-          border: 1px solid var(--glass-border) !important;
+          background: #FFFFFF !important;
+          border: 1px solid var(--border) !important;
           border-radius: 0.75rem !important;
           padding: 0.6rem 1rem !important;
-          color: var(--cream) !important;
+          color: var(--charcoal) !important;
           transition: all 0.3s ease;
         }
         .dataTables_filter input:focus {
           border-color: var(--coral) !important;
-          box-shadow: 0 0 0 3px var(--coral-glow) !important;
+          box-shadow: 0 0 0 3px rgba(232, 93, 76, 0.15) !important;
           outline: none;
         }
         .dataTables_info, .dataTables_length, .dataTables_paginate {
-          color: var(--text-muted) !important;
+          color: var(--slate) !important;
         }
         .dataTables_paginate .paginate_button {
-          color: var(--text-secondary) !important;
+          color: var(--charcoal) !important;
           border-radius: 0.5rem !important;
         }
         .dataTables_paginate .paginate_button.current {
           background: var(--coral) !important;
           border-color: var(--coral) !important;
-          color: var(--midnight) !important;
+          color: #FFFFFF !important;
         }
 
-        /* === PLOTLY CHARTS - Dark Mode === */
+        /* === PLOTLY CHARTS - Clinical Premium === */
         .plotly {
           background: transparent !important;
           position: relative;
@@ -619,23 +595,23 @@ ui <- page_fillable(
         .js-plotly-plot .xtick text,
         .js-plotly-plot .ytick text,
         .js-plotly-plot .ztick text {
-          fill: #94A3B8 !important;
+          fill: #64748B !important;
         }
         .js-plotly-plot .xtitle,
         .js-plotly-plot .ytitle,
         .js-plotly-plot .gtitle {
-          fill: #F5F0E8 !important;
+          fill: #1A1A2E !important;
         }
         /* Grid lines */
         .js-plotly-plot .gridlayer line {
-          stroke: rgba(255, 255, 255, 0.08) !important;
+          stroke: rgba(0, 0, 0, 0.06) !important;
         }
         .js-plotly-plot .zerolinelayer line {
-          stroke: rgba(255, 255, 255, 0.15) !important;
+          stroke: rgba(0, 0, 0, 0.12) !important;
         }
         /* Legend text */
         .js-plotly-plot .legendtext {
-          fill: #E2E8F0 !important;
+          fill: #1A1A2E !important;
         }
         .js-plotly-plot .legend .bg {
           fill: transparent !important;
@@ -643,38 +619,38 @@ ui <- page_fillable(
         }
         /* Annotations */
         .js-plotly-plot .annotation-text {
-          fill: #F5F0E8 !important;
+          fill: #1A1A2E !important;
         }
         /* Hover labels */
         .js-plotly-plot .hovertext {
-          fill: var(--cream) !important;
+          fill: #1A1A2E !important;
         }
         .js-plotly-plot .hovertext rect {
-          fill: var(--midnight-lighter) !important;
+          fill: #FFFFFF !important;
           stroke: var(--coral) !important;
         }
         /* Modebar */
         .plotly .modebar {
           opacity: 0.3;
-          background: var(--midnight-lighter) !important;
+          background: #FAFAFA !important;
           border-radius: 0.5rem;
         }
         .plotly:hover .modebar {
           opacity: 1;
         }
         .js-plotly-plot .plotly .modebar-btn path {
-          fill: var(--text-secondary) !important;
+          fill: var(--slate) !important;
         }
         .js-plotly-plot .plotly .modebar-btn:hover path {
           fill: var(--coral) !important;
         }
         /* Pie/Donut chart labels */
         .js-plotly-plot .pielayer .slicetext {
-          fill: var(--cream) !important;
+          fill: #FFFFFF !important;
         }
         /* Bar chart text annotations */
         .js-plotly-plot .barlayer text {
-          fill: var(--cream) !important;
+          fill: #1A1A2E !important;
         }
 
         /* === RISK BADGES - Glowing Pills === */
@@ -709,21 +685,21 @@ ui <- page_fillable(
           box-shadow: 0 4px 16px rgba(251, 113, 133, 0.3);
         }
 
-        /* === METRIC CARDS === */
+        /* === METRIC CARDS - Clinical Premium === */
         .metric-card-title {
-          font-family: 'Outfit', sans-serif;
-          font-size: 0.85rem;  /* INCREASED from 0.7rem for better readability */
-          color: var(--text-secondary);  /* FIXED: was text-muted - better contrast */
+          font-family: 'DM Sans', sans-serif;
+          font-size: 0.85rem;
+          color: var(--slate);
           font-weight: 600;
           margin-bottom: 0.5rem;
           text-transform: uppercase;
           letter-spacing: 0.12em;
         }
         .metric-card-value {
-          font-family: 'Fraunces', serif;
+          font-family: 'Playfair Display', serif;
           font-size: 2.5rem;
           font-weight: 700;
-          color: var(--cream);
+          color: var(--charcoal);
           letter-spacing: -0.03em;
         }
 
@@ -781,7 +757,6 @@ ui <- page_fillable(
         .editorial-icon {
           font-size: 1.25rem;
           color: var(--coral);
-          filter: drop-shadow(0 0 4px rgba(255, 107, 107, 0.25));  /* REDUCED glow */
         }
         .editorial-label {
           font-family: 'DM Mono', monospace;
@@ -792,11 +767,11 @@ ui <- page_fillable(
           text-transform: uppercase;
         }
         .editorial-lead {
-          font-family: 'Fraunces', serif;
+          font-family: 'Playfair Display', serif;
           font-size: 1.35rem;
           font-weight: 500;
           line-height: 1.5;
-          color: var(--cream);
+          color: var(--charcoal);
           margin-bottom: 1rem;
         }
         .editorial-lead strong {
@@ -804,37 +779,37 @@ ui <- page_fillable(
           font-weight: 600;
         }
         .editorial-lead em {
-          color: var(--sky);
+          color: var(--teal);
           font-style: normal;
-          border-bottom: 2px solid rgba(56, 189, 248, 0.4);
+          border-bottom: 2px solid rgba(13, 148, 136, 0.4);
         }
         .editorial-body {
           font-size: 1rem;
           line-height: 1.7;
-          color: var(--muted);
+          color: var(--slate);
         }
         .editorial-body strong {
-          color: var(--cream);
+          color: var(--charcoal);
           font-weight: 600;
-          background: linear-gradient(90deg, rgba(74, 222, 128, 0.2) 0%, transparent 100%);
+          background: linear-gradient(90deg, rgba(13, 148, 136, 0.15) 0%, transparent 100%);
           padding: 0.1em 0.3em;
           border-radius: 0.25em;
         }
 
-        /* === INSIGHT METRIC CARDS === */
+        /* === INSIGHT METRIC CARDS - Clinical Premium === */
         .insight-metrics {
           margin: 1.5rem 0 2rem 0;
         }
         .insight-card {
-          background: var(--glass-bg);
-          backdrop-filter: blur(20px);
-          border: 1px solid var(--glass-border);
+          background: #FFFFFF;
+          border: 1px solid var(--border);
           border-radius: 1rem;
           padding: 1.5rem;
           text-align: center;
           transition: all 0.3s ease;
           position: relative;
           overflow: hidden;
+          box-shadow: var(--shadow-sm);
         }
         .insight-card::before {
           content: '';
@@ -844,14 +819,14 @@ ui <- page_fillable(
           right: 0;
           height: 3px;
           background: linear-gradient(90deg, transparent, currentColor, transparent);
-          opacity: 0.5;
+          opacity: 0.7;
         }
         .insight-card:hover {
           transform: translateY(-4px);
-          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
         }
         .insight-number {
-          font-family: 'Fraunces', serif;
+          font-family: 'Playfair Display', serif;
           font-size: 2.5rem;
           font-weight: 700;
           letter-spacing: -0.03em;
@@ -860,12 +835,12 @@ ui <- page_fillable(
         .insight-label {
           font-size: 0.9rem;
           font-weight: 600;
-          color: var(--cream);
+          color: var(--charcoal);
           margin-bottom: 0.35rem;
         }
         .insight-detail {
           font-size: 0.75rem;
-          color: var(--ghost);
+          color: var(--slate);
           text-transform: uppercase;
           letter-spacing: 0.05em;
         }
@@ -879,7 +854,8 @@ ui <- page_fillable(
         }
         .causal-insight .insight-number {
           color: var(--mint);
-          text-shadow: 0 0 12px rgba(74, 222, 128, 0.25);  /* REDUCED from 30px 0.5 */
+          text-shadow: none;
+          font-weight: 700;
         }
 
         .discovery-insight {
@@ -890,7 +866,8 @@ ui <- page_fillable(
         }
         .discovery-insight .insight-number {
           color: var(--sky);
-          text-shadow: 0 0 12px rgba(56, 189, 248, 0.25);  /* REDUCED glow */
+          text-shadow: none;
+          font-weight: 700;
         }
 
         .fairness-insight {
@@ -901,7 +878,8 @@ ui <- page_fillable(
         }
         .fairness-insight .insight-number {
           color: var(--amber);
-          text-shadow: 0 0 12px rgba(251, 191, 36, 0.25);  /* REDUCED glow */
+          text-shadow: none;
+          font-weight: 700;
         }
 
         .variance-insight {
@@ -912,7 +890,8 @@ ui <- page_fillable(
         }
         .variance-insight .insight-number {
           color: #A855F7;
-          text-shadow: 0 0 12px rgba(168, 85, 247, 0.25);  /* REDUCED glow */
+          text-shadow: none;
+          font-weight: 700;
         }
 
         /* === TRAFFIC LIGHT INDICATORS === */
@@ -981,29 +960,33 @@ ui <- page_fillable(
           pointer-events: none;
         }
 
-        /* === HYPOTHESIS CARDS - Priority Glow === */
+        /* === HYPOTHESIS CARDS - Clinical Premium === */
         .hypothesis-card {
-          background: var(--midnight-lighter);
+          background: #FFFFFF;
+          border-left: 4px solid var(--amber);
+          border: 1px solid var(--border);
           border-left: 4px solid var(--amber);
           padding: 1.25rem 1.5rem;
           margin-bottom: 1rem;
           border-radius: 0 1rem 1rem 0;
           transition: all 0.3s ease;
+          box-shadow: var(--shadow-sm);
         }
         .hypothesis-card:hover {
           transform: translateX(4px);
+          box-shadow: var(--shadow-md);
         }
         .hypothesis-high {
-          border-left-color: var(--rose);
-          background: linear-gradient(90deg, rgba(251, 113, 133, 0.1) 0%, var(--midnight-lighter) 50%);
+          border-left-color: var(--coral);
+          background: linear-gradient(90deg, rgba(232, 93, 76, 0.08) 0%, #FFFFFF 50%);
         }
         .hypothesis-medium {
           border-left-color: var(--amber);
-          background: linear-gradient(90deg, rgba(251, 191, 36, 0.1) 0%, var(--midnight-lighter) 50%);
+          background: linear-gradient(90deg, rgba(251, 191, 36, 0.08) 0%, #FFFFFF 50%);
         }
         .hypothesis-low {
-          border-left-color: var(--mint);
-          background: linear-gradient(90deg, rgba(74, 222, 128, 0.1) 0%, var(--midnight-lighter) 50%);
+          border-left-color: var(--teal);
+          background: linear-gradient(90deg, rgba(13, 148, 136, 0.08) 0%, #FFFFFF 50%);
         }
 
         /* === SUBGROUP BADGES === */
@@ -1037,35 +1020,28 @@ ui <- page_fillable(
           border: 1px solid rgba(251, 191, 36, 0.3);
         }
         .subgroup-typical {
-          background: var(--midnight-lighter);
-          color: var(--text-secondary);
-          border: 1px solid var(--glass-border);
+          background: #FAFAFA;
+          color: var(--slate);
+          border: 1px solid var(--border);
         }
 
-        /* === APP HEADER === */
-        .app-header {
-          background: linear-gradient(180deg, var(--midnight) 0%, var(--midnight-darker) 100%);
-          border-bottom: 1px solid var(--glass-border);
-          position: sticky;
-          top: 0;
-          z-index: 100;
-        }
+        /* === UTILITY CLASSES - Clinical Premium === */
         .text-coral {
           color: var(--coral) !important;
         }
-        .text-cream {
-          color: var(--cream) !important;
+        .text-charcoal {
+          color: var(--charcoal) !important;
         }
 
-        /* === SIDEBAR NAVIGATION (navset_pill_list) === */
+        /* === SIDEBAR NAVIGATION (navset_pill_list) - Clinical Premium === */
         .nav-pills {
           gap: 0.25rem;
         }
         .nav-pills .nav-link {
-          font-family: 'Outfit', sans-serif;
+          font-family: 'DM Sans', sans-serif;
           font-size: 0.875rem;
           font-weight: 500;
-          color: var(--text-secondary);
+          color: var(--slate);
           border-radius: 0.75rem;
           padding: 0.875rem 1.25rem;
           transition: all 0.25s ease;
@@ -1074,16 +1050,16 @@ ui <- page_fillable(
           gap: 0.5rem;
         }
         .nav-pills .nav-link:hover {
-          background: linear-gradient(145deg, var(--midnight-lighter) 0%, rgba(26, 35, 50, 0.7) 100%);
-          color: var(--cream);
+          background: #FFF0EE;
+          color: var(--coral);
         }
         .nav-pills .nav-link.active {
-          background: linear-gradient(135deg, var(--coral) 0%, #FF8585 100%) !important;
-          color: white !important;
-          box-shadow: 0 4px 20px rgba(255, 107, 107, 0.35);
+          background: var(--coral) !important;
+          color: #FFFFFF !important;
+          box-shadow: var(--shadow-sm);
         }
         .nav-pills .nav-link.active:hover {
-          background: linear-gradient(135deg, #FF5858 0%, var(--coral) 100%) !important;
+          background: #D54C3D !important;
         }
 
         /* === NAVIGATION SECTION HEADERS === */
@@ -1091,46 +1067,101 @@ ui <- page_fillable(
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          font-family: 'Outfit', sans-serif;
+          font-family: 'DM Sans', sans-serif;
           font-size: 0.65rem;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.15em;
-          color: var(--text-muted);
+          color: var(--slate);
           padding: 1.5rem 1.25rem 0.5rem;
           pointer-events: none;
           cursor: default;
         }
 
-        /* === NAVSET PILL LIST LAYOUT === */
+        /* === NAVSET PILL LIST LAYOUT - Clinical Premium === */
         .bslib-navs-pill-list {
           display: flex;
           gap: 0;
           height: calc(100vh - 80px);
+          position: relative;
         }
         .bslib-navs-pill-list > .nav {
-          background: linear-gradient(180deg, var(--midnight) 0%, var(--midnight-darker) 100%);
-          border-right: 1px solid var(--glass-border);
+          background: #FAFAFA;
+          border-right: 1px solid var(--border);
           padding: 1rem 0.75rem;
           overflow-y: auto;
           flex-shrink: 0;
+          width: 240px;
+          transition: width 0.3s ease, padding 0.3s ease;
+          position: relative;
         }
         .bslib-navs-pill-list > .tab-content {
           flex: 1;
           overflow-y: auto;
           padding: 1.5rem;
+          background: #FFFFFF;
         }
 
-        /* === RISK PREDICTOR INPUT GROUPS === */
+        /* === SIDEBAR TOGGLE BUTTON - Clinical Premium === */
+        .sidebar-toggle-btn {
+          position: absolute;
+          right: -14px;
+          top: 20px;
+          width: 28px;
+          height: 28px;
+          background: #FFFFFF;
+          border: 1px solid var(--border);
+          border-radius: 50%;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 100;
+          transition: all 0.2s ease;
+          color: var(--slate);
+          box-shadow: var(--shadow-sm);
+        }
+        .sidebar-toggle-btn:hover {
+          background: #FFF0EE;
+          color: var(--coral);
+          transform: scale(1.1);
+        }
+        .sidebar-toggle-btn svg {
+          width: 14px;
+          height: 14px;
+          transition: transform 0.3s ease;
+        }
+
+        /* === COLLAPSED SIDEBAR STATE === */
+        .bslib-navs-pill-list.sidebar-collapsed > .nav {
+          width: 60px;
+          padding: 1rem 0.5rem;
+        }
+        .bslib-navs-pill-list.sidebar-collapsed .nav-pills .nav-link {
+          padding: 0.75rem;
+          justify-content: center;
+        }
+        .bslib-navs-pill-list.sidebar-collapsed .nav-pills .nav-link span:not(.bi) {
+          display: none;
+        }
+        .bslib-navs-pill-list.sidebar-collapsed .nav-section-header {
+          display: none;
+        }
+        .bslib-navs-pill-list.sidebar-collapsed .sidebar-toggle-btn svg {
+          transform: rotate(180deg);
+        }
+
+        /* === RISK PREDICTOR INPUT GROUPS - Clinical Premium === */
         .input-group-card {
-          background: linear-gradient(145deg, var(--midnight-lighter) 0%, rgba(26, 35, 50, 0.7) 100%);
-          border: 1px solid var(--glass-border);
+          background: #FFFFFF;
+          border: 1px solid var(--border);
           border-radius: 1rem;
           padding: 1.25rem;
           margin-bottom: 1.25rem;
+          box-shadow: var(--shadow-sm);
         }
         .input-group-title {
-          font-family: 'Outfit', sans-serif;
+          font-family: 'DM Sans', sans-serif;
           font-size: 0.7rem;
           font-weight: 700;
           color: var(--coral);
@@ -1141,52 +1172,52 @@ ui <- page_fillable(
           align-items: center;
         }
 
-        /* === FORM CONTROLS === */
+        /* === FORM CONTROLS - Clinical Premium === */
         .form-control, .form-select {
-          background: var(--midnight-lighter) !important;
-          border: 1px solid var(--glass-border) !important;
-          color: var(--cream) !important;
+          background: #FFFFFF !important;
+          border: 1px solid var(--border) !important;
+          color: var(--charcoal) !important;
           border-radius: 0.75rem !important;
           padding: 0.75rem 1rem !important;
           transition: all 0.3s ease;
         }
         .form-control:focus, .form-select:focus {
           border-color: var(--coral) !important;
-          box-shadow: 0 0 0 3px var(--coral-glow) !important;
+          box-shadow: 0 0 0 3px rgba(232, 93, 76, 0.15) !important;
           outline: none;
         }
         .form-label {
-          font-family: 'Outfit', sans-serif;
+          font-family: 'DM Sans', sans-serif;
           font-size: 0.85rem;
           font-weight: 500;
-          color: var(--text-secondary);
+          color: var(--slate);
           margin-bottom: 0.5rem;
         }
         .form-check-input {
-          background-color: var(--midnight-lighter);
-          border-color: var(--glass-border);
+          background-color: #FFFFFF;
+          border-color: var(--border);
         }
         .form-check-input:checked {
           background-color: var(--coral);
           border-color: var(--coral);
         }
 
-        /* === DROPDOWN MENUS - Z-Index Fix === */
+        /* === DROPDOWN MENUS - Clinical Premium === */
         .dropdown-menu {
-          background: var(--midnight-lighter) !important;
-          border: 1px solid var(--glass-border) !important;
+          background: #FFFFFF !important;
+          border: 1px solid var(--border) !important;
           border-radius: 0.75rem !important;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+          box-shadow: var(--shadow-lg) !important;
           z-index: 10000 !important;
         }
         .dropdown-menu .dropdown-item {
-          color: var(--cream) !important;
+          color: var(--charcoal) !important;
           padding: 0.6rem 1.2rem;
           transition: all 0.2s ease;
         }
         .dropdown-menu .dropdown-item:hover,
         .dropdown-menu .dropdown-item:focus {
-          background: var(--midnight) !important;
+          background: #FFF0EE !important;
           color: var(--coral) !important;
         }
         .nav-item .dropdown-menu {
@@ -1376,7 +1407,7 @@ ui <- page_fillable(
             padding: 1rem 1.25rem;
           }
           .card-body {
-            padding: 1.25rem;
+            padding: 1rem;
           }
 
           .metric-card-value {
@@ -1387,6 +1418,28 @@ ui <- page_fillable(
             width: 100% !important;
             max-width: 100% !important;
           }
+          
+          /* Plotly charts - responsive on mobile */
+          .js-plotly-plot {
+            width: 100% !important;
+            min-height: 250px;
+          }
+          .js-plotly-plot .plotly {
+            width: 100% !important;
+          }
+          
+          /* Stack sidebar below content on mobile */
+          .bslib-sidebar-layout {
+            flex-direction: column-reverse;
+          }
+          
+          /* Insight cards on mobile */
+          .insight-card {
+            padding: 1rem;
+          }
+          .insight-number {
+            font-size: 1.75rem;
+          }
         }
 
         @media (max-width: 576px) {
@@ -1394,14 +1447,25 @@ ui <- page_fillable(
             font-size: 1rem !important;
           }
           .value-box .value-box-title {
-            font-size: 0.65rem;
+            font-size: 0.7rem;
           }
           .value-box .value-box-value {
-            font-size: 1.75rem;
+            font-size: 1.5rem;
           }
           .risk-badge {
-            font-size: 0.875rem;
-            padding: 0.625rem 1.25rem;
+            font-size: 0.8rem;
+            padding: 0.5rem 1rem;
+          }
+          .insight-number {
+            font-size: 1.5rem;
+          }
+          .editorial-lead {
+            font-size: 1.1rem;
+          }
+          /* Hide theme toggle label on very small screens */
+          .theme-toggle-wrapper::before,
+          .theme-toggle-wrapper::after {
+            display: none;
           }
         }
 
@@ -1523,17 +1587,27 @@ ui <- page_fillable(
           color: var(--text-secondary);
         }
 
-        /* === LIGHT MODE OVERRIDES === */
+        /* === LIGHT MODE OVERRIDES - Anthropic-Inspired Warm Caramel === */
         [data-bs-theme='light'] {
-          --midnight: #F8FAFC;
-          --midnight-light: #FFFFFF;
-          --midnight-lighter: #F1F5F9;
-          --cream: #0F172A;
-          --text-secondary: #64748B;
-          --text-muted: #94A3B8;
-          --glass-border: rgba(0, 0, 0, 0.1);
-          --coral: #0D9488;
-          --coral-glow: rgba(13, 148, 136, 0.15);
+          --midnight: #FAF7F2;          /* Warm cream background */
+          --midnight-light: #FFFFFF;     /* Pure white */
+          --midnight-lighter: #F5F0E8;   /* Light caramel */
+          --midnight-darker: #EAE5DC;   /* Slightly darker cream */
+          --cream: #1A1A1A;              /* Near black text */
+          --text-secondary: #5C5C5C;     /* Warm gray */
+          --text-muted: #6B7280;         /* Accessible gray */
+          --muted: #6B7280;              /* Alias for text-muted */
+          --ghost: #9CA3AF;              /* Lighter ghost for light mode */
+          --glass-border: rgba(0, 0, 0, 0.08);
+          --glass-bg: rgba(0, 0, 0, 0.02);
+          --coral: #C4704B;              /* Terracotta accent */
+          --coral-glow: rgba(196, 112, 75, 0.12);
+          --teal: #2D5A4A;               /* Forest teal */
+          --amber: #B45309;              /* Warm amber */
+        }
+
+        [data-bs-theme='light'] body {
+          background: linear-gradient(180deg, #FAF7F2 0%, #F5F0E8 100%) !important;
         }
 
         [data-bs-theme='light'] body::before {
@@ -1542,60 +1616,60 @@ ui <- page_fillable(
 
         [data-bs-theme='light'] .navbar {
           background: #FFFFFF !important;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
         }
 
         [data-bs-theme='light'] .navbar-nav .nav-link {
-          color: #334155 !important;
+          color: #5C5C5C !important;
         }
 
         [data-bs-theme='light'] .navbar-nav .nav-link:hover,
         [data-bs-theme='light'] .navbar-nav .nav-link.active {
-          color: #0D9488 !important;
+          color: #2D5A4A !important;
         }
 
         [data-bs-theme='light'] .card {
           background: #FFFFFF !important;
-          border: 1px solid rgba(0, 0, 0, 0.08) !important;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+          border: 1px solid rgba(0, 0, 0, 0.06) !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
         }
 
         [data-bs-theme='light'] .card-header {
-          background: #F8FAFC !important;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
-          color: #0F172A !important;
+          background: #FAF7F2 !important;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+          color: #1A1A1A !important;
         }
 
         [data-bs-theme='light'] .value-box {
-          background: linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 100%) !important;
-          border: 1px solid rgba(0, 0, 0, 0.08) !important;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+          background: linear-gradient(145deg, #FFFFFF 0%, #FAF7F2 100%) !important;
+          border: 1px solid rgba(0, 0, 0, 0.06) !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
         }
         [data-bs-theme='light'] .value-box .value-box-title {
-          color: #334155 !important;
+          color: #5C5C5C !important;
         }
         [data-bs-theme='light'] .value-box .value-box-value {
-          color: #0F172A !important;
+          color: #1A1A1A !important;
         }
         [data-bs-theme='light'] .value-box p {
-          color: #64748B !important;
+          color: #6B7280 !important;
         }
-        /* Light mode value box icon colors */
-        [data-bs-theme='light'] .value-box.bg-primary .value-box-showcase .bi { color: #0284C7 !important; }
-        [data-bs-theme='light'] .value-box.bg-danger .value-box-showcase .bi { color: #E11D48 !important; }
-        [data-bs-theme='light'] .value-box.bg-success .value-box-showcase .bi { color: #059669 !important; }
-        [data-bs-theme='light'] .value-box.bg-warning .value-box-showcase .bi { color: #D97706 !important; }
+        /* Light mode value box icon colors - Warm professional palette */
+        [data-bs-theme='light'] .value-box.bg-primary .value-box-showcase .bi { color: #2D5A4A !important; }
+        [data-bs-theme='light'] .value-box.bg-danger .value-box-showcase .bi { color: #B91C1C !important; }
+        [data-bs-theme='light'] .value-box.bg-success .value-box-showcase .bi { color: #166534 !important; }
+        [data-bs-theme='light'] .value-box.bg-warning .value-box-showcase .bi { color: #B45309 !important; }
         /* Light mode accent borders */
-        [data-bs-theme='light'] .value-box.bg-primary { border-left: 3px solid #0284C7 !important; }
-        [data-bs-theme='light'] .value-box.bg-danger { border-left: 3px solid #E11D48 !important; }
-        [data-bs-theme='light'] .value-box.bg-success { border-left: 3px solid #059669 !important; }
-        [data-bs-theme='light'] .value-box.bg-warning { border-left: 3px solid #D97706 !important; }
+        [data-bs-theme='light'] .value-box.bg-primary { border-left: 3px solid #2D5A4A !important; }
+        [data-bs-theme='light'] .value-box.bg-danger { border-left: 3px solid #B91C1C !important; }
+        [data-bs-theme='light'] .value-box.bg-success { border-left: 3px solid #166534 !important; }
+        [data-bs-theme='light'] .value-box.bg-warning { border-left: 3px solid #B45309 !important; }
         /* Light mode top accent bars */
-        [data-bs-theme='light'] .value-box.bg-primary::before { background: linear-gradient(90deg, #0284C7, #0284C7, transparent) !important; }
-        [data-bs-theme='light'] .value-box.bg-danger::before { background: linear-gradient(90deg, #E11D48, #E11D48, transparent) !important; }
-        [data-bs-theme='light'] .value-box.bg-success::before { background: linear-gradient(90deg, #059669, #059669, transparent) !important; }
-        [data-bs-theme='light'] .value-box.bg-warning::before { background: linear-gradient(90deg, #D97706, #D97706, transparent) !important; }
+        [data-bs-theme='light'] .value-box.bg-primary::before { background: linear-gradient(90deg, #2D5A4A, #2D5A4A, transparent) !important; }
+        [data-bs-theme='light'] .value-box.bg-danger::before { background: linear-gradient(90deg, #B91C1C, #B91C1C, transparent) !important; }
+        [data-bs-theme='light'] .value-box.bg-success::before { background: linear-gradient(90deg, #166534, #166534, transparent) !important; }
+        [data-bs-theme='light'] .value-box.bg-warning::before { background: linear-gradient(90deg, #B45309, #B45309, transparent) !important; }
 
         [data-bs-theme='light'] .dropdown-menu {
           background: #FFFFFF !important;
@@ -1608,54 +1682,54 @@ ui <- page_fillable(
         }
 
         [data-bs-theme='light'] .dropdown-menu .dropdown-item:hover {
-          background: #F1F5F9 !important;
-          color: #0D9488 !important;
+          background: #F5F0E8 !important;
+          color: #2D5A4A !important;
         }
 
         [data-bs-theme='light'] .selectize-input,
         [data-bs-theme='light'] .selectize-dropdown {
           background: #FFFFFF !important;
-          border-color: rgba(0, 0, 0, 0.15) !important;
-          color: #0F172A !important;
+          border-color: rgba(0, 0, 0, 0.12) !important;
+          color: #1A1A1A !important;
         }
 
         [data-bs-theme='light'] .selectize-dropdown-content .option {
-          color: #334155 !important;
+          color: #5C5C5C !important;
         }
 
         [data-bs-theme='light'] .selectize-dropdown-content .option:hover,
         [data-bs-theme='light'] .selectize-dropdown-content .option.active {
-          background: #F1F5F9 !important;
-          color: #0D9488 !important;
+          background: #F5F0E8 !important;
+          color: #2D5A4A !important;
         }
 
         [data-bs-theme='light'] .form-select,
         [data-bs-theme='light'] .form-control {
           background: #FFFFFF !important;
-          border-color: rgba(0, 0, 0, 0.15) !important;
-          color: #0F172A !important;
+          border-color: rgba(0, 0, 0, 0.12) !important;
+          color: #1A1A1A !important;
         }
 
         [data-bs-theme='light'] .form-select option {
           background: #FFFFFF;
-          color: #0F172A;
+          color: #1A1A1A;
         }
 
         [data-bs-theme='light'] .sidebar {
-          background: #F8FAFC !important;
-          border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
+          background: #FAF7F2 !important;
+          border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
         }
 
         [data-bs-theme='light'] .btn-primary {
-          background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%) !important;
+          background: linear-gradient(135deg, #2D5A4A 0%, #3D7A6A 100%) !important;
           color: #FFFFFF !important;
-          box-shadow: 0 4px 16px rgba(13, 148, 136, 0.3);
+          box-shadow: 0 4px 16px rgba(45, 90, 74, 0.25);
         }
 
         [data-bs-theme='light'] .btn-secondary {
-          background: #F1F5F9 !important;
-          border: 1px solid rgba(0, 0, 0, 0.1) !important;
-          color: #64748B !important;
+          background: #F5F0E8 !important;
+          border: 1px solid rgba(0, 0, 0, 0.08) !important;
+          color: #5C5C5C !important;
         }
 
         /* Light mode for Plotly charts */
@@ -1703,6 +1777,76 @@ ui <- page_fillable(
           background: #CBD5E1;
         }
 
+        /* ================================================================
+           LIGHT MODE: Page Background (CRITICAL)
+           ================================================================ */
+        html[data-bs-theme='light'],
+        [data-bs-theme='light'] body,
+        [data-bs-theme='light'] .bslib-page-fill,
+        [data-bs-theme='light'] .bslib-page-fillable {
+          background: #FAF7F2 !important;
+          background-color: #FAF7F2 !important;
+        }
+
+        [data-bs-theme='light'] .bslib-navs-pill-list > .tab-content,
+        [data-bs-theme='light'] .tab-content,
+        [data-bs-theme='light'] .tab-pane {
+          background: #FAF7F2 !important;
+        }
+
+        /* Light mode: All cards and containers */
+        [data-bs-theme='light'] .card {
+          background: #FFFFFF !important;
+          border-color: rgba(0, 0, 0, 0.08) !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+        }
+        [data-bs-theme='light'] .card-header {
+          background: #F8FAFC !important;
+          border-bottom-color: rgba(0, 0, 0, 0.06) !important;
+          color: #1A1A1A !important;
+        }
+        [data-bs-theme='light'] .card-body {
+          background: transparent !important;
+          color: #3C3C3C !important;
+        }
+        [data-bs-theme='light'] .card-title,
+        [data-bs-theme='light'] .card h1,
+        [data-bs-theme='light'] .card h2,
+        [data-bs-theme='light'] .card h3,
+        [data-bs-theme='light'] .card h4,
+        [data-bs-theme='light'] .card h5 {
+          color: #1A1A1A !important;
+        }
+
+        /* Light mode: Value boxes */
+        [data-bs-theme='light'] .value-box {
+          background: #FFFFFF !important;
+          border: 1px solid rgba(0, 0, 0, 0.08) !important;
+        }
+        [data-bs-theme='light'] .value-box .value-box-title {
+          color: #6B7280 !important;
+        }
+        [data-bs-theme='light'] .value-box .value-box-value {
+          color: #1A1A1A !important;
+        }
+        [data-bs-theme='light'] .value-box p {
+          color: #6B7280 !important;
+        }
+
+        /* Light mode: Text colors */
+        [data-bs-theme='light'] p,
+        [data-bs-theme='light'] span,
+        [data-bs-theme='light'] div {
+          color: inherit;
+        }
+        [data-bs-theme='light'] .text-muted {
+          color: #6B7280 !important;
+        }
+        [data-bs-theme='light'] strong,
+        [data-bs-theme='light'] b {
+          color: #1A1A1A;
+        }
+
         /* Light mode: App Header */
         [data-bs-theme='light'] .app-header {
           background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
@@ -1714,23 +1858,24 @@ ui <- page_fillable(
 
         /* Light mode: Sidebar Navigation */
         [data-bs-theme='light'] .bslib-navs-pill-list > .nav {
-          background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
-          border-right-color: #E2E8F0;
+          background: linear-gradient(180deg, #FAF7F2 0%, #F5F0E8 100%);
+          border-right-color: rgba(0, 0, 0, 0.06);
         }
         [data-bs-theme='light'] .nav-pills .nav-link {
-          color: #64748B;
+          color: #1A1A1A !important;  /* Near black for better contrast */
+          font-weight: 500;
         }
         [data-bs-theme='light'] .nav-pills .nav-link:hover {
-          background: linear-gradient(145deg, #E2E8F0 0%, #F1F5F9 100%);
-          color: #0F172A;
+          background: #E8E0D0;
+          color: #1A1A1A !important;
         }
         [data-bs-theme='light'] .nav-pills .nav-link.active {
-          background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%) !important;
+          background: linear-gradient(135deg, #2D5A4A 0%, #3D7A6A 100%) !important;
           color: white !important;
-          box-shadow: 0 4px 20px rgba(13, 148, 136, 0.3);
+          box-shadow: 0 4px 20px rgba(45, 90, 74, 0.25);
         }
         [data-bs-theme='light'] .nav-section-header {
-          color: #64748B;
+          color: #6B7280;
         }
 
         /* Light mode interpretation boxes */
@@ -1769,24 +1914,121 @@ ui <- page_fillable(
         [data-bs-theme='light'] .interpretation-box-high .interpretation-detail {
           color: #E11D48;
         }
+
+        /* ================================================================
+           LIGHT MODE: DataTables
+           ================================================================ */
+        [data-bs-theme='light'] table.dataTable {
+          background: #FFFFFF !important;
+        }
+        [data-bs-theme='light'] table.dataTable thead th {
+          color: #1A1A1A !important;
+          background: #F5F0E8 !important;
+          border-bottom-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        [data-bs-theme='light'] table.dataTable tbody td {
+          color: #3C3C3C !important;
+          background: transparent;
+          border-bottom-color: rgba(0, 0, 0, 0.05) !important;
+        }
+        [data-bs-theme='light'] table.dataTable tbody tr:hover td {
+          background: #F5F0E8 !important;
+          color: #1A1A1A !important;
+        }
+        [data-bs-theme='light'] .dataTables_wrapper .dataTables_filter input,
+        [data-bs-theme='light'] .dataTables_wrapper .dataTables_length select {
+          background: #FFFFFF !important;
+          color: #1A1A1A !important;
+          border-color: rgba(0, 0, 0, 0.15) !important;
+        }
+        [data-bs-theme='light'] .dataTables_wrapper .dataTables_info,
+        [data-bs-theme='light'] .dataTables_wrapper .dataTables_paginate {
+          color: #5C5C5C !important;
+        }
+        [data-bs-theme='light'] .dataTables_wrapper .dataTables_paginate .paginate_button {
+          color: #3C3C3C !important;
+        }
+        [data-bs-theme='light'] .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+          background: #2D5A4A !important;
+          color: white !important;
+          border-color: #2D5A4A !important;
+        }
+
+        /* ================================================================
+           LIGHT MODE: Risk Badges
+           ================================================================ */
+        [data-bs-theme='light'] .risk-low {
+          background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%) !important;
+          color: #065F46 !important;
+          border: 1px solid #86EFAC !important;
+        }
+        [data-bs-theme='light'] .risk-medium {
+          background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%) !important;
+          color: #92400E !important;
+          border: 1px solid #FCD34D !important;
+        }
+        [data-bs-theme='light'] .risk-high {
+          background: linear-gradient(135deg, #FFE4E6 0%, #FECDD3 100%) !important;
+          color: #BE123C !important;
+          border: 1px solid #FDA4AF !important;
+        }
+
+        /* ================================================================
+           LIGHT MODE: Subgroup Badges
+           ================================================================ */
+        [data-bs-theme='light'] .subgroup-resilient {
+          background: #DCFCE7 !important;
+          color: #065F46 !important;
+          border-color: #86EFAC !important;
+        }
+        [data-bs-theme='light'] .subgroup-vulnerable {
+          background: #FCE7F3 !important;
+          color: #BE123C !important;
+          border-color: #FBCFE8 !important;
+        }
+        [data-bs-theme='light'] .subgroup-expected-healthy {
+          background: #E0F2FE !important;
+          color: #0369A1 !important;
+          border-color: #7DD3FC !important;
+        }
+        [data-bs-theme='light'] .subgroup-expected-diabetic {
+          background: #FEF3C7 !important;
+          color: #92400E !important;
+          border-color: #FDE68A !important;
+        }
+        [data-bs-theme='light'] .subgroup-typical {
+          background: #E8E0D0 !important;
+          color: #3C3C3C !important;
+        }
+
+        /* ================================================================
+           LIGHT MODE: Cards and General Components
+           ================================================================ */
+        [data-bs-theme='light'] .card {
+          background: #FFFFFF !important;
+          border-color: rgba(0, 0, 0, 0.08) !important;
+        }
+        [data-bs-theme='light'] .card-header {
+          background: #FAF7F2 !important;
+          color: #1A1A1A !important;
+          border-bottom-color: rgba(0, 0, 0, 0.06) !important;
+        }
+        [data-bs-theme='light'] .value-box {
+          background: #FFFFFF !important;
+          border-color: rgba(0, 0, 0, 0.08) !important;
+        }
+        [data-bs-theme='light'] .value-box .value-box-title {
+          color: #5C5C5C !important;
+        }
+        [data-bs-theme='light'] .value-box .value-box-value {
+          color: #1A1A1A !important;
+        }
+        [data-bs-theme='light'] .value-box p {
+          color: #6B7280 !important;
+        }
       "))
     ),
-
-    # Custom Header Bar
-    tags$header(
-      class = "app-header d-flex align-items-center justify-content-between px-4 py-3",
-      tags$div(
-        class = "d-flex align-items-center",
-        bs_icon("heart-pulse-fill", size = "1.75rem", class = "me-3 text-coral"),
-        tags$h1(class = "h4 mb-0 text-cream", style = "font-family: 'Fraunces', serif; font-weight: 600;", "Diabetes Risk Intelligence")
-      ),
-      tags$div(
-        class = "d-flex align-items-center gap-3",
-        input_dark_mode(id = "dark_mode", mode = "dark"),
-        tags$span(class = "text-muted small", "CDC BRFSS 2015")
-      )
-    ),
-    # Accessibility enhancements
+    # Accessibility enhancements and sidebar toggle
     tags$script(HTML("
       $(document).ready(function() {
         // Add ARIA labels to navigation
@@ -1798,31 +2040,38 @@ ui <- page_fillable(
         // Add ARIA labels to value boxes
         $('.value-box').attr('role', 'status');
 
-        // Add skip link for keyboard navigation
-        $('body').prepend('<a href=\"#main_nav\" class=\"skip-link\" style=\"position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;z-index:9999;\">&nbsp;</a>');
-
-        // Announce chart updates to screen readers
-        $(document).on('shiny:value', function(e) {
-          if (e.name && e.name.includes('plot')) {
-            var liveRegion = $('#aria-live-region');
-            if (liveRegion.length === 0) {
-              $('body').append('<div id=\"aria-live-region\" aria-live=\"polite\" aria-atomic=\"true\" style=\"position:absolute;left:-9999px;\"></div>');
-            }
-            $('#aria-live-region').text('Chart updated');
-          }
-        });
-
-        // Add keyboard navigation support for cards
-        $('.card').attr('tabindex', '0');
-
         // Theme toggle accessibility
         $('#dark_mode').attr({
           'aria-label': 'Toggle dark mode',
           'role': 'switch'
         });
+
+        // === SIDEBAR TOGGLE FUNCTIONALITY ===
+        // Create toggle button
+        var toggleBtn = $('<button class=\"sidebar-toggle-btn\" aria-label=\"Toggle sidebar\" aria-expanded=\"true\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path fill-rule=\"evenodd\" d=\"M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z\"/></svg></button>');
+
+        // Insert toggle button into sidebar nav
+        $('.bslib-navs-pill-list > .nav').css('position', 'relative').append(toggleBtn);
+
+        // Handle toggle click
+        toggleBtn.on('click', function() {
+          var sidebar = $('.bslib-navs-pill-list');
+          var isCollapsed = sidebar.hasClass('sidebar-collapsed');
+
+          sidebar.toggleClass('sidebar-collapsed');
+
+          // Update button state
+          if (isCollapsed) {
+            $(this).attr('aria-expanded', 'true');
+            $(this).html('<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path fill-rule=\"evenodd\" d=\"M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z\"/></svg>');
+          } else {
+            $(this).attr('aria-expanded', 'false');
+            $(this).html('<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path fill-rule=\"evenodd\" d=\"M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z\"/></svg>');
+          }
+        });
       });
     "))
-  ),  # End of header
+  ),
 
   # Sidebar Navigation with navset_pill_list
   navset_pill_list(
@@ -1843,7 +2092,7 @@ ui <- page_fillable(
         title = "Total Records",
         value = scales::comma(total_records),
         showcase = bs_icon("database"),
-        theme = "primary",
+        theme = value_box_theme(bg = "#1E293B", fg = "#F5F0E8"),
         p("CDC BRFSS 2015 Survey")
       ),
 
@@ -1851,7 +2100,7 @@ ui <- page_fillable(
         title = "Diabetes Prevalence",
         value = paste0(round(diabetes_prevalence, 1), "%"),
         showcase = bs_icon("heart-pulse"),
-        theme = "danger",
+        theme = value_box_theme(bg = "#1E293B", fg = "#F5F0E8"),
         p(scales::comma(sum(diabetes_data$diabetes_status == "Diabetes")), " individuals")
       ),
 
@@ -1859,7 +2108,7 @@ ui <- page_fillable(
         title = "Best Model AUC",
         value = round(lr_auc, 3),
         showcase = bs_icon("graph-up"),
-        theme = "success",
+        theme = value_box_theme(bg = "#1E293B", fg = "#F5F0E8"),
         p("Logistic Regression")
       ),
 
@@ -1867,7 +2116,7 @@ ui <- page_fillable(
         title = "Top Risk Factor",
         value = "Gen Health",
         showcase = bs_icon("exclamation-triangle"),
-        theme = "warning",
+        theme = value_box_theme(bg = "#1E293B", fg = "#F5F0E8"),
         p("Self-reported health status")
       )
     ),
@@ -2304,25 +2553,25 @@ ui <- page_fillable(
         title = "Logistic AUC-ROC",
         value = round(eval_results$threshold_independent_metrics$auc_roc[1], 3),
         showcase = bs_icon("graph-up"),
-        theme = "primary"
+        theme = value_box_theme(bg = "#1E293B", fg = "#F5F0E8")
       ),
       value_box(
         title = "Random Forest AUC-ROC",
         value = round(eval_results$threshold_independent_metrics$auc_roc[2], 3),
         showcase = bs_icon("graph-up"),
-        theme = "info"
+        theme = value_box_theme(bg = "#1E293B", fg = "#F5F0E8")
       ),
       value_box(
         title = "Best F1 Score",
         value = round(max(eval_results$optimal_thresholds$f1_score), 3),
         showcase = bs_icon("bullseye"),
-        theme = "success"
+        theme = value_box_theme(bg = "#1E293B", fg = "#F5F0E8")
       ),
       value_box(
         title = "Brier Score",
         value = round(eval_results$threshold_independent_metrics$brier_score[1], 3),
         showcase = bs_icon("check-circle"),
-        theme = "warning",
+        theme = value_box_theme(bg = "#1E293B", fg = "#F5F0E8"),
         p("Lower is better")
       )
     ),
@@ -3047,7 +3296,7 @@ ui <- page_fillable(
           title = "Resilient Cases",
           value = textOutput("discovery_resilient_n"),
           showcase = bs_icon("shield-check"),
-          theme = "success",
+          theme = value_box_theme(bg = "#1E293B", fg = "#F5F0E8"),
           p("High risk, no diabetes")
         ),
 
@@ -3055,7 +3304,7 @@ ui <- page_fillable(
           title = "Vulnerable Cases",
           value = textOutput("discovery_vulnerable_n"),
           showcase = bs_icon("exclamation-triangle"),
-          theme = "danger",
+          theme = value_box_theme(bg = "#1E293B", fg = "#F5F0E8"),
           p("Low risk, has diabetes")
         ),
 
@@ -3063,14 +3312,14 @@ ui <- page_fillable(
           title = "Selected Subgroup",
           value = textOutput("discovery_selected_n"),
           showcase = bs_icon("people"),
-          theme = "primary"
+          theme = value_box_theme(bg = "#1E293B", fg = "#F5F0E8")
         ),
 
         value_box(
           title = "Diabetes Rate",
           value = textOutput("discovery_selected_rate"),
           showcase = bs_icon("percent"),
-          theme = "info"
+          theme = value_box_theme(bg = "#1E293B", fg = "#F5F0E8")
         )
       ),
 
@@ -3153,17 +3402,12 @@ server <- function(input, output, session) {
 
 
   # Reactive theme state -------------------------------------------------------
-  theme_is_dark <- reactive({
-    # Default to dark mode if input not yet available
-    if (is.null(input$dark_mode)) TRUE else input$dark_mode
-  })
+  # Clinical Premium - Light Mode Only (no theme switching)
+  # Wrapper function for backwards compatibility - always returns FALSE (light mode)
+  theme_is_dark <- reactive({ FALSE })
 
-  # Update ggplot2 theme when dark mode toggle changes
-
-  observe({
-    dark <- theme_is_dark()
-    theme_set(theme_worldclass(dark_mode = dark))
-  })
+  # Set the Clinical Premium light theme at startup
+  theme_set(theme_worldclass())
 
   # Reactive filtered data with caching -----------------------------------------
   filtered_data <- reactive({
@@ -3250,11 +3494,11 @@ server <- function(input, output, session) {
       scale_fill_gradient(low = "#93C5FD", high = "#1D4ED8", guide = "none") +
       scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
       labs(x = "Age Group", y = "Diabetes Prevalence (%)") +
-      theme_worldclass(dark_mode = dark) +
+      theme_worldclass() +
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
     ggplotly(p, tooltip = c("x", "y")) |>
-      apply_plotly_theme(dark_mode = dark) |>
+      apply_plotly_theme() |>
       layout(margin = list(b = 80)) |>
       config(displayModeBar = FALSE)
   })
@@ -3289,7 +3533,7 @@ server <- function(input, output, session) {
       geom_point(alpha = 0.5, size = 1.5) +
       scale_color_manual(values = if(color_var == "diabetes_status") diabetes_colors else chart_colors) +
       labs(x = "Age (Encoded 1-13)", y = "BMI", color = str_to_title(gsub("_", " ", color_var))) +
-      theme_worldclass(dark_mode = dark)
+      theme_worldclass()
 
     pl <- ggplotly(p, tooltip = c("x", "y", "color"))
 
@@ -3298,7 +3542,7 @@ server <- function(input, output, session) {
     }
 
     pl |>
-      apply_plotly_theme(dark_mode = dark) |>
+      apply_plotly_theme() |>
       layout(legend = list(orientation = "h", y = -0.15)) |>
       config(displayModeBar = TRUE, modeBarButtonsToRemove = c("lasso2d", "select2d"))
   })
@@ -3312,10 +3556,10 @@ server <- function(input, output, session) {
       geom_histogram(bins = 30, alpha = 0.7, position = "identity") +
       scale_fill_manual(values = diabetes_colors) +
       labs(x = str_to_title(gsub("_", " ", var)), y = "Count", fill = "Status") +
-      theme_worldclass(dark_mode = dark)
+      theme_worldclass()
 
     ggplotly(p) |>
-      apply_plotly_theme(dark_mode = dark) |>
+      apply_plotly_theme() |>
       layout(legend = list(orientation = "h", y = -0.2)) |>
       config(displayModeBar = FALSE)
   })
@@ -3391,7 +3635,7 @@ server <- function(input, output, session) {
       zmin = -1, zmax = 1,
       hovertemplate = "<b>%{x}</b> vs <b>%{y}</b><br>Correlation: %{z:.3f}<extra></extra>"
     ) |>
-      apply_plotly_theme(dark_mode = dark) |>
+      apply_plotly_theme() |>
       layout(
         xaxis = list(tickangle = 45, color = axis_color),
         yaxis = list(autorange = "reversed", color = axis_color),
@@ -3413,7 +3657,7 @@ server <- function(input, output, session) {
         geom_col() +
         scale_fill_manual(values = c("Increases Risk" = "#EF4444", "Decreases Risk" = "#10B981")) +
         labs(x = "Absolute Coefficient", y = "", fill = "") +
-        theme_worldclass(dark_mode = dark)
+        theme_worldclass()
     } else {
       df <- rf_importance |>
         mutate(feature = fct_reorder(feature, importance))
@@ -3421,11 +3665,11 @@ server <- function(input, output, session) {
       p <- ggplot(df, aes(x = importance, y = feature)) +
         geom_col(fill = "#0D6EFD") +
         labs(x = "Importance (Mean Decrease Impurity)", y = "") +
-        theme_worldclass(dark_mode = dark)
+        theme_worldclass()
     }
 
     ggplotly(p) |>
-      apply_plotly_theme(dark_mode = dark) |>
+      apply_plotly_theme() |>
       layout(legend = list(orientation = "h", y = -0.15)) |>
       config(displayModeBar = FALSE)
   })
@@ -3437,11 +3681,11 @@ server <- function(input, output, session) {
       geom_col(position = "dodge", width = 0.7) +
       scale_fill_manual(values = diabetes_colors) +
       labs(x = "", y = "Prevalence (%)", fill = "") +
-      theme_worldclass(dark_mode = dark) +
+      theme_worldclass() +
       theme(axis.text.x = element_text(angle = 30, hjust = 1))
 
     ggplotly(p) |>
-      apply_plotly_theme(dark_mode = dark) |>
+      apply_plotly_theme() |>
       layout(legend = list(orientation = "h", y = -0.25)) |>
       config(displayModeBar = FALSE)
   })
@@ -3453,11 +3697,11 @@ server <- function(input, output, session) {
       geom_density(alpha = 0.6) +
       scale_fill_manual(values = diabetes_colors) +
       labs(x = "BMI", y = "Density", fill = "") +
-      theme_worldclass(dark_mode = dark) +
+      theme_worldclass() +
       theme(legend.position = "none")
 
     ggplotly(p) |>
-      apply_plotly_theme(dark_mode = dark) |>
+      apply_plotly_theme() |>
       config(displayModeBar = FALSE)
   })
 
@@ -3473,11 +3717,11 @@ server <- function(input, output, session) {
       geom_col(position = "stack") +
       scale_fill_manual(values = diabetes_colors) +
       labs(x = "", y = "%", fill = "") +
-      theme_worldclass(dark_mode = dark) +
+      theme_worldclass() +
       theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust = 1))
 
     ggplotly(p) |>
-      apply_plotly_theme(dark_mode = dark) |>
+      apply_plotly_theme() |>
       config(displayModeBar = FALSE)
   })
 
@@ -3493,11 +3737,11 @@ server <- function(input, output, session) {
       geom_col(position = "stack") +
       scale_fill_manual(values = diabetes_colors) +
       labs(x = "", y = "%", fill = "") +
-      theme_worldclass(dark_mode = dark) +
+      theme_worldclass() +
       theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust = 1))
 
     ggplotly(p) |>
-      apply_plotly_theme(dark_mode = dark) |>
+      apply_plotly_theme() |>
       config(displayModeBar = FALSE)
   })
 
@@ -3524,10 +3768,10 @@ server <- function(input, output, session) {
            y = "True Positive Rate (Sensitivity)",
            color = "") +
       coord_equal() +
-      theme_worldclass(dark_mode = dark)
+      theme_worldclass()
 
     ggplotly(p) |>
-      apply_plotly_theme(dark_mode = dark) |>
+      apply_plotly_theme() |>
       layout(legend = list(orientation = "h", y = -0.15)) |>
       config(displayModeBar = FALSE)
   })
@@ -3590,11 +3834,11 @@ server <- function(input, output, session) {
       geom_vline(xintercept = threshold, linetype = "dashed", color = vline_color) +
       scale_color_manual(values = c("sensitivity" = "#10B981", "specificity" = "#0D6EFD")) +
       labs(x = "Threshold", y = "Value", color = "") +
-      theme_worldclass(dark_mode = dark) +
+      theme_worldclass() +
       theme(legend.position = "top")
 
     ggplotly(p) |>
-      apply_plotly_theme(dark_mode = dark) |>
+      apply_plotly_theme() |>
       config(displayModeBar = FALSE)
   })
 
@@ -4099,11 +4343,11 @@ server <- function(input, output, session) {
       geom_hline(yintercept = 1.25, linetype = "dotted", color = "#EF4444", alpha = 0.7) +
       scale_fill_manual(values = chart_colors) +
       labs(x = "", y = "Disparity Ratio", fill = "Group") +
-      theme_worldclass(dark_mode = dark) +
+      theme_worldclass() +
       theme(axis.text.x = element_text(angle = 30, hjust = 1))
 
     ggplotly(p) |>
-      apply_plotly_theme(dark_mode = dark) |>
+      apply_plotly_theme() |>
       layout(legend = list(orientation = "h", y = -0.25)) |>
       config(displayModeBar = FALSE)
   })
@@ -4329,10 +4573,10 @@ server <- function(input, output, session) {
       geom_vline(xintercept = 0, linetype = "dashed", color = vline_color) +
       scale_fill_manual(values = subgroup_colors) +
       labs(x = "Prediction Residual", y = "Density", fill = "Subgroup") +
-      theme_worldclass(dark_mode = dark)
+      theme_worldclass()
 
     ggplotly(p) |>
-      apply_plotly_theme(dark_mode = dark) |>
+      apply_plotly_theme() |>
       layout(legend = list(orientation = "h", y = -0.2)) |>
       config(displayModeBar = FALSE)
   })
@@ -4378,11 +4622,11 @@ server <- function(input, output, session) {
       )) +
       scale_alpha_manual(values = c("Selected" = 1, "Other" = 0.4), guide = "none") +
       labs(x = "", y = "Percentage (%)", fill = "Subgroup") +
-      theme_worldclass(dark_mode = dark) +
+      theme_worldclass() +
       theme(axis.text.x = element_text(angle = 30, hjust = 1))
 
     ggplotly(p) |>
-      apply_plotly_theme(dark_mode = dark) |>
+      apply_plotly_theme() |>
       layout(legend = list(orientation = "h", y = -0.3)) |>
       config(displayModeBar = FALSE)
   })
