@@ -1574,3 +1574,313 @@ get_surveillance_timeline <- function(db_path = DB_PATH, pathogen_codes = NULL, 
 
   data
 }
+
+# =============================================================================
+# KPI QUERY FUNCTIONS FOR GLOBAL OVERVIEW
+# =============================================================================
+
+#' Determine CSS severity class based on metric values
+#' @param metric_type Type of metric (positivity, hospitalization, coverage)
+#' @param value Numeric value
+#' @return Severity class string ("severity-low", "severity-moderate", "severity-high")
+determine_severity_class <- function(metric_type, value) {
+  if (is.null(value) || is.na(value)) return("severity-low")
+
+  thresholds <- switch(metric_type,
+    "positivity" = list(low = 5, high = 15),
+    "hospitalization" = list(low = 2, high = 5),
+    "coverage" = list(low = 30, high = 60),
+    "status" = list(low = 1, high = 3),
+    list(low = 33, high = 66)
+  )
+
+  if (metric_type == "coverage") {
+    if (value >= thresholds$high) return("severity-low")
+    if (value >= thresholds$low) return("severity-moderate")
+    return("severity-high")
+  } else {
+    if (value <= thresholds$low) return("severity-low")
+    if (value <= thresholds$high) return("severity-moderate")
+    return("severity-high")
+  }
+}
+
+#' Map status text to severity level
+#' @param status Status string from database
+#' @return Severity class string
+status_to_severity <- function(status) {
+  if (is.null(status) || is.na(status)) return("severity-low")
+
+  status_lower <- tolower(status)
+  if (status_lower %in% c("low", "declining", "stable", "endemic")) {
+    return("severity-low")
+  } else if (status_lower %in% c("monitoring", "moderate", "elevated", "watching")) {
+    return("severity-moderate")
+  } else if (status_lower %in% c("active", "high", "peak", "critical", "outbreak")) {
+    return("severity-high")
+  }
+  return("severity-moderate")
+}
+
+#' Get KPI summary for a specific pathogen
+#' @param conn Database connection
+#' @param pathogen_code Pathogen code (e.g., "RSV", "COVID19", "H3N2")
+#' @return List with KPI values for dashboard display
+get_pathogen_kpi_summary <- function(conn, pathogen_code) {
+  pathogen_code <- toupper(pathogen_code)
+
+  surveillance_query <- sprintf("
+    SELECT
+      p.pathogen_code,
+      p.pathogen_name,
+      MAX(s.observation_date) as latest_date,
+      AVG(CASE WHEN s.observation_date >= date('now', '-14 days') THEN s.positivity_rate END) as avg_positivity,
+      AVG(CASE WHEN s.observation_date >= date('now', '-14 days') THEN s.hospitalization_rate END) as avg_hospitalization,
+      SUM(CASE WHEN s.observation_date >= date('now', '-14 days') THEN s.estimated_cases END) as total_cases,
+      SUM(CASE WHEN s.observation_date >= date('now', '-14 days') THEN s.deaths END) as total_deaths,
+      COUNT(DISTINCT s.country_id) as countries_reporting
+    FROM pathogens p
+    LEFT JOIN surveillance_data s ON p.pathogen_id = s.pathogen_id
+    WHERE p.pathogen_code = '%s'
+    GROUP BY p.pathogen_id
+  ", pathogen_code)
+
+  surveillance <- tryCatch(dbGetQuery(conn, surveillance_query), error = function(e) data.frame())
+
+  regional_query <- sprintf("
+    SELECT ro.status, ro.dominant_strain, ro.trend
+    FROM regional_overview ro
+    JOIN pathogens p ON ro.pathogen_id = p.pathogen_id
+    WHERE p.pathogen_code = '%s'
+    ORDER BY ro.observation_date DESC
+    LIMIT 1
+  ", pathogen_code)
+
+  regional <- tryCatch(dbGetQuery(conn, regional_query), error = function(e) data.frame())
+
+  vaccine_query <- sprintf("
+    SELECT AVG(vc.coverage_pct) as avg_coverage
+    FROM vaccine_coverage vc
+    JOIN vaccines v ON vc.vaccine_id = v.vaccine_id
+    JOIN pathogens p ON v.pathogen_id = p.pathogen_id
+    WHERE p.pathogen_code = '%s'
+      AND vc.observation_date >= date('now', '-30 days')
+  ", pathogen_code)
+
+  vaccine <- tryCatch(dbGetQuery(conn, vaccine_query), error = function(e) data.frame())
+
+  variant_query <- sprintf("
+    SELECT v.variant_name, vp.prevalence_pct
+    FROM variant_prevalence vp
+    JOIN variants v ON vp.variant_id = v.variant_id
+    JOIN pathogens p ON v.pathogen_id = p.pathogen_id
+    WHERE p.pathogen_code = '%s'
+    ORDER BY vp.prevalence_pct DESC, vp.observation_date DESC
+    LIMIT 1
+  ", pathogen_code)
+
+  variant <- tryCatch(dbGetQuery(conn, variant_query), error = function(e) data.frame())
+
+  positivity <- if (nrow(surveillance) > 0 && !is.na(surveillance$avg_positivity[1])) surveillance$avg_positivity[1] else NA
+  hospitalization <- if (nrow(surveillance) > 0 && !is.na(surveillance$avg_hospitalization[1])) surveillance$avg_hospitalization[1] else NA
+  total_cases <- if (nrow(surveillance) > 0 && !is.na(surveillance$total_cases[1])) surveillance$total_cases[1] else NA
+  total_deaths <- if (nrow(surveillance) > 0 && !is.na(surveillance$total_deaths[1])) surveillance$total_deaths[1] else NA
+  status <- if (nrow(regional) > 0 && !is.na(regional$status[1])) regional$status[1] else "unknown"
+  dominant_strain <- if (nrow(variant) > 0 && !is.na(variant$variant_name[1])) {
+    variant$variant_name[1]
+  } else if (nrow(regional) > 0 && !is.na(regional$dominant_strain[1])) {
+    regional$dominant_strain[1]
+  } else NA
+  coverage <- if (nrow(vaccine) > 0 && !is.na(vaccine$avg_coverage[1])) vaccine$avg_coverage[1] else NA
+  trend <- if (nrow(regional) > 0 && !is.na(regional$trend[1])) regional$trend[1] else NA
+  cfr <- if (!is.na(total_cases) && !is.na(total_deaths) && total_cases > 0) (total_deaths / total_cases) * 100 else NA
+
+  list(
+    pathogen_code = pathogen_code,
+    pathogen_name = if (nrow(surveillance) > 0) surveillance$pathogen_name[1] else pathogen_code,
+    status = status,
+    status_severity = status_to_severity(status),
+    positivity_rate = positivity,
+    positivity_severity = determine_severity_class("positivity", positivity),
+    hospitalization_rate = hospitalization,
+    hospitalization_severity = determine_severity_class("hospitalization", hospitalization),
+    vaccine_coverage = coverage,
+    coverage_severity = determine_severity_class("coverage", coverage),
+    dominant_variant = dominant_strain,
+    total_cases = total_cases,
+    total_deaths = total_deaths,
+    cfr = cfr,
+    trend = trend,
+    countries_reporting = if (nrow(surveillance) > 0) surveillance$countries_reporting[1] else 0,
+    latest_date = if (nrow(surveillance) > 0) surveillance$latest_date[1] else NA,
+    has_data = nrow(surveillance) > 0 && !is.na(surveillance$latest_date[1])
+  )
+}
+
+#' Get aggregate KPI summary across all active pathogens
+#' @param conn Database connection
+#' @return List with aggregate KPI values for "All Pathogens" view
+get_aggregate_kpi_summary <- function(conn) {
+  active_query <- "
+    SELECT COUNT(DISTINCT p.pathogen_id) as active_count
+    FROM pathogens p
+    JOIN surveillance_data s ON p.pathogen_id = s.pathogen_id
+    WHERE p.is_active = 1
+      AND s.observation_date >= date('now', '-30 days')
+  "
+  active <- tryCatch(dbGetQuery(conn, active_query), error = function(e) data.frame(active_count = 0))
+
+  dominant_query <- "
+    SELECT
+      p.pathogen_code,
+      p.pathogen_name,
+      SUM(s.estimated_cases) as total_cases,
+      AVG(s.positivity_rate) as avg_positivity
+    FROM pathogens p
+    JOIN surveillance_data s ON p.pathogen_id = s.pathogen_id
+    WHERE s.observation_date >= date('now', '-14 days')
+    GROUP BY p.pathogen_id
+    ORDER BY total_cases DESC, avg_positivity DESC
+    LIMIT 1
+  "
+  dominant <- tryCatch(dbGetQuery(conn, dominant_query), error = function(e) data.frame())
+
+  overall_query <- "
+    SELECT
+      AVG(s.positivity_rate) as overall_positivity,
+      SUM(s.estimated_cases) as total_cases,
+      SUM(s.deaths) as total_deaths,
+      AVG(s.hospitalization_rate) as overall_hospitalization
+    FROM surveillance_data s
+    WHERE s.observation_date >= date('now', '-14 days')
+  "
+  overall <- tryCatch(dbGetQuery(conn, overall_query), error = function(e) data.frame())
+
+  severity_query <- "
+    SELECT ro.status
+    FROM regional_overview ro
+    WHERE ro.observation_date >= date('now', '-7 days')
+    ORDER BY
+      CASE ro.status
+        WHEN 'peak' THEN 5 WHEN 'active' THEN 4 WHEN 'elevated' THEN 3
+        WHEN 'monitoring' THEN 2 WHEN 'low' THEN 1 WHEN 'declining' THEN 0
+        ELSE 1
+      END DESC
+    LIMIT 1
+  "
+  severity <- tryCatch(dbGetQuery(conn, severity_query), error = function(e) data.frame())
+
+  quality_query <- "
+    SELECT
+      COUNT(*) as total_records,
+      SUM(CASE WHEN positivity_rate IS NOT NULL THEN 1 ELSE 0 END) as with_positivity,
+      MAX(observation_date) as latest_date
+    FROM surveillance_data
+    WHERE observation_date >= date('now', '-30 days')
+  "
+  quality <- tryCatch(dbGetQuery(conn, quality_query), error = function(e) data.frame())
+
+  prevalence <- if (nrow(dominant) > 0 && nrow(overall) > 0 &&
+                    !is.na(dominant$total_cases[1]) && !is.na(overall$total_cases[1]) &&
+                    overall$total_cases[1] > 0) {
+    (dominant$total_cases[1] / overall$total_cases[1]) * 100
+  } else NA
+
+  data_quality <- if (nrow(quality) > 0 && quality$total_records[1] > 0) {
+    (quality$with_positivity[1] / quality$total_records[1]) * 100
+  } else 0
+
+  global_severity <- if (nrow(severity) > 0 && !is.na(severity$status[1])) severity$status[1] else "unknown"
+
+  list(
+    active_pathogens = if (nrow(active) > 0) active$active_count[1] else 0,
+    dominant_pathogen = if (nrow(dominant) > 0) dominant$pathogen_code[1] else NA,
+    dominant_pathogen_name = if (nrow(dominant) > 0) dominant$pathogen_name[1] else NA,
+    dominant_prevalence = prevalence,
+    overall_positivity = if (nrow(overall) > 0) overall$overall_positivity[1] else NA,
+    overall_hospitalization = if (nrow(overall) > 0) overall$overall_hospitalization[1] else NA,
+    total_cases = if (nrow(overall) > 0) overall$total_cases[1] else NA,
+    total_deaths = if (nrow(overall) > 0) overall$total_deaths[1] else NA,
+    global_severity = global_severity,
+    global_severity_class = status_to_severity(global_severity),
+    data_quality_score = round(data_quality, 0),
+    latest_date = if (nrow(quality) > 0) quality$latest_date[1] else NA
+  )
+}
+
+#' Check if surveillance data is stale
+#' @param conn Database connection
+#' @param pathogen_code Pathogen to check (NULL for all)
+#' @param max_age_days Maximum acceptable age (default 7)
+#' @return NULL if fresh, warning message if stale
+get_data_staleness_warning <- function(conn, pathogen_code = NULL, max_age_days = 7) {
+  if (!is.null(pathogen_code)) {
+    pathogen_code <- toupper(pathogen_code)
+    query <- sprintf("
+      SELECT MAX(s.observation_date) as latest_date
+      FROM surveillance_data s
+      JOIN pathogens p ON s.pathogen_id = p.pathogen_id
+      WHERE p.pathogen_code = '%s'
+    ", pathogen_code)
+  } else {
+    query <- "SELECT MAX(observation_date) as latest_date FROM surveillance_data"
+  }
+
+  result <- tryCatch(dbGetQuery(conn, query), error = function(e) data.frame(latest_date = NA))
+
+  if (nrow(result) == 0 || is.na(result$latest_date[1])) {
+    return("No surveillance data available")
+  }
+
+  latest_date <- as.Date(result$latest_date[1])
+  age_days <- as.numeric(Sys.Date() - latest_date)
+
+  if (age_days > max_age_days) {
+    return(sprintf("Data is %d days old (last update: %s)", age_days, format(latest_date, "%b %d, %Y")))
+  }
+
+  NULL
+}
+
+#' Format KPI value for display
+#' @param value Numeric or character value
+#' @param format_type Format type ("percent", "integer", "status", "text")
+#' @param fallback Value if NULL/NA (default "N/A")
+#' @return Formatted string
+format_kpi_value <- function(value, format_type = "percent", fallback = "N/A") {
+  if (is.null(value) || is.na(value)) return(fallback)
+
+  switch(format_type,
+    "percent" = paste0(round(as.numeric(value), 1), "%"),
+    "integer" = format(round(as.numeric(value)), big.mark = ","),
+    "status" = toupper(as.character(value)),
+    "text" = as.character(value),
+    as.character(value)
+  )
+}
+
+#' Get dashboard-ready KPI data (wrapper function)
+#' @param db_path Path to database
+#' @param pathogen_code Pathogen code or "all"
+#' @return List with KPI values and staleness warning
+get_dashboard_kpis <- function(db_path = DB_PATH, pathogen_code = "all") {
+  conn <- get_db_connection(db_path)
+
+  result <- tryCatch({
+    if (tolower(pathogen_code) == "all") {
+      kpis <- get_aggregate_kpi_summary(conn)
+    } else {
+      kpis <- get_pathogen_kpi_summary(conn, pathogen_code)
+    }
+
+    staleness <- get_data_staleness_warning(conn, if (tolower(pathogen_code) == "all") NULL else pathogen_code)
+
+    list(kpis = kpis, staleness_warning = staleness, success = TRUE)
+  }, error = function(e) {
+    list(kpis = NULL, staleness_warning = sprintf("Error: %s", e$message), success = FALSE)
+  }, finally = {
+    close_db_connection(conn)
+  })
+
+  result
+}

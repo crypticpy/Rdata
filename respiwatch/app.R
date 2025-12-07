@@ -330,11 +330,19 @@ if (db_has_timeline) {
   message(sprintf("Using JSON fallback timeline: %d records", nrow(combined_timeline_df)))
 }
 
-# Pathogen color palette for charts
+# Pathogen color palette for charts (expanded to all 6 pathogens)
 pathogen_colors <- c(
   "H3N2 (Influenza)" = "#E85D4C",  # Coral (primary theme color)
   "RSV" = "#2563EB",               # Blue
-  "COVID-19" = "#7C3AED"           # Purple
+  "COVID-19" = "#7C3AED",          # Purple
+  "H5N1 (Avian)" = "#DC2626",      # Red (danger color for avian flu)
+  "Influenza A" = "#F97316",       # Orange
+  "Influenza B" = "#0891B2",       # Cyan
+  "H3N2" = "#E85D4C",              # Alias for code lookups
+  "COVID19" = "#7C3AED",           # Alias for code lookups
+  "H5N1" = "#DC2626",              # Alias for code lookups
+  "FLU_A" = "#F97316",             # Alias for code lookups
+  "FLU_B" = "#0891B2"              # Alias for code lookups
 )
 
 # Clinical Premium Theme Configuration ----------------------------------------
@@ -2290,13 +2298,16 @@ server <- function(input, output, session) {
   # END DATE RANGE FILTERING
   # ==========================================================================
 
-  # Pathogen KPIs (reactive) --------------------------------------------------
+  # Pathogen KPIs (reactive) - DATABASE-DRIVEN ---------------------------------
   output$pathogen_kpis <- renderUI({
     tryCatch({
       pathogen <- input$selected_pathogen
 
-      # Defensive null check for outbreak_data
-      if (is.null(outbreak_data) || is.null(outbreak_data$global_overview)) {
+      # Get KPI data from database
+      kpi_result <- get_dashboard_kpis(pathogen_code = pathogen)
+
+      # Loading state fallback
+      if (!kpi_result$success || is.null(kpi_result$kpis)) {
         return(div(
           class = "row g-3",
           lapply(1:4, function(i) {
@@ -2304,152 +2315,127 @@ server <- function(input, output, session) {
               div(class = "kpi-card severity-low",
                 div(class = "kpi-title", "Loading..."),
                 div(class = "kpi-value", "--"),
-                div(class = "kpi-change", "Data loading")
+                div(class = "kpi-change", if (!is.null(kpi_result$staleness_warning)) kpi_result$staleness_warning else "Data loading")
               )
             )
           })
         ))
       }
 
-      # Define pathogen-specific data
-      kpi_data <- switch(pathogen,
-        "all" = list(
+      kpis <- kpi_result$kpis
+
+      # Build KPI cards based on pathogen type
+      if (tolower(pathogen) == "all") {
+        # Aggregate view for all pathogens
+        kpi_data <- list(
           title1 = "Active Pathogens",
-          value1 = "5",
+          value1 = format_kpi_value(kpis$active_pathogens, "integer", "0"),
           change1 = "Multi-Pathogen View",
           severity1 = "severity-moderate",
-          title2 = "Global Severity",
-          value2 = toupper(outbreak_data$global_overview$severity_assessment$global_severity),
-          change2 = "Combined Assessment",
-          severity2 = "severity-high",
-          title3 = "Dominant Pathogen",
-          value3 = "H3N2",
-          change3 = "73.5% Prevalence",
-          severity3 = "severity-high",
-          title4 = "Data Quality",
-          value4 = paste0(outbreak_data$metadata$data_quality_score, "%"),
-          change4 = paste("Updated:", format(as.Date(outbreak_data$metadata$data_baseline), "%b %d")),
-          severity4 = "severity-moderate"
-        ),
-        "h3n2" = list(
-          title1 = "Global Severity",
-          value1 = toupper(outbreak_data$global_overview$severity_assessment$global_severity),
-          change1 = "H3N2 Dominant",
-          severity1 = "severity-high",
-          title2 = "Vaccine Effectiveness",
-          value2 = paste0(outbreak_data$global_overview$severity_assessment$vaccine_effectiveness$h3n2_effectiveness, "%"),
-          change2 = "Against H3N2",
-          severity2 = "severity-moderate",
-          title3 = "Subclade K Effectiveness",
-          value3 = paste0(outbreak_data$global_overview$severity_assessment$vaccine_effectiveness$subclade_k_effectiveness, "%"),
-          change3 = "Major Mismatch",
-          severity3 = "severity-high",
-          title4 = "Data Quality",
-          value4 = paste0(outbreak_data$metadata$data_quality_score, "%"),
-          change4 = paste("Updated:", format(as.Date(outbreak_data$metadata$data_baseline), "%b %d")),
-          severity4 = "severity-moderate"
-        ),
-        "rsv" = list(
-          title1 = "RSV Status",
-          value1 = "ELEVATED",
-          change1 = "Winter Peak",
-          severity1 = "severity-moderate",
-          title2 = "Positivity Rate",
-          value2 = "12%",
-          change2 = "Lab Confirmed",
-          severity2 = "severity-moderate",
-          title3 = "Hospitalization Rate",
-          value3 = "2.3%",
-          change3 = "Age <2 & 65+",
-          severity3 = "severity-moderate",
-          title4 = "Vaccine Coverage",
-          value4 = "42%",
-          change4 = "High-Risk Groups",
-          severity4 = "severity-low"
-        ),
-        "covid" = list(
-          title1 = "COVID-19 Status",
-          value1 = "MODERATE",
-          change1 = "Endemic Phase",
-          severity1 = "severity-moderate",
-          title2 = "Positivity Rate",
-          value2 = "5%",
-          change2 = "7-Day Average",
-          severity2 = "severity-low",
-          title3 = "Variant Dominant",
-          value3 = "JN.1",
-          change3 = "Omicron Lineage",
-          severity3 = "severity-moderate",
-          title4 = "Booster Uptake",
-          value4 = "28%",
-          change4 = "2024-25 Season",
-          severity4 = "severity-moderate"
-        ),
-        "h5n1" = list(
-          title1 = "Avian Flu Status",
-          value1 = "WATCHING",
-          change1 = "Animal Spillover",
-          severity1 = "severity-high",
-          title2 = "Human Cases",
-          value2 = "61",
-          change2 = "2024 YTD (Global)",
-          severity2 = "severity-high",
-          title3 = "CFR Estimate",
-          value3 = "52%",
-          change3 = "Historical",
-          severity3 = "severity-high",
-          title4 = "Poultry Outbreaks",
-          value4 = "847",
-          change4 = "Farms Affected",
-          severity4 = "severity-high"
-        )
-      )
 
-      div(
-        class = "row g-4 mb-4",
+          title2 = "Global Severity",
+          value2 = format_kpi_value(kpis$global_severity, "status", "UNKNOWN"),
+          change2 = "Combined Assessment",
+          severity2 = kpis$global_severity_class,
+
+          title3 = "Dominant Pathogen",
+          value3 = format_kpi_value(kpis$dominant_pathogen, "text", "N/A"),
+          change3 = if (!is.na(kpis$dominant_prevalence)) paste0(round(kpis$dominant_prevalence, 1), "% Prevalence") else "Calculating...",
+          severity3 = "severity-high",
+
+          title4 = "Data Quality",
+          value4 = paste0(format_kpi_value(kpis$data_quality_score, "integer", "0"), "%"),
+          change4 = if (!is.null(kpis$latest_date) && !is.na(kpis$latest_date)) paste("Updated:", format(as.Date(kpis$latest_date), "%b %d")) else "No data",
+          severity4 = if (kpis$data_quality_score >= 80) "severity-low" else if (kpis$data_quality_score >= 50) "severity-moderate" else "severity-high"
+        )
+      } else {
+        # Single pathogen view
+        pathogen_name <- switch(tolower(pathogen),
+          "h3n2" = "H3N2",
+          "rsv" = "RSV",
+          "covid" = "COVID-19",
+          "h5n1" = "H5N1 (Avian)",
+          toupper(pathogen)
+        )
+
+        kpi_data <- list(
+          title1 = paste(pathogen_name, "Status"),
+          value1 = format_kpi_value(kpis$status, "status", "UNKNOWN"),
+          change1 = if (!is.null(kpis$trend) && !is.na(kpis$trend)) paste("Trend:", kpis$trend) else "Status from database",
+          severity1 = kpis$status_severity,
+
+          title2 = "Positivity Rate",
+          value2 = format_kpi_value(kpis$positivity_rate, "percent", "N/A"),
+          change2 = "14-Day Average",
+          severity2 = kpis$positivity_severity,
+
+          title3 = if (!is.na(kpis$dominant_variant)) "Dominant Variant" else "Hospitalization Rate",
+          value3 = if (!is.na(kpis$dominant_variant)) format_kpi_value(kpis$dominant_variant, "text", "N/A") else format_kpi_value(kpis$hospitalization_rate, "percent", "N/A"),
+          change3 = if (!is.na(kpis$dominant_variant)) "Current Strain" else "14-Day Average",
+          severity3 = if (!is.na(kpis$dominant_variant)) "severity-moderate" else kpis$hospitalization_severity,
+
+          title4 = "Vaccine Coverage",
+          value4 = format_kpi_value(kpis$vaccine_coverage, "percent", "N/A"),
+          change4 = if (!is.null(kpis$countries_reporting) && kpis$countries_reporting > 0) paste(kpis$countries_reporting, "countries reporting") else "Coverage data",
+          severity4 = kpis$coverage_severity
+        )
+      }
+
+      # Add staleness warning banner if data is old
+      staleness_banner <- if (!is.null(kpi_result$staleness_warning)) {
+        div(class = "alert alert-warning mb-3",
+          icon("exclamation-triangle"),
+          kpi_result$staleness_warning
+        )
+      } else NULL
+
+      # Render KPI cards
+      tagList(
+        staleness_banner,
         div(
-          class = "col-md-3",
+          class = "row g-4 mb-4",
           div(
-            class = paste("kpi-card", kpi_data$severity1),
-            div(class = "kpi-label", kpi_data$title1),
-            div(class = "kpi-value", kpi_data$value1),
-            div(class = "kpi-change", kpi_data$change1)
-          )
-        ),
-        div(
-          class = "col-md-3",
+            class = "col-md-3",
+            div(
+              class = paste("kpi-card", kpi_data$severity1),
+              div(class = "kpi-label", kpi_data$title1),
+              div(class = "kpi-value", kpi_data$value1),
+              div(class = "kpi-change", kpi_data$change1)
+            )
+          ),
           div(
-            class = paste("kpi-card", kpi_data$severity2),
-            div(class = "kpi-label", kpi_data$title2),
-            div(class = "kpi-value", kpi_data$value2),
-            div(class = "kpi-change", kpi_data$change2)
-          )
-        ),
-        div(
-          class = "col-md-3",
+            class = "col-md-3",
+            div(
+              class = paste("kpi-card", kpi_data$severity2),
+              div(class = "kpi-label", kpi_data$title2),
+              div(class = "kpi-value", kpi_data$value2),
+              div(class = "kpi-change", kpi_data$change2)
+            )
+          ),
           div(
-            class = paste("kpi-card", kpi_data$severity3),
-            div(class = "kpi-label", kpi_data$title3),
-            div(class = "kpi-value", kpi_data$value3),
-            div(class = "kpi-change", kpi_data$change3)
-          )
-        ),
-        div(
-          class = "col-md-3",
+            class = "col-md-3",
+            div(
+              class = paste("kpi-card", kpi_data$severity3),
+              div(class = "kpi-label", kpi_data$title3),
+              div(class = "kpi-value", kpi_data$value3),
+              div(class = "kpi-change", kpi_data$change3)
+            )
+          ),
           div(
-            class = paste("kpi-card", kpi_data$severity4),
-            div(class = "kpi-label", kpi_data$title4),
-            div(class = "kpi-value", kpi_data$value4),
-            div(class = "kpi-change", kpi_data$change4)
+            class = "col-md-3",
+            div(
+              class = paste("kpi-card", kpi_data$severity4),
+              div(class = "kpi-label", kpi_data$title4),
+              div(class = "kpi-value", kpi_data$value4),
+              div(class = "kpi-change", kpi_data$change4)
+            )
           )
         )
       )
     }, error = function(e) {
       message("Error in pathogen_kpis renderUI: ", e$message)
-      div(class = "alert alert-danger", "Error loading Pathogen KPIs")
+      div(class = "alert alert-danger", paste("Error loading Pathogen KPIs:", e$message))
     })
-
-
   })
 
   # Global Map ----------------------------------------------------------------

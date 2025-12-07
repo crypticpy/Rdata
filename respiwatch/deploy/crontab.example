@@ -1,0 +1,54 @@
+# ============================================================================
+# RespiWatch Crontab Configuration
+# ============================================================================
+#
+# Copy the relevant lines to your crontab using: crontab -e
+#
+# Format: minute hour day-of-month month day-of-week command
+#
+# ============================================================================
+
+# Nightly data refresh at 2:00 AM
+# Fetches latest surveillance data from CDC, WHO, and other sources
+0 2 * * * cd /path/to/respiwatch && Rscript scripts/scheduled_refresh.R >> data/cache/cron.log 2>&1
+
+# Optional: Hourly data refresh (for more real-time updates)
+# Uncomment if you need more frequent updates
+# 0 * * * * cd /path/to/respiwatch && Rscript scripts/scheduled_refresh.R >> data/cache/cron.log 2>&1
+
+# Weekly cleanup of old log files (Sundays at 3:00 AM)
+# Keeps only the last 30 days of logs
+0 3 * * 0 find /path/to/respiwatch/data/cache -name "*.log" -mtime +30 -delete
+
+# Weekly database backup (Sundays at 4:00 AM)
+# 0 4 * * 0 cp /path/to/respiwatch/data/respiwatch.sqlite /path/to/backups/respiwatch_$(date +\%Y\%m\%d).sqlite
+
+# ============================================================================
+# Environment Setup Notes:
+# ============================================================================
+#
+# 1. Replace /path/to/respiwatch with actual path
+#    Example: /home/user/Projects/respiwatch
+#
+# 2. Ensure R is in the cron PATH or use full path to Rscript
+#    Example: /usr/local/bin/Rscript or /usr/bin/Rscript
+#
+# 3. Check R library paths - you may need to set R_LIBS_USER
+#    Example: R_LIBS_USER=/home/user/R/library
+#
+# 4. For Docker deployments, configure entrypoint or use container cron
+#
+# ============================================================================
+# Monitoring:
+# ============================================================================
+#
+# Check logs:
+#   tail -f /path/to/respiwatch/data/cache/cron.log
+#
+# Check error logs:
+#   cat /path/to/respiwatch/data/cache/refresh_errors.log
+#
+# Verify last run:
+#   ls -la /path/to/respiwatch/data/cache/refresh_*.log
+#
+# ============================================================================
