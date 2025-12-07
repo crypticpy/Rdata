@@ -65,16 +65,17 @@ if (db_has_timeline) {
 
 # Populate countries_df from Database or JSON
 if (USE_DATABASE) {
-  # Fetch latest surveillance snapshot from DB
+  # Fetch latest surveillance snapshot from DB (ALL pathogens - for reactive filtering)
   conn <- get_db_connection()
-  map_snapshot <- get_latest_surveillance(conn)
+  map_snapshot_all <- get_latest_surveillance(conn)  # Keep all pathogen data for reactive filtering
   close_db_connection(conn)
-  
-  if (!is.null(map_snapshot) && nrow(map_snapshot) > 0) {
-    # Filter to H3N2 (influenza) data and get most recent observation per country
-    # This prevents duplicate geometry rows from multi-pathogen data
-    countries_df <- map_snapshot |>
-      filter(pathogen_code == "H3N2") |>  # Focus on influenza for choropleth
+
+  # Helper function to filter surveillance data by pathogen
+  filter_by_pathogen <- function(data, pathogen_code_filter) {
+    if (is.null(data) || nrow(data) == 0) return(NULL)
+
+    data |>
+      filter(pathogen_code == pathogen_code_filter) |>
       group_by(iso_code) |>
       slice_max(observation_date, n = 1, with_ties = FALSE) |>
       ungroup() |>
@@ -92,6 +93,11 @@ if (USE_DATABASE) {
         last_updated = as.character(observation_date),
         stringsAsFactors = FALSE
       )
+  }
+
+  # Create initial countries_df with H3N2 (default pathogen)
+  if (!is.null(map_snapshot_all) && nrow(map_snapshot_all) > 0) {
+    countries_df <- filter_by_pathogen(map_snapshot_all, "H3N2")
   } else {
     # Fallback structure if DB empty
      countries_df <- data.frame(
@@ -946,7 +952,15 @@ ui <- page_navbar(
               top = 80, right = 40, width = 220,
               draggable = TRUE,
               style = "background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000;",
-              selectInput("map_metric", "Select Metric:", 
+              selectInput("map_pathogen", "Pathogen:",
+                          choices = c(
+                            "Influenza (H3N2)" = "H3N2",
+                            "COVID-19" = "COVID19",
+                            "RSV" = "RSV"
+                          ),
+                          selected = "H3N2"
+              ),
+              selectInput("map_metric", "Metric:",
                           choices = c(
                             "Positivity Rate (%)" = "positivity_rate",
                             "Vaccination Coverage (%)" = "vaccination_rate",
@@ -2250,6 +2264,28 @@ server <- function(input, output, session) {
     }
   })
 
+  # Create reactive for world map data based on selected pathogen
+  world_map_data_reactive <- reactive({
+    req(input$map_pathogen)  # Wait for pathogen selector to be available
+
+    selected_pathogen <- input$map_pathogen
+
+    # Filter surveillance data by selected pathogen
+    filtered_countries_df <- filter_by_pathogen(map_snapshot_all, selected_pathogen)
+
+    if (is.null(filtered_countries_df) || nrow(filtered_countries_df) == 0) {
+      # Return base world countries with no data if filtering yields nothing
+      return(world_countries)
+    }
+
+    # Merge with country coords
+    filtered_countries_df <- left_join(filtered_countries_df, country_coords, by = "iso_code")
+
+    # Join with world shapefile geometry
+    world_countries |>
+      left_join(filtered_countries_df, by = "iso_code")
+  })
+
   # Global Overview tab date filtering
   global_date_filter <- dateRangeControlServer(
     "global_date_range",
@@ -2445,8 +2481,11 @@ server <- function(input, output, session) {
 
   # Global Map ----------------------------------------------------------------
   output$global_map <- renderLeaflet({
-    # Defensive null check for world_map_data
-    if (is.null(world_map_data) || !inherits(world_map_data, "sf") || nrow(world_map_data) == 0) {
+    # Get reactive map data based on selected pathogen
+    map_data <- world_map_data_reactive()
+
+    # Defensive null check for map_data
+    if (is.null(map_data) || !inherits(map_data, "sf") || nrow(map_data) == 0) {
       return(
         leaflet() |>
           addProviderTiles(providers$CartoDB.Positron) |>
@@ -2462,17 +2501,17 @@ server <- function(input, output, session) {
 
     # Determine metric to display based on input
     metric <- input$map_metric %||% "positivity_rate"
-    
+
     # Configure visualization based on metric
     if (metric == "vaccination_rate") {
-        display_val <- world_map_data$vaccination_rate
+        display_val <- map_data$vaccination_rate
         pal_colors <- c("#F7FCF5", "#E5F5E0", "#C7E9C0", "#A1D99B", "#74C476", "#41AB5D", "#238B45") # Green scale
         legend_title <- "Vaccination (%)"
         domain_range <- c(0, 100)
         border_color <- "#006d2c"
         val_suffix <- "%"
     } else if (metric == "confirmed_cases") {
-        display_val <- world_map_data$confirmed_cases
+        display_val <- map_data$confirmed_cases
         pal_colors <- c("#F3E5F5", "#E1BEE7", "#CE93D8", "#BA68C8", "#AB47BC", "#8E24AA", "#4A148C") # Purple scale
         legend_title <- "Total Cases"
         domain_range <- NULL # Auto-scale
@@ -2480,14 +2519,14 @@ server <- function(input, output, session) {
         val_suffix <- ""
     } else {
         # Default: Positivity Rate
-        display_val <- world_map_data$positivity_rate
+        display_val <- map_data$positivity_rate
         pal_colors <- c("#FEE2E2", "#FECACA", "#FCA5A5", "#F87171", "#EF4444", "#DC2626", "#B91C1C") # Red scale
         legend_title <- "Positivity (%)"
         domain_range <- c(0, 50)
         border_color <- "#991B1B"
         val_suffix <- "%"
     }
-    
+
     # Create palette
     fill_pal <- colorNumeric(
       palette = pal_colors,
@@ -2504,22 +2543,22 @@ server <- function(input, output, session) {
        Vaccination: %s%%<br/>
        Confirmed Cases: %s<br/>
        Status: %s",
-      ifelse(is.na(world_map_data$country_name), world_map_data$country_name_geo, world_map_data$country_name),
+      ifelse(is.na(map_data$country_name), map_data$country_name_geo, map_data$country_name),
       border_color,
       legend_title,
-      ifelse(is.na(display_val), "N/A", 
-             if(metric == "confirmed_cases") format(display_val, big.mark=",") 
+      ifelse(is.na(display_val), "N/A",
+             if(metric == "confirmed_cases") format(display_val, big.mark=",")
              else round(display_val, 1)),
       val_suffix,
-      ifelse(is.na(world_map_data$positivity_rate), "N/A", round(world_map_data$positivity_rate, 1)),
-      ifelse(is.na(world_map_data$vaccination_rate), "N/A", round(world_map_data$vaccination_rate, 1)),
-      ifelse(is.na(world_map_data$confirmed_cases), "N/A", format(world_map_data$confirmed_cases, big.mark = ",")),
-      ifelse(is.na(world_map_data$outbreak_status), "Unknown", world_map_data$outbreak_status)
+      ifelse(is.na(map_data$positivity_rate), "N/A", round(map_data$positivity_rate, 1)),
+      ifelse(is.na(map_data$vaccination_rate), "N/A", round(map_data$vaccination_rate, 1)),
+      ifelse(is.na(map_data$confirmed_cases), "N/A", format(map_data$confirmed_cases, big.mark = ",")),
+      ifelse(is.na(map_data$outbreak_status), "Unknown", map_data$outbreak_status)
     ) |> lapply(htmltools::HTML)
 
     # Base Map with Polygons
     # Configure bounds to prevent infinite horizontal scrolling
-    map <- leaflet(world_map_data, options = leafletOptions(
+    map <- leaflet(map_data, options = leafletOptions(
       worldCopyJump = FALSE,
       maxBoundsViscosity = 1.0
     )) |>
@@ -2568,7 +2607,7 @@ server <- function(input, output, session) {
     if (isTRUE(input$show_bubbles)) {
       # Scale bubbles based on confirmed cases (sqrt scale for area)
       # Normalize max size
-      max_cases <- max(world_map_data$confirmed_cases, na.rm = TRUE)
+      max_cases <- max(map_data$confirmed_cases, na.rm = TRUE)
       if (!is.finite(max_cases) || max_cases <= 0) max_cases <- 1
       
       map <- map |>
