@@ -1,0 +1,1363 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "H3N2 Outbreak Tracker Dashboard Schema",
+  "description": "Comprehensive schema for outbreak tracker dashboard data structure",
+  "type": "object",
+  "required": [
+    "metadata",
+    "global_overview",
+    "countries",
+    "urban_centers",
+    "pathogen_analysis",
+    "timeline",
+    "intelligence_sources",
+    "anomaly_detection_flags"
+  ],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "description": "Dataset metadata and versioning",
+      "required": ["dataset_name", "version", "last_updated", "data_baseline", "coverage_period"],
+      "properties": {
+        "dataset_name": {
+          "type": "string",
+          "description": "Name of the dataset",
+          "enum": ["h3n2_outbreak_tracker"]
+        },
+        "version": {
+          "type": "string",
+          "description": "Semantic version of the dataset"
+        },
+        "last_updated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of last dataset update"
+        },
+        "data_baseline": {
+          "type": "string",
+          "description": "Baseline date for data analysis"
+        },
+        "coverage_period": {
+          "type": "object",
+          "description": "Time period covered by the dataset",
+          "properties": {
+            "start_date": {
+              "type": "string",
+              "format": "date",
+              "description": "Start date of data coverage"
+            },
+            "end_date": {
+              "type": "string",
+              "format": "date",
+              "description": "End date of data coverage"
+            }
+          }
+        },
+        "schema_version": {
+          "type": "string",
+          "description": "Version of the JSON schema used"
+        },
+        "data_quality_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Overall data quality score percentage"
+        }
+      }
+    },
+    "global_overview": {
+      "type": "object",
+      "description": "Global outbreak status by continent",
+      "required": [
+        "current_status",
+        "severity_assessment",
+        "key_anomalies",
+        "surveillance_system_status"
+      ],
+      "properties": {
+        "current_status": {
+          "type": "object",
+          "description": "Current outbreak status by continent",
+          "patternProperties": {
+            "^[A-Z][a-z]+$": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["active", "monitoring", "elevated", "peak", "declining"],
+                  "description": "Current outbreak status level"
+                },
+                "positivity_rate": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Percentage positivity rate"
+                },
+                "dominant_pathogen": {
+                  "type": "string",
+                  "description": "Dominant pathogen (H3N2, H1N1pdm09, etc.)"
+                },
+                "confidence_level": {
+                  "type": "string",
+                  "enum": ["high", "medium", "low"],
+                  "description": "Confidence level of the data"
+                },
+                "data_sources": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Primary data sources supporting this status"
+                  }
+                }
+              },
+              "required": ["status", "confidence_level"]
+            }
+          }
+        },
+        "severity_assessment": {
+          "type": "object",
+          "description": "Overall severity assessment",
+          "required": ["global_severity", "vaccine_effectiveness"],
+          "properties": {
+            "global_severity": {
+              "type": "string",
+              "enum": ["low", "moderate", "high", "critical"],
+              "description": "Global severity level"
+            },
+            "vaccine_effectiveness": {
+              "type": "object",
+              "description": "Vaccine effectiveness data",
+              "properties": {
+                "overall_effectiveness": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Overall vaccine effectiveness percentage"
+                },
+                "h3n2_effectiveness": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "H3N2-specific vaccine effectiveness"
+                },
+                "subclade_k_effectiveness": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Subclade K-specific vaccine effectiveness"
+                },
+                "assessment_source": {
+                  "type": "string",
+                  "description": "Source of effectiveness assessment"
+                }
+              }
+            }
+          }
+        },
+        "key_anomalies": {
+          "type": "array",
+          "description": "Key anomalies detected globally",
+          "items": {
+            "type": "object",
+            "properties": {
+              "anomaly_type": {
+                "type": "string",
+                "description": "Type of anomaly (timing, severity, mutation, etc.)"
+              },
+              "description": {
+                "type": "string",
+                "description": "Description of the anomaly"
+              },
+              "geographic_scope": {
+                "type": "string",
+                "description": "Geographic scope of the anomaly"
+              },
+              "confidence_level": {
+                "type": "string",
+                "enum": ["high", "medium", "low"]
+              },
+              "first_detected": {
+                "type": "string",
+                "format": "date",
+                "description": "Date when anomaly was first detected"
+              }
+            }
+          }
+        },
+        "surveillance_system_status": {
+          "type": "object",
+          "description": "Status of global surveillance systems",
+          "properties": {
+            "who_status": {
+              "type": "string",
+              "enum": ["operational", "degraded", "limited", "blackout"],
+              "description": "WHO surveillance system status"
+            },
+            "cdc_status": {
+              "type": "string",
+              "enum": ["operational", "degraded", "limited", "blackout"],
+              "description": "CDC surveillance system status"
+            },
+            "ecdc_status": {
+              "type": "string",
+              "enum": ["operational", "degraded", "limited", "blackout"],
+              "description": "ECDC surveillance system status"
+            },
+            "data_gaps_identified": {
+              "type": "array",
+              "description": "List of identified data gaps",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "countries": {
+      "type": "object",
+      "description": "Country-level epidemiological data",
+      "patternProperties": {
+        "^[A-Z]{3}$": {
+          "type": "object",
+          "description": "ISO 3166-1 alpha-3 country code",
+          "required": [
+            "country_name",
+            "population",
+            "outbreak_status",
+            "h3n2_data",
+            "healthcare_capacity",
+            "data_confidence_level",
+            "last_updated"
+          ],
+          "properties": {
+            "country_name": {
+              "type": "string",
+              "description": "Full country name"
+            },
+            "iso_code": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$",
+              "description": "ISO 3166-1 alpha-3 country code"
+            },
+            "population": {
+              "type": "integer",
+              "description": "Total population"
+            },
+            "outbreak_status": {
+              "type": "string",
+              "enum": ["active_outbreak", "elevated_activity", "normal_activity", "unknown"],
+              "description": "Current outbreak status"
+            },
+            "h3n2_data": {
+              "type": "object",
+              "description": "H3N2-specific data",
+              "properties": {
+                "case_numbers": {
+                  "type": "object",
+                  "description": "H3N2 case numbers",
+                  "properties": {
+                    "confirmed_cases": {
+                      "type": "integer",
+                      "description": "Confirmed H3N2 cases"
+                    },
+                    "estimated_cases": {
+                      "type": "integer",
+                      "description": "Estimated total H3N2 cases"
+                    },
+                    "hospitalizations": {
+                      "type": "integer",
+                      "description": "H3N2 hospitalizations"
+                    },
+                    "deaths": {
+                      "type": "integer",
+                      "description": "H3N2 deaths"
+                    }
+                  }
+                },
+                "positivity_rate": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "H3N2 positivity rate percentage"
+                },
+                "subclade_k_prevalence": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Subclade K prevalence as percentage of H3N2"
+                },
+                "hospitalization_rate": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "H3N2 hospitalization rate per 100,000 population"
+                }
+              }
+            },
+            "subclade_data": {
+              "type": "object",
+              "description": "Viral subclade identification",
+              "properties": {
+                "dominant_clade": {
+                  "type": "string",
+                  "description": "Dominant viral clade"
+                },
+                "subclade_k_proportion": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Percentage of viruses belonging to subclade K"
+                },
+                "other_clades": {
+                  "type": "array",
+                  "description": "Other significant clades",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "clade": {
+                        "type": "string"
+                      },
+                      "proportion": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "healthcare_capacity": {
+              "type": "object",
+              "description": "Healthcare system capacity indicators",
+              "properties": {
+                "icu_bed_utilization": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "ICU bed utilization percentage"
+                },
+                "hospital_capacity_stress": {
+                  "type": "string",
+                  "enum": ["low", "moderate", "high", "critical"],
+                  "description": "Overall hospital capacity stress level"
+                },
+                "healthcare_worker_status": {
+                  "type": "string",
+                  "enum": ["adequate", "strained", "overwhelmed"],
+                  "description": "Healthcare workforce status"
+                }
+              }
+            },
+            "policy_responses": {
+              "type": "array",
+              "description": "Policy responses and interventions",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "policy_type": {
+                    "type": "string",
+                    "description": "Type of policy response"
+                  },
+                  "implementation_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Date policy was implemented"
+                  },
+                  "current_status": {
+                    "type": "string",
+                    "enum": ["active", "planned", "suspended", "lifted"],
+                    "description": "Current status of the policy"
+                  },
+                  "effectiveness": {
+                    "type": "string",
+                    "enum": ["effective", "partially_effective", "ineffective", "unknown"],
+                    "description": "Assessed effectiveness of the policy"
+                  }
+                }
+              }
+            },
+            "anomaly_flags": {
+              "type": "array",
+              "description": "Anomaly flags for this country",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "anomaly_type": {
+                    "type": "string",
+                    "description": "Type of anomaly"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Description of the anomaly"
+                  },
+                  "severity": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high", "critical"],
+                    "description": "Severity level of the anomaly"
+                  },
+                  "first_detected": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "verification_status": {
+                    "type": "string",
+                    "enum": ["verified", "investigating", "unverified"],
+                    "description": "Verification status of the anomaly"
+                  }
+                }
+              }
+            },
+            "data_confidence_level": {
+              "type": "string",
+              "enum": ["high", "medium", "low"],
+              "description": "Overall data confidence level for this country"
+            },
+            "last_updated": {
+              "type": "string",
+              "format": "date-time",
+              "description": "ISO 8601 timestamp of last update"
+            },
+            "primary_data_source": {
+              "type": "string",
+              "description": "Primary data source for this country"
+            }
+          }
+        }
+      }
+    },
+    "urban_centers": {
+      "type": "object",
+      "description": "Urban center outbreak data",
+      "patternProperties": {
+        "^[A-Z0-9_]+$": {
+          "type": "object",
+          "required": [
+            "city_name",
+            "country_code",
+            "population_density",
+            "outbreak_status",
+            "healthcare_infrastructure"
+          ],
+          "properties": {
+            "city_name": {
+              "type": "string",
+              "description": "Name of the city"
+            },
+            "country_code": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$",
+              "description": "ISO 3166-1 alpha-3 country code"
+            },
+            "population_density": {
+              "type": "number",
+              "description": "Population density per km²"
+            },
+            "transportation_hub_risk": {
+              "type": "string",
+              "enum": ["low", "medium", "high", "critical"],
+              "description": "Transportation hub risk assessment"
+            },
+            "outbreak_status": {
+              "type": "string",
+              "enum": ["active_outbreak", "cluster_detected", "elevated_activity", "normal", "unknown"],
+              "description": "Current outbreak status in the city"
+            },
+            "case_numbers": {
+              "type": "object",
+              "description": "Case numbers and trends",
+              "properties": {
+                "current_cases": {
+                  "type": "integer",
+                  "description": "Current active cases"
+                },
+                "weekly_increase": {
+                  "type": "number",
+                  "description": "Weekly increase percentage"
+                },
+                "peak_capacity_utilization": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Healthcare peak capacity utilization"
+                }
+              }
+            },
+            "clustering_patterns": {
+              "type": "array",
+              "description": "Identified clustering patterns",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "pattern_type": {
+                    "type": "string",
+                    "description": "Type of clustering pattern"
+                  },
+                  "location": {
+                    "type": "string",
+                    "description": "Specific location or area"
+                  },
+                  "case_count": {
+                    "type": "integer",
+                    "description": "Number of cases in cluster"
+                  },
+                  "date_identified": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Date cluster was identified"
+                  }
+                }
+              }
+            },
+            "healthcare_infrastructure": {
+              "type": "object",
+              "description": "Healthcare infrastructure status",
+              "properties": {
+                "hospital_capacity": {
+                  "type": "object",
+                  "properties": {
+                    "total_beds": {
+                      "type": "integer",
+                      "description": "Total hospital beds"
+                    },
+                    "icu_beds": {
+                      "type": "integer",
+                      "description": "ICU beds available"
+                    },
+                    "capacity_utilization": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100,
+                      "description": "Current capacity utilization percentage"
+                    }
+                  }
+                },
+                "testing_capacity": {
+                  "type": "object",
+                  "properties": {
+                    "daily_capacity": {
+                      "type": "integer",
+                      "description": "Daily testing capacity"
+                    },
+                    "turnaround_time_hours": {
+                      "type": "number",
+                      "description": "Average test turnaround time in hours"
+                    }
+                  }
+                }
+              }
+            },
+            "demographic_factors": {
+              "type": "object",
+              "description": "Demographic risk factors",
+              "properties": {
+                "elderly_population_percentage": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Percentage of elderly population"
+                },
+                "vulnerable_populations": {
+                  "type": "array",
+                  "description": "Vulnerable population groups",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "social_vulnerability_index": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Social vulnerability index (0-1 scale)"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pathogen_analysis": {
+      "type": "object",
+      "description": "Cross-pathogen analysis and monitoring",
+      "required": [
+        "primary_pathogen",
+        "pathogen_cross_analysis",
+        "laboratory_testing",
+        "co_infection_patterns",
+        "vaccine_effectiveness"
+      ],
+      "properties": {
+        "primary_pathogen": {
+          "type": "object",
+          "description": "Primary pathogen analysis",
+          "required": ["name", "dominant_strain", "global_prevalence"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Pathogen name"
+            },
+            "dominant_strain": {
+              "type": "string",
+              "description": "Dominant strain or subtype"
+            },
+            "global_prevalence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Global prevalence percentage"
+            },
+            "severity_assessment": {
+              "type": "string",
+              "enum": ["low", "moderate", "high", "critical"],
+              "description": "Overall severity assessment"
+            },
+            "mutation_tracking": {
+              "type": "array",
+              "description": "Significant mutations or variants",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "mutation_name": {
+                    "type": "string"
+                  },
+                  "first_detected": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "prevalence": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "impact_assessment": {
+                    "type": "string",
+                    "enum": ["minimal", "moderate", "significant", "critical"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "pathogen_cross_analysis": {
+          "type": "array",
+          "description": "Cross-pathogen analysis results",
+          "items": {
+            "type": "object",
+            "properties": {
+              "pathogens_compared": {
+                "type": "array",
+                "description": "Pathogens being compared",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "analysis_type": {
+                "type": "string",
+                "enum": ["circulation_overlap", "severity_comparison", "vaccine_cross_protection", "testing_interference"],
+                "description": "Type of cross-pathogen analysis"
+              },
+              "findings": {
+                "type": "string",
+                "description": "Key findings from the analysis"
+              },
+              "confidence_level": {
+                "type": "string",
+                "enum": ["high", "medium", "low"]
+              },
+              "source_agencies": {
+                "type": "array",
+                "description": "Source agencies providing data",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "laboratory_testing": {
+          "type": "object",
+          "description": "Laboratory testing accuracy rates",
+          "properties": {
+            "testing_accuracies": {
+              "type": "array",
+              "description": "Testing accuracy data",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "test_type": {
+                    "type": "string",
+                    "description": "Type of test (PCR, antigen, etc.)"
+                  },
+                  "sensitivity": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Test sensitivity percentage"
+                  },
+                  "specificity": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Test specificity percentage"
+                  },
+                  "false_positive_rate": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "False positive rate percentage"
+                  },
+                  "false_negative_rate": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "False negative rate percentage"
+                  }
+                }
+              }
+            },
+            "anomalies_detected": {
+              "type": "array",
+              "description": "Laboratory testing anomalies",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "anomaly_type": {
+                    "type": "string",
+                    "description": "Type of testing anomaly"
+                  },
+                  "location": {
+                    "type": "string",
+                    "description": "Location where anomaly was detected"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Description of the anomaly"
+                  },
+                  "investigation_status": {
+                    "type": "string",
+                    "enum": ["investigating", "resolved", "escalated"],
+                    "description": "Status of investigation"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "co_infection_patterns": {
+          "type": "array",
+          "description": "Co-infection patterns identified",
+          "items": {
+            "type": "object",
+            "properties": {
+              "pathogens": {
+                "type": "array",
+                "description": "Pathogens involved in co-infection",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "frequency": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Frequency of co-infection percentage"
+              },
+              "severity_impact": {
+                "type": "string",
+                "enum": ["none", "mild_increase", "moderate_increase", "significant_increase"],
+                "description": "Impact on disease severity"
+              },
+              "geographic_distribution": {
+                "type": "array",
+                "description": "Geographic areas with co-infections",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "vaccine_effectiveness": {
+          "type": "object",
+          "description": "Vaccine effectiveness data",
+          "properties": {
+            "overall_effectiveness": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Overall vaccine effectiveness"
+            },
+            "strain_specific_effectiveness": {
+              "type": "array",
+              "description": "Effectiveness against specific strains",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "strain": {
+                    "type": "string",
+                    "description": "Specific strain"
+                  },
+                  "effectiveness": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "confidence_interval": {
+                    "type": "object",
+                    "properties": {
+                      "lower": {
+                        "type": "number"
+                      },
+                      "upper": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "mismatch_indicators": {
+              "type": "array",
+              "description": "Vaccine mismatch indicators",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "strain": {
+                    "type": "string"
+                  },
+                  "mismatch_severity": {
+                    "type": "string",
+                    "enum": ["none", "minor", "moderate", "major"],
+                    "description": "Severity of vaccine mismatch"
+                  },
+                  "evidence_source": {
+                    "type": "string",
+                    "description": "Source of mismatch evidence"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeline": {
+      "type": "object",
+      "description": "Timeline and progression data",
+      "properties": {
+        "progression_by_date": {
+          "type": "array",
+          "description": "Daily progression data",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "week_number": {
+                "type": "integer",
+                "description": "ISO week number"
+              },
+              "key_events": {
+                "type": "array",
+                "description": "Key events on this date",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "event_type": {
+                      "type": "string",
+                      "description": "Type of event"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Event description"
+                    },
+                    "location": {
+                      "type": "string",
+                      "description": "Geographic location"
+                    },
+                    "impact_level": {
+                      "type": "string",
+                      "enum": ["low", "medium", "high", "critical"]
+                    }
+                  }
+                }
+              },
+              "surveillance_indicators": {
+                "type": "object",
+                "description": "Surveillance indicators for this date",
+                "properties": {
+                  "positivity_rate": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "case_numbers": {
+                    "type": "integer"
+                  },
+                  "hospitalization_rate": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "key_epidemiological_events": {
+          "type": "array",
+          "description": "Major epidemiological events",
+          "items": {
+            "type": "object",
+            "properties": {
+              "event_name": {
+                "type": "string",
+                "description": "Name of the event"
+              },
+              "event_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "event_type": {
+                "type": "string",
+                "enum": [
+                  "surveillance_milestone",
+                  "variant_identification",
+                  "policy_change",
+                  "outbreak_declaration",
+                  "capacity_threshold",
+                  "vaccine_update"
+                ]
+              },
+              "description": {
+                "type": "string"
+              },
+              "geographic_scope": {
+                "type": "string"
+              },
+              "impact_assessment": {
+                "type": "string",
+                "enum": ["minimal", "moderate", "significant", "critical"]
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "surveillance_gaps": {
+          "type": "array",
+          "description": "Identified surveillance gaps",
+          "items": {
+            "type": "object",
+            "properties": {
+              "gap_type": {
+                "type": "string",
+                "description": "Type of surveillance gap"
+              },
+              "location": {
+                "type": "string",
+                "description": "Geographic location affected"
+              },
+              "start_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "end_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "impact_level": {
+                "type": "string",
+                "enum": ["low", "medium", "high", "critical"]
+              },
+              "reason": {
+                "type": "string",
+                "description": "Reason for surveillance gap"
+              }
+            }
+          }
+        }
+      }
+    },
+    "intelligence_sources": {
+      "type": "object",
+      "description": "Intelligence sources and attribution",
+      "properties": {
+        "official_sources": {
+          "type": "object",
+          "description": "Official agency reports",
+          "properties": {
+            "who_reports": {
+              "type": "object",
+              "properties": {
+                "last_report_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "report_coverage": {
+                  "type": "string"
+                },
+                "data_quality": {
+                  "type": "string",
+                  "enum": ["high", "medium", "low"]
+                },
+                "key_findings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "cdc_reports": {
+              "type": "object",
+              "properties": {
+                "surveillance_status": {
+                  "type": "string",
+                  "enum": ["operational", "limited", "interrupted"]
+                },
+                "last_complete_report": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "data_gaps": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "ecdc_reports": {
+              "type": "object",
+              "properties": {
+                "risk_assessment_level": {
+                  "type": "string",
+                  "enum": ["low", "moderate", "high", "critical"]
+                },
+                "subclade_k_assessment": {
+                  "type": "string"
+                },
+                "vaccine_effectiveness_data": {
+                  "type": "boolean",
+                  "description": "Whether VE data is available"
+                }
+              }
+            }
+          }
+        },
+        "alternative_sources": {
+          "type": "object",
+          "description": "Alternative intelligence sources",
+          "properties": {
+            "social_media_monitoring": {
+              "type": "object",
+              "properties": {
+                "monitoring_active": {
+                  "type": "boolean"
+                },
+                "platforms_monitored": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "reliability_assessment": {
+                  "type": "string",
+                  "enum": ["high", "medium", "low"]
+                },
+                "key_signals": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "signal_type": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "verification_status": {
+                        "type": "string",
+                        "enum": ["verified", "partial", "unverified"]
+                      },
+                      "geographic_relevance": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "clinician_reports": {
+              "type": "array",
+              "description": "Direct clinician reports",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "institution": {
+                    "type": "string"
+                  },
+                  "report_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "key_observations": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "verification_level": {
+                    "type": "string",
+                    "enum": ["direct", "confirmed", "reported"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "underground_leaked_info": {
+          "type": "array",
+          "description": "Underground or leaked information",
+          "items": {
+            "type": "object",
+            "properties": {
+              "info_type": {
+                "type": "string",
+                "enum": ["whistleblower", "leaked_document", "internal_report", "unverified_claim"]
+              },
+              "description": {
+                "type": "string"
+              },
+              "source_reliability": {
+                "type": "string",
+                "enum": ["unverified", "low", "medium", "high"],
+                "description": "Source reliability assessment"
+              },
+              "verification_status": {
+                "type": "string",
+                "enum": ["under_investigation", "partially_verified", "confirmed", "refuted"]
+              },
+              "potential_impact": {
+                "type": "string",
+                "enum": ["minimal", "moderate", "significant", "critical"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "anomaly_detection_flags": {
+      "type": "object",
+      "description": "Anomaly detection flags and suspicious patterns",
+      "properties": {
+        "suspicious_patterns": {
+          "type": "array",
+          "description": "Suspicious patterns identified",
+          "items": {
+            "type": "object",
+            "required": [
+              "pattern_id",
+              "pattern_type",
+              "description",
+              "confidence_level",
+              "verification_status"
+            ],
+            "properties": {
+              "pattern_id": {
+                "type": "string",
+                "description": "Unique identifier for the pattern"
+              },
+              "pattern_type": {
+                "type": "string",
+                "enum": [
+                  "timing_anomaly",
+                  "geographic_anomaly",
+                  "severity_mismatch",
+                  "laboratory_anomaly",
+                  "surveillance_gap",
+                  "information_suppression",
+                  "testing_anomaly"
+                ],
+                "description": "Type of suspicious pattern"
+              },
+              "description": {
+                "type": "string",
+                "description": "Detailed description of the pattern"
+              },
+              "geographic_scope": {
+                "type": "string",
+                "description": "Geographic scope of the pattern"
+              },
+              "first_detected": {
+                "type": "string",
+                "format": "date",
+                "description": "Date pattern was first detected"
+              },
+              "confidence_level": {
+                "type": "string",
+                "enum": ["high", "medium", "low"],
+                "description": "Confidence level in the pattern"
+              },
+              "verification_status": {
+                "type": "string",
+                "enum": ["verified", "investigating", "unverified", "refuted"],
+                "description": "Current verification status"
+              },
+              "data_sources": {
+                "type": "array",
+                "description": "Sources supporting this pattern",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "potential_implications": {
+                "type": "string",
+                "description": "Potential implications of this pattern"
+              },
+              "recommended_actions": {
+                "type": "array",
+                "description": "Recommended actions to address this pattern",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "potential_misclassification_warnings": {
+          "type": "array",
+          "description": "Potential misclassification warnings",
+          "items": {
+            "type": "object",
+            "properties": {
+              "warning_id": {
+                "type": "string"
+              },
+              "misclassification_type": {
+                "type": "string",
+                "enum": [
+                  "pathogen_confusion",
+                  "false_positive",
+                  "false_negative",
+                  "strain_misidentification",
+                  "cross_reactivity"
+                ]
+              },
+              "description": {
+                "type": "string"
+              },
+              "affected_locations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "confidence_level": {
+                "type": "string",
+                "enum": ["high", "medium", "low"]
+              },
+              "investigation_priority": {
+                "type": "string",
+                "enum": ["immediate", "high", "medium", "low"]
+              }
+            }
+          }
+        },
+        "information_suppression_evidence": {
+          "type": "array",
+          "description": "Evidence of information suppression",
+          "items": {
+            "type": "object",
+            "properties": {
+              "suppression_type": {
+                "type": "string",
+                "enum": [
+                  "surveillance_blackout",
+                  "delayed_reporting",
+                  "incomplete_data",
+                  "censorship",
+                  "restricted_access"
+                ]
+              },
+              "description": {
+                "type": "string"
+              },
+              "affected_sources": {
+                "type": "array",
+                "description": "Affected data sources",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "duration": {
+                "type": "string",
+                "description": "Duration of suppression"
+              },
+              "impact_assessment": {
+                "type": "string",
+                "enum": ["minimal", "moderate", "significant", "critical"]
+              },
+              "evidence_sources": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "surveillance_gaps": {
+          "type": "array",
+          "description": "Surveillance gaps identified",
+          "items": {
+            "type": "object",
+            "properties": {
+              "gap_id": {
+                "type": "string"
+              },
+              "gap_type": {
+                "type": "string",
+                "enum": [
+                  "temporal_gap",
+                  "geographic_gap",
+                  "demographic_gap",
+                  "pathogen_gap",
+                  "capacity_gap"
+                ]
+              },
+              "description": {
+                "type": "string"
+              },
+              "affected_area": {
+                "type": "string"
+              },
+              "start_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "end_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "severity": {
+                "type": "string",
+                "enum": ["low", "medium", "high", "critical"]
+              },
+              "potential_impact": {
+                "type": "string",
+                "description": "Potential impact of the gap"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

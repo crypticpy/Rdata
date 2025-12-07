@@ -1,42 +1,95 @@
-# Rdata - Voice-Driven Data Analysis Project
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## About This Project
-R project repository for voice-driven data analysis demonstrations. Focus on interactive visualizations, statistical analysis, and reproducible research workflows optimized for terminal-based, voice-to-code development.
 
-## Tech Stack
-- Language: R 4.5.1 (ARM64/aarch64-apple-darwin20)
-- Package Management: renv
-- IDE: Terminal-based (Claude Code), RStudio available
-- Reporting: Quarto (.qmd) and R Markdown (.Rmd)
-- Visualization: ggplot2, plotly (interactive)
-- Dashboards: Shiny, flexdashboard
+R data analysis project with two main components:
+1. **rdataviz package** (`R/`, `tests/`) - CRAN-ready ggplot2/plotly theming toolkit
+2. **Data analysis projects** - Diabetes analysis dashboard, RespiWatch surveillance platform
 
-## Key Directories
-- `data/raw/` - Original, unmodified data (read-only)
-- `data/processed/` - Cleaned, analysis-ready datasets
-- `R/` - Custom functions and utilities
-- `scripts/` - Data pipeline and processing scripts
-- `reports/` - Quarto/R Markdown documents for analysis
-- `output/` - Generated plots, models, and tables
-- `tests/` - Unit tests
+Optimized for terminal-based, voice-to-code workflows.
+
+## Commands
+
+### Package Development (rdataviz)
+```bash
+R -e 'devtools::load_all()'          # Load package for development
+R -e 'devtools::test()'              # Run testthat tests
+R -e 'devtools::check()'             # Full R CMD check
+R -e 'devtools::document()'          # Generate roxygen2 docs
+```
+
+### Dependencies
+```bash
+R -e 'renv::restore()'               # Install project dependencies
+R -e 'renv::install("pkg")'          # Add new package
+R -e 'renv::snapshot()'              # Update lockfile
+```
+
+### Running Scripts
+```bash
+Rscript scripts/12_eda_diabetes.R    # Run analysis script
+```
+
+### Shiny Dashboards
+```bash
+R -e "shiny::runApp('diabetes_dashboard.R')"   # Main diabetes dashboard
+R -e "shiny::runApp('respiwatch/app.R')"       # RespiWatch surveillance
+```
+
+### Reports
+```bash
+quarto render reports/diabetes_analysis_report.qmd
+R -e "rmarkdown::render('reports/visualization_template.Rmd')"
+```
+
+### Code Quality
+```bash
+R -e 'styler::style_file("script.R")'    # Auto-format
+R -e 'lintr::lint("script.R")'           # Lint check
+```
+
+## Architecture
+
+### rdataviz Package (`R/`)
+
+Publication-quality visualization toolkit with dark/light mode:
+
+- **`theme-worldclass.R`** - Main ggplot2 theme (`theme_worldclass()`, `theme_wc()`, `theme_dashboard()`)
+- **`palettes.R`** - Colorblind-safe palettes (`chart_colors`, `diabetes_colors`, `risk_gradient`, `subgroup_colors`) and `get_theme_colors()`
+- **`scales.R`** - ggplot2 scale functions (`scale_fill_rdataviz()`, `scale_color_rdataviz()`, `scale_fill_risk()`)
+- **`theme-plotly.R`** - Plotly theming (`apply_plotly_theme()`)
+
+### Analysis Pipeline (`scripts/`)
+
+Numbered scripts form a data pipeline:
+- `01-05` - Basic data loading, iris/mtcars examples, statistical analysis
+- `11-15` - Diabetes analysis: cleaning → EDA → feature engineering → modeling → evaluation
+- `20-23` - Advanced: causal inference, anomaly detection, fairness audit, external data fusion
+
+### Shiny Dashboards
+
+- **`diabetes_dashboard.R`** (~2000 lines) - Comprehensive ML dashboard with 8 tabs: Overview, EDA, Modeling, Subgroup Analysis, Causal Inference, Fairness Audit, Data Fusion, Model Comparison
+- **`respiwatch/`** - Respiratory surveillance platform (separate subproject with own `R/` modules)
+
+### Data Flow
+
+```
+data/raw/ (read-only) → scripts/ → data/processed/ → dashboards/reports
+                        ↓
+                      output/figures/
+```
 
 ## Coding Standards
 
-### Style
-- Follow tidyverse style guide (https://style.tidyverse.org/)
-- Use snake_case for all names
-- 2-space indentation
-- 80 character line limit
+- tidyverse style guide, snake_case naming, 2-space indentation, 80-char lines
 - Use native pipe `|>` (R 4.1+)
-
-### Required Practices
-- Load all packages at the top of scripts
-- Use `library()`, not `require()`
-- Prefix function calls from non-loaded packages: `pkg::function()`
-- Always set `na.rm = TRUE` explicitly when handling missing data
+- Use `library()` at top, `pkg::fn()` for one-off calls
+- Always set `na.rm = TRUE` explicitly
 - Use relative paths from project root
 
-### Code Structure
+### Script Header Template
 ```r
 # ============================================================================
 # Title: [Script purpose]
@@ -46,72 +99,17 @@ R project repository for voice-driven data analysis demonstrations. Focus on int
 # Input: data/processed/clean_data.csv
 # Output: output/figures/plot.png
 # ============================================================================
-
-# Load packages ---------------------------------------------------------------
-library(tidyverse)
-
-# Load data -------------------------------------------------------------------
-df <- read_csv("data/raw/dataset.csv")
-
-# Analysis --------------------------------------------------------------------
-# [Analysis code here]
-
-# Save outputs ----------------------------------------------------------------
-ggsave("output/figures/plot.png", width = 8, height = 6)
 ```
 
-## Commands
+## Key Files
 
-### Development
-- `renv::restore()` - Install project dependencies
-- `renv::snapshot()` - Update renv.lock after adding packages
-- `Rscript scripts/analysis_template.R` - Run analysis script
-
-### Reporting
-- `R -e "rmarkdown::render('reports/visualization_template.Rmd')"` - Render R Markdown
-- `quarto render reports/visualization_template.qmd` - Render Quarto (requires Quarto CLI)
-
-### Shiny
-- `R -e "shiny::runApp('app.R')"` - Launch Shiny dashboard
-
-### Quality Checks
-- `styler::style_file("script.R")` - Auto-format code
-- `lintr::lint("script.R")` - Check for style issues
-
-## Installed Packages
-
-### Core
-- tidyverse (dplyr, ggplot2, tidyr, readr, purrr, stringr, forcats)
-
-### Visualization
-- plotly, htmlwidgets, leaflet
-
-### Reporting
-- rmarkdown, knitr, flexdashboard
-
-### Interactive
-- shiny, DT (data tables)
-
-## Workflow Notes
-
-### Voice-Driven Development
-- All scripts designed to run from terminal via `Rscript`
-- Reports render to HTML for browser viewing
-- Shiny apps launch in default browser
-- Minimal IDE dependency
-
-### When Adding Dependencies
-1. Install package: `renv::install("newpkg")`
-2. Update lockfile: `renv::snapshot()`
-3. Document why the package was added
-
-### Sample Datasets Available
-- `data/raw/iris.csv` - Fisher's iris flower dataset
-- `data/raw/mtcars.csv` - Motor Trend car road tests
+- `DESCRIPTION` - Package metadata for rdataviz
+- `renv.lock` - Reproducible dependencies
+- `data/raw/diabetes_012_health_indicators_BRFSS2015.csv` - Main diabetes dataset
+- `data/processed/diabetes_clean.rds` - Cleaned analysis-ready data
 
 ## Do Not
-- Modify files in `data/raw/` - these are read-only
-- Use `setwd()` - use relative paths from project root
-- Commit large data files - use .gitignore
-- Use `attach()` - causes namespace conflicts
-- Use right-assignment `->` - use `<-` only
+
+- Modify files in `data/raw/`
+- Use `setwd()`, `attach()`, or right-assignment `->`
+- Commit large data files or `renv/library/`

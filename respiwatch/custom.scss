@@ -1,0 +1,305 @@
+/*-- Clinical Premium Theme for RespiWatch --*/
+
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+/* Clinical Premium Color Palette */
+$coral: #E85D4C;
+$coral-light: #FFF0EE;
+$teal: #0D9488;
+$teal-light: #ECFDF5;
+$charcoal: #1A1A2E;
+$slate: #64748B;
+$off-white: #FAFAFA;
+$cream: #F7F5F3;
+$border: #E8E8E8;
+
+/* Override Bootstrap/Flatly variables */
+$font-family-sans-serif: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+$headings-font-family: 'Playfair Display', Georgia, serif;
+$font-family-monospace: 'IBM Plex Mono', monospace;
+
+$primary: $coral;
+$secondary: $slate;
+$success: $teal;
+$warning: #F59E0B;
+$danger: #DC2626;
+$info: #0891B2;
+
+$body-bg: #FFFFFF;
+$body-color: $charcoal;
+
+/* Dashboard-specific styles */
+.quarto-dashboard {
+  font-family: $font-family-sans-serif;
+
+  /* Navigation */
+  .navbar {
+    background: linear-gradient(135deg, $charcoal 0%, #2D2D4A 100%) !important;
+    border-bottom: 3px solid $coral;
+
+    .navbar-brand {
+      font-family: $headings-font-family;
+      font-weight: 600;
+      font-size: 1.5rem;
+      color: white !important;
+    }
+
+    .navbar-subtitle {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.85rem;
+    }
+
+    .nav-link {
+      color: rgba(255, 255, 255, 0.85) !important;
+      font-weight: 500;
+      transition: all 0.2s ease;
+
+      &:hover, &.active {
+        color: white !important;
+        background: rgba($coral, 0.2);
+      }
+    }
+  }
+
+  /* Page tabs */
+  .nav-tabs {
+    border-bottom: 2px solid $border;
+
+    .nav-link {
+      color: $slate;
+      font-weight: 500;
+      border: none;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s ease;
+
+      &:hover {
+        color: $charcoal;
+        border-bottom-color: rgba($coral, 0.3);
+      }
+
+      &.active {
+        color: $coral;
+        border-bottom-color: $coral;
+        background: transparent;
+      }
+    }
+  }
+
+  /* Value boxes */
+  .value-box {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid $border;
+    overflow: hidden;
+
+    .value-box-title {
+      font-family: $font-family-sans-serif;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      letter-spacing: 0.5px;
+      opacity: 0.9;
+    }
+
+    .value-box-value {
+      font-family: $headings-font-family;
+      font-weight: 700;
+      font-size: 2rem;
+    }
+
+    .value-box-area {
+      padding: 1rem 1.25rem;
+    }
+  }
+
+  /* Cards */
+  .card {
+    border-radius: 12px;
+    border: 1px solid $border;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+
+    .card-header {
+      background: $off-white;
+      border-bottom: 1px solid $border;
+      font-family: $font-family-sans-serif;
+      font-weight: 600;
+      color: $charcoal;
+      padding: 0.75rem 1rem;
+
+      &::before {
+        content: '';
+        display: inline-block;
+        width: 4px;
+        height: 16px;
+        background: $coral;
+        border-radius: 2px;
+        margin-right: 10px;
+        vertical-align: middle;
+      }
+    }
+
+    .card-body {
+      padding: 1rem;
+    }
+  }
+
+  /* Tables */
+  .dataTable {
+    font-family: $font-family-sans-serif;
+    font-size: 0.875rem;
+
+    thead th {
+      background: $cream;
+      color: $charcoal;
+      font-weight: 600;
+      border-bottom: 2px solid $coral;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+    }
+
+    tbody tr {
+      transition: background 0.15s ease;
+
+      &:hover {
+        background: $coral-light;
+      }
+    }
+
+    td {
+      padding: 0.75rem;
+      vertical-align: middle;
+    }
+  }
+
+  /* Leaflet maps */
+  .leaflet-container {
+    border-radius: 8px;
+
+    .leaflet-popup-content-wrapper {
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .leaflet-popup-tip {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  /* Plotly charts */
+  .plotly {
+    .main-svg {
+      background: transparent !important;
+    }
+  }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: $off-white;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: $slate;
+    border-radius: 4px;
+
+    &:hover {
+      background: $charcoal;
+    }
+  }
+}
+
+/* Typography enhancements */
+h1, h2, h3, h4, h5, h6 {
+  font-family: $headings-font-family;
+  color: $charcoal;
+}
+
+h1 { font-weight: 700; }
+h2 { font-weight: 600; }
+h3, h4, h5, h6 { font-weight: 500; }
+
+/* Code blocks */
+code, pre {
+  font-family: $font-family-monospace;
+  background: $off-white;
+  border-radius: 4px;
+}
+
+pre {
+  padding: 1rem;
+  border: 1px solid $border;
+}
+
+/* Custom alert/callout styles */
+.callout {
+  border-radius: 8px;
+  border-left: 4px solid $coral;
+  background: $off-white;
+
+  &.callout-warning {
+    border-left-color: $warning;
+    background: #FFFBEB;
+  }
+
+  &.callout-tip {
+    border-left-color: $teal;
+    background: $teal-light;
+  }
+}
+
+/* Footer */
+.quarto-dashboard-footer {
+  background: $off-white;
+  border-top: 1px solid $border;
+  padding: 1rem;
+  font-size: 0.8rem;
+  color: $slate;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .quarto-dashboard {
+    .value-box {
+      .value-box-value {
+        font-size: 1.5rem;
+      }
+    }
+
+    .card-header::before {
+      display: none;
+    }
+  }
+}
+
+/* Animation for loading states */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.loading {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Print styles */
+@media print {
+  .quarto-dashboard {
+    .navbar {
+      display: none;
+    }
+
+    .card {
+      break-inside: avoid;
+      box-shadow: none;
+      border: 1px solid #ccc;
+    }
+  }
+}

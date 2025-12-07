@@ -1,0 +1,862 @@
+---
+title: "RespiWatch"
+subtitle: "Global Respiratory Surveillance Intelligence"
+format:
+  dashboard:
+    orientation: rows
+    theme:
+      - flatly
+      - custom.scss
+    nav-buttons:
+      - icon: github
+        href: https://github.com/aphchris/respiwatch
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+# Load packages
+library(tidyverse)
+library(jsonlite)
+library(leaflet)
+library(plotly)
+library(DT)
+library(htmltools)
+library(scales)
+library(lubridate)
+
+# Load outbreak data
+outbreak_data <- fromJSON("data/raw/h3n2_outbreak_tracker.json")
+
+# Extract key data structures
+metadata <- outbreak_data$metadata
+global_overview <- outbreak_data$global_overview
+countries <- outbreak_data$countries
+timeline <- outbreak_data$timeline
+pathogen_analysis <- outbreak_data$pathogen_analysis
+anomaly_flags <- outbreak_data$anomaly_detection_flags
+
+# Country coordinates for mapping
+country_coords <- tibble(
+  iso_code = c("USA", "GBR", "JPN", "AUS", "CAN", "CHN", "EEA"),
+  lat = c(39.8, 55.4, 36.2, -25.3, 56.1, 35.9, 50.1),
+  lng = c(-98.6, -3.4, 138.3, 133.8, -106.3, 104.2, 9.7),
+  country_name = c("United States", "United Kingdom", "Japan",
+                   "Australia", "Canada", "China", "European Economic Area")
+)
+
+# Build country data frame
+country_df <- map_df(names(countries), function(iso) {
+  c <- countries[[iso]]
+  tibble(
+    iso_code = iso,
+    country_name = c$country_name,
+    population = c$population,
+    outbreak_status = c$outbreak_status,
+    positivity_rate = c$h3n2_data$positivity_rate,
+    confirmed_cases = c$h3n2_data$case_numbers$confirmed_cases %||% NA,
+    estimated_cases = c$h3n2_data$case_numbers$estimated_cases %||% NA,
+    hospitalizations = c$h3n2_data$case_numbers$hospitalizations %||% NA,
+    deaths = c$h3n2_data$case_numbers$deaths %||% NA,
+    subclade_k_prevalence = c$h3n2_data$subclade_k_prevalence,
+    hospitalization_rate = c$h3n2_data$hospitalization_rate,
+    icu_utilization = c$healthcare_capacity$icu_bed_utilization,
+    hospital_stress = c$healthcare_capacity$hospital_capacity_stress,
+    data_confidence = c$data_confidence_level,
+    last_updated = c$last_updated,
+    data_source = c$primary_data_source
+  )
+}) |>
+  left_join(country_coords, by = "iso_code")
+
+# Build timeline data
+timeline_df <- map_df(timeline$progression_by_date, function(t) {
+  tibble(
+    date = as.Date(t$date),
+    week_number = t$week_number,
+    positivity_rate = t$surveillance_indicators$positivity_rate,
+    case_numbers = t$surveillance_indicators$case_numbers,
+    hospitalization_rate = t$surveillance_indicators$hospitalization_rate
+  )
+})
+
+# Build anomaly data
+anomaly_df <- map_df(anomaly_flags$suspicious_patterns, function(a) {
+  tibble(
+    pattern_id = a$pattern_id,
+    pattern_type = a$pattern_type,
+    description = a$description,
+    geographic_scope = a$geographic_scope,
+    confidence_level = a$confidence_level,
+    first_detected = as.Date(a$first_detected)
+  )
+})
+
+# Key metrics
+total_estimated_cases <- sum(country_df$estimated_cases, na.rm = TRUE)
+total_deaths <- sum(country_df$deaths, na.rm = TRUE)
+total_hospitalizations <- sum(country_df$hospitalizations, na.rm = TRUE)
+avg_positivity <- mean(country_df$positivity_rate, na.rm = TRUE)
+global_subclade_k <- pathogen_analysis$primary_pathogen$global_prevalence
+vaccine_effectiveness <- pathogen_analysis$vaccine_effectiveness$overall_effectiveness
+
+# Status colors
+status_colors <- c(
+  "active_outbreak" = "#E85D4C",
+  "peak" = "#DC2626",
+  "elevated_activity" = "#F59E0B",
+  "monitoring" = "#0D9488"
+)
+```
+
+# Global Overview
+
+## Row {height=25%}
+
+```{r}
+#| content: valuebox
+#| title: "Estimated Cases"
+list(
+  icon = "virus",
+  color = "danger",
+  value = scales::comma(total_estimated_cases)
+)
+```
+
+```{r}
+#| content: valuebox
+#| title: "Hospitalizations"
+list(
+  icon = "hospital",
+  color = "warning",
+  value = scales::comma(total_hospitalizations)
+)
+```
+
+```{r}
+#| content: valuebox
+#| title: "Deaths"
+list(
+  icon = "heart-pulse",
+  color = "dark",
+  value = scales::comma(total_deaths)
+)
+```
+
+```{r}
+#| content: valuebox
+#| title: "Avg Positivity Rate"
+list(
+  icon = "percent",
+  color = "primary",
+  value = paste0(round(avg_positivity, 1), "%")
+)
+```
+
+```{r}
+#| content: valuebox
+#| title: "Subclade K Prevalence"
+list(
+  icon = "diagram-3",
+  color = "info",
+  value = paste0(global_subclade_k, "%")
+)
+```
+
+```{r}
+#| content: valuebox
+#| title: "Vaccine Effectiveness"
+list(
+  icon = "shield-check",
+  color = "secondary",
+  value = paste0(vaccine_effectiveness, "%")
+)
+```
+
+## Row {height=75%}
+
+### Column {width=60%}
+
+```{r}
+#| title: "Global Outbreak Map"
+#| padding: 0
+
+# Color palette based on positivity rate
+pal <- colorNumeric(
+  palette = c("#0D9488", "#F59E0B", "#E85D4C", "#DC2626"),
+  domain = c(0, 50)
+)
+
+# Create popup content
+country_df <- country_df |>
+  mutate(
+    popup_content = paste0(
+      "<div style='font-family: DM Sans, sans-serif; min-width: 200px;'>",
+      "<h4 style='margin: 0 0 8px 0; color: #1A1A2E; border-bottom: 2px solid #E85D4C; padding-bottom: 4px;'>",
+      country_name, "</h4>",
+      "<table style='width: 100%; font-size: 12px;'>",
+      "<tr><td style='color: #64748B;'>Status:</td><td style='font-weight: 600;'>",
+      str_to_title(str_replace_all(outbreak_status, "_", " ")), "</td></tr>",
+      "<tr><td style='color: #64748B;'>Positivity:</td><td style='font-weight: 600; color: #E85D4C;'>",
+      positivity_rate, "%</td></tr>",
+      "<tr><td style='color: #64748B;'>Subclade K:</td><td style='font-weight: 600;'>",
+      subclade_k_prevalence, "%</td></tr>",
+      "<tr><td style='color: #64748B;'>ICU Load:</td><td style='font-weight: 600;'>",
+      icu_utilization, "%</td></tr>",
+      "<tr><td style='color: #64748B;'>Confidence:</td><td style='font-weight: 600;'>",
+      str_to_title(data_confidence), "</td></tr>",
+      "</table>",
+      "<p style='font-size: 10px; color: #94A3B8; margin-top: 8px;'>Source: ", data_source, "</p>",
+      "</div>"
+    )
+  )
+
+leaflet(country_df, options = leafletOptions(minZoom = 2, maxZoom = 8)) |>
+  addProviderTiles(providers$CartoDB.Positron) |>
+  setView(lng = 0, lat = 30, zoom = 2) |>
+  addCircleMarkers(
+    lng = ~lng,
+    lat = ~lat,
+    radius = ~sqrt(positivity_rate) * 3,
+    color = ~pal(positivity_rate),
+    fillColor = ~pal(positivity_rate),
+    fillOpacity = 0.7,
+    stroke = TRUE,
+    weight = 2,
+    popup = ~popup_content,
+    label = ~paste0(country_name, ": ", positivity_rate, "% positivity")
+  ) |>
+  addLegend(
+    position = "bottomright",
+    pal = pal,
+    values = ~positivity_rate,
+    title = "Positivity Rate (%)",
+    opacity = 0.8
+  )
+```
+
+### Column {width=40%}
+
+```{r}
+#| title: "Outbreak Timeline"
+
+plot_ly(timeline_df, x = ~date, y = ~positivity_rate, type = 'scatter', mode = 'lines+markers',
+        line = list(color = '#E85D4C', width = 3),
+        marker = list(color = '#E85D4C', size = 8),
+        name = 'Positivity Rate',
+        hovertemplate = paste(
+          "<b>Week %{x}</b><br>",
+          "Positivity: %{y:.1f}%<br>",
+          "<extra></extra>"
+        )) |>
+  layout(
+    xaxis = list(
+      title = "",
+      gridcolor = '#E8E8E8',
+      tickformat = "%b %d"
+    ),
+    yaxis = list(
+      title = "Positivity Rate (%)",
+      gridcolor = '#E8E8E8',
+      range = c(0, 50)
+    ),
+    paper_bgcolor = 'white',
+    plot_bgcolor = 'white',
+    font = list(family = "DM Sans"),
+    margin = list(t = 20, b = 40)
+  )
+```
+
+```{r}
+#| title: "Case Progression"
+
+plot_ly(timeline_df, x = ~date, y = ~case_numbers, type = 'bar',
+        marker = list(color = '#0D9488'),
+        name = 'Cases',
+        hovertemplate = paste(
+          "<b>%{x}</b><br>",
+          "Cases: %{y:,.0f}<br>",
+          "<extra></extra>"
+        )) |>
+  layout(
+    xaxis = list(
+      title = "",
+      gridcolor = '#E8E8E8',
+      tickformat = "%b %d"
+    ),
+    yaxis = list(
+      title = "Estimated Cases",
+      gridcolor = '#E8E8E8'
+    ),
+    paper_bgcolor = 'white',
+    plot_bgcolor = 'white',
+    font = list(family = "DM Sans"),
+    margin = list(t = 20, b = 40)
+  )
+```
+
+# Country Analysis
+
+## Row {height=35%}
+
+```{r}
+#| title: "Country Comparison: Positivity Rate"
+
+country_df |>
+  arrange(desc(positivity_rate)) |>
+  plot_ly(
+    x = ~reorder(country_name, positivity_rate),
+    y = ~positivity_rate,
+    type = 'bar',
+    marker = list(
+      color = ~positivity_rate,
+      colorscale = list(c(0, '#0D9488'), c(0.5, '#F59E0B'), c(1, '#E85D4C'))
+    ),
+    text = ~paste0(positivity_rate, "%"),
+    textposition = 'outside',
+    hovertemplate = paste(
+      "<b>%{x}</b><br>",
+      "Positivity Rate: %{y:.1f}%<br>",
+      "<extra></extra>"
+    )
+  ) |>
+  layout(
+    xaxis = list(title = "", tickangle = -45),
+    yaxis = list(title = "Positivity Rate (%)", gridcolor = '#E8E8E8'),
+    paper_bgcolor = 'white',
+    plot_bgcolor = 'white',
+    font = list(family = "DM Sans"),
+    margin = list(t = 20, b = 80)
+  )
+```
+
+```{r}
+#| title: "Subclade K Prevalence by Country"
+
+country_df |>
+  filter(subclade_k_prevalence > 0) |>
+  arrange(desc(subclade_k_prevalence)) |>
+  plot_ly(
+    x = ~reorder(country_name, subclade_k_prevalence),
+    y = ~subclade_k_prevalence,
+    type = 'bar',
+    marker = list(color = '#E85D4C'),
+    text = ~paste0(subclade_k_prevalence, "%"),
+    textposition = 'outside',
+    hovertemplate = paste(
+      "<b>%{x}</b><br>",
+      "Subclade K: %{y:.1f}%<br>",
+      "<extra></extra>"
+    )
+  ) |>
+  layout(
+    xaxis = list(title = "", tickangle = -45),
+    yaxis = list(title = "Subclade K (%)", gridcolor = '#E8E8E8', range = c(0, 100)),
+    paper_bgcolor = 'white',
+    plot_bgcolor = 'white',
+    font = list(family = "DM Sans"),
+    margin = list(t = 20, b = 80)
+  )
+```
+
+## Row {height=65%}
+
+```{r}
+#| title: "Country Details"
+
+country_df |>
+  select(
+    Country = country_name,
+    Status = outbreak_status,
+    `Positivity (%)` = positivity_rate,
+    `Subclade K (%)` = subclade_k_prevalence,
+    `ICU Load (%)` = icu_utilization,
+    `Hospital Stress` = hospital_stress,
+    Confidence = data_confidence,
+    Source = data_source
+  ) |>
+  mutate(
+    Status = str_to_title(str_replace_all(Status, "_", " ")),
+    `Hospital Stress` = str_to_title(`Hospital Stress`),
+    Confidence = str_to_title(Confidence)
+  ) |>
+  datatable(
+    options = list(
+      pageLength = 10,
+      dom = 'ft',
+      scrollX = TRUE,
+      columnDefs = list(
+        list(className = 'dt-center', targets = 2:6)
+      )
+    ),
+    rownames = FALSE,
+    class = 'cell-border stripe hover'
+  ) |>
+  formatStyle(
+    'Positivity (%)',
+    background = styleColorBar(c(0, 100), '#E85D4C'),
+    backgroundSize = '80% 60%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'left'
+  ) |>
+  formatStyle(
+    'Subclade K (%)',
+    background = styleColorBar(c(0, 100), '#0D9488'),
+    backgroundSize = '80% 60%',
+    backgroundRepeat = 'no-repeat',
+    backgroundPosition = 'left'
+  )
+```
+
+# Anomaly Detection
+
+## Row {height=30%}
+
+```{r}
+#| content: valuebox
+#| title: "Active Alerts"
+list(
+  icon = "exclamation-triangle",
+  color = "danger",
+  value = nrow(anomaly_df)
+)
+```
+
+```{r}
+#| content: valuebox
+#| title: "Surveillance Gaps"
+n_gaps <- sum(anomaly_df$pattern_type == "surveillance_gap")
+list(
+  icon = "eye-slash",
+  color = "warning",
+  value = n_gaps
+)
+```
+
+```{r}
+#| content: valuebox
+#| title: "Vaccine Mismatches"
+n_mismatch <- sum(str_detect(anomaly_df$pattern_type, "mismatch"))
+list(
+  icon = "shield-x",
+  color = "info",
+  value = n_mismatch
+)
+```
+
+```{r}
+#| content: valuebox
+#| title: "Capacity Crises"
+n_capacity <- sum(str_detect(anomaly_df$pattern_type, "capacity"))
+list(
+  icon = "hospital",
+  color = "secondary",
+  value = n_capacity
+)
+```
+
+## Row {height=70%}
+
+### Column {width=50%}
+
+```{r}
+#| title: "Active Surveillance Alerts"
+
+# Build alert cards
+alerts_html <- map_chr(1:nrow(anomaly_df), function(i) {
+  a <- anomaly_df[i, ]
+
+  type_icon <- case_when(
+    str_detect(a$pattern_type, "timing") ~ "clock",
+    str_detect(a$pattern_type, "mismatch") ~ "shield-x",
+    str_detect(a$pattern_type, "surveillance") ~ "eye-slash",
+    str_detect(a$pattern_type, "capacity") ~ "hospital",
+    str_detect(a$pattern_type, "laboratory") ~ "flask",
+    TRUE ~ "exclamation-triangle"
+  )
+
+  type_color <- case_when(
+    str_detect(a$pattern_type, "timing") ~ "#F59E0B",
+    str_detect(a$pattern_type, "mismatch") ~ "#E85D4C",
+    str_detect(a$pattern_type, "surveillance") ~ "#DC2626",
+    str_detect(a$pattern_type, "capacity") ~ "#DC2626",
+    TRUE ~ "#64748B"
+  )
+
+  paste0(
+    "<div style='background: #FAFAFA; border-left: 4px solid ", type_color, "; ",
+    "padding: 12px 16px; margin-bottom: 12px; border-radius: 0 8px 8px 0;'>",
+    "<div style='display: flex; align-items: center; margin-bottom: 8px;'>",
+    "<i class='bi bi-", type_icon, "' style='color: ", type_color, "; font-size: 18px; margin-right: 8px;'></i>",
+    "<span style='font-weight: 600; color: #1A1A2E; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;'>",
+    str_to_title(str_replace_all(a$pattern_type, "_", " ")), "</span>",
+    "<span style='margin-left: auto; background: ", type_color, "; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px;'>",
+    str_to_upper(a$confidence_level), "</span>",
+    "</div>",
+    "<p style='margin: 0 0 8px 0; color: #1A1A2E; font-size: 14px; line-height: 1.5;'>", a$description, "</p>",
+    "<div style='display: flex; gap: 16px; font-size: 11px; color: #64748B;'>",
+    "<span><i class='bi bi-geo-alt'></i> ", a$geographic_scope, "</span>",
+    "<span><i class='bi bi-calendar'></i> ", format(a$first_detected, "%b %d, %Y"), "</span>",
+    "</div>",
+    "</div>"
+  )
+})
+
+htmltools::HTML(paste0(
+  "<div style='font-family: DM Sans, sans-serif; max-height: 500px; overflow-y: auto; padding-right: 8px;'>",
+  paste(alerts_html, collapse = ""),
+  "</div>"
+))
+```
+
+### Column {width=50%}
+
+```{r}
+#| title: "Anomaly Types Distribution"
+
+anomaly_df |>
+  count(pattern_type) |>
+  mutate(pattern_type = str_to_title(str_replace_all(pattern_type, "_", " "))) |>
+  plot_ly(
+    labels = ~pattern_type,
+    values = ~n,
+    type = 'pie',
+    hole = 0.5,
+    marker = list(colors = c('#E85D4C', '#F59E0B', '#0D9488', '#64748B', '#DC2626')),
+    textinfo = 'label+percent',
+    textposition = 'outside',
+    hovertemplate = paste(
+      "<b>%{label}</b><br>",
+      "Count: %{value}<br>",
+      "<extra></extra>"
+    )
+  ) |>
+  layout(
+    paper_bgcolor = 'white',
+    font = list(family = "DM Sans"),
+    showlegend = FALSE,
+    margin = list(t = 40, b = 40)
+  )
+```
+
+```{r}
+#| title: "Alert Timeline"
+
+anomaly_df |>
+  arrange(first_detected) |>
+  plot_ly(
+    x = ~first_detected,
+    y = ~pattern_type,
+    type = 'scatter',
+    mode = 'markers',
+    marker = list(
+      size = 15,
+      color = '#E85D4C',
+      symbol = 'diamond'
+    ),
+    text = ~description,
+    hovertemplate = paste(
+      "<b>%{y}</b><br>",
+      "Date: %{x}<br>",
+      "%{text}<br>",
+      "<extra></extra>"
+    )
+  ) |>
+  layout(
+    xaxis = list(title = "", tickformat = "%b %d"),
+    yaxis = list(title = "", categoryorder = 'total ascending'),
+    paper_bgcolor = 'white',
+    plot_bgcolor = 'white',
+    font = list(family = "DM Sans"),
+    margin = list(l = 120, t = 20, b = 40)
+  )
+```
+
+# Pathogen Intel
+
+## Row {height=30%}
+
+```{r}
+#| content: valuebox
+#| title: "Primary Pathogen"
+list(
+  icon = "virus",
+  color = "danger",
+  value = "H3N2 Subclade K"
+)
+```
+
+```{r}
+#| content: valuebox
+#| title: "H3N2 VE"
+list(
+  icon = "shield",
+  color = "warning",
+  value = "35%"
+)
+```
+
+```{r}
+#| content: valuebox
+#| title: "Subclade K VE"
+list(
+  icon = "shield-x",
+  color = "danger",
+  value = "25%"
+)
+```
+
+```{r}
+#| content: valuebox
+#| title: "H1N1 VE"
+list(
+  icon = "shield-check",
+  color = "success",
+  value = "65%"
+)
+```
+
+## Row {height=70%}
+
+### Column {width=50%}
+
+```{r}
+#| title: "Vaccine Effectiveness by Strain"
+
+ve_data <- tibble(
+  strain = c("Overall", "H3N2 General", "Subclade K", "H1N1pdm09"),
+  effectiveness = c(45, 35, 25, 65),
+  lower = c(35, 25, 15, 55),
+  upper = c(55, 45, 35, 75)
+)
+
+plot_ly(ve_data, x = ~strain, y = ~effectiveness, type = 'bar',
+        marker = list(color = c('#64748B', '#F59E0B', '#E85D4C', '#0D9488')),
+        error_y = list(
+          type = 'data',
+          symmetric = FALSE,
+          array = ~upper - effectiveness,
+          arrayminus = ~effectiveness - lower,
+          color = '#1A1A2E'
+        ),
+        text = ~paste0(effectiveness, "%"),
+        textposition = 'outside',
+        hovertemplate = paste(
+          "<b>%{x}</b><br>",
+          "VE: %{y}% (%{customdata[0]}-%{customdata[1]}%)<br>",
+          "<extra></extra>"
+        ),
+        customdata = ~cbind(lower, upper)) |>
+  layout(
+    xaxis = list(title = ""),
+    yaxis = list(title = "Vaccine Effectiveness (%)", range = c(0, 100), gridcolor = '#E8E8E8'),
+    paper_bgcolor = 'white',
+    plot_bgcolor = 'white',
+    font = list(family = "DM Sans"),
+    margin = list(t = 40, b = 40)
+  )
+```
+
+```{r}
+#| title: "Co-infection Patterns"
+
+coinfection_data <- tibble(
+  pathogens = c("H3N2 + RSV", "H3N2 + COVID-19", "Influenza + Mycoplasma"),
+  frequency = c(8.5, 3.2, 12.0),
+  severity = c("Moderate Increase", "Moderate Increase", "Mild Increase")
+)
+
+plot_ly(coinfection_data, x = ~reorder(pathogens, frequency), y = ~frequency, type = 'bar',
+        marker = list(color = '#0D9488'),
+        text = ~paste0(frequency, "%"),
+        textposition = 'outside',
+        hovertemplate = paste(
+          "<b>%{x}</b><br>",
+          "Frequency: %{y}%<br>",
+          "Severity Impact: %{customdata}<br>",
+          "<extra></extra>"
+        ),
+        customdata = ~severity) |>
+  layout(
+    xaxis = list(title = ""),
+    yaxis = list(title = "Co-infection Frequency (%)", gridcolor = '#E8E8E8'),
+    paper_bgcolor = 'white',
+    plot_bgcolor = 'white',
+    font = list(family = "DM Sans"),
+    margin = list(t = 40, b = 60)
+  )
+```
+
+### Column {width=50%}
+
+```{r}
+#| title: "Testing Performance Comparison"
+
+test_data <- tibble(
+  test_type = c("Microprofit LFA", "Goldsite LFA", "SureScreen LFA", "RT-PCR (Gold)"),
+  sensitivity = c(82.1, 84.9, 89.7, 98.5),
+  specificity = c(97.6, 98.0, 86.2, 99.2)
+)
+
+plot_ly(test_data) |>
+  add_trace(
+    x = ~test_type, y = ~sensitivity, type = 'bar',
+    name = 'Sensitivity',
+    marker = list(color = '#E85D4C'),
+    text = ~paste0(sensitivity, "%"),
+    textposition = 'auto'
+  ) |>
+  add_trace(
+    x = ~test_type, y = ~specificity, type = 'bar',
+    name = 'Specificity',
+    marker = list(color = '#0D9488'),
+    text = ~paste0(specificity, "%"),
+    textposition = 'auto'
+  ) |>
+  layout(
+    barmode = 'group',
+    xaxis = list(title = "", tickangle = -30),
+    yaxis = list(title = "Performance (%)", range = c(0, 105), gridcolor = '#E8E8E8'),
+    paper_bgcolor = 'white',
+    plot_bgcolor = 'white',
+    font = list(family = "DM Sans"),
+    legend = list(orientation = 'h', y = -0.2),
+    margin = list(t = 40, b = 100)
+  )
+```
+
+```{r}
+#| title: "Key Intelligence Summary"
+
+key_findings <- list(
+  list(
+    icon = "exclamation-circle",
+    color = "#E85D4C",
+    title = "Vaccine Mismatch Alert",
+    text = "Only 33.3% of H3N2 viruses are well-recognized by the current vaccine strain. Subclade K shows significant antigenic divergence."
+  ),
+  list(
+    icon = "clock",
+    color = "#F59E0B",
+    title = "Early Season Onset",
+    text = "Outbreak began 3-4 weeks earlier than typical seasonality in EU/EEA and Northern Europe regions."
+  ),
+  list(
+    icon = "eye-slash",
+    color = "#DC2626",
+    title = "US Surveillance Gap",
+    text = "Critical data gap: NCHS mortality surveillance data unavailable for weeks 39-47 due to federal pause."
+  ),
+  list(
+    icon = "hospital",
+    color = "#0D9488",
+    title = "Healthcare Pressure",
+    text = "Adelaide ED at 125%+ capacity. Northern Ontario experiencing early surge with COVID-19 co-circulation."
+  )
+)
+
+cards_html <- map_chr(key_findings, function(f) {
+  paste0(
+    "<div style='background: white; border: 1px solid #E8E8E8; border-radius: 8px; ",
+    "padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);'>",
+    "<div style='display: flex; align-items: center; margin-bottom: 8px;'>",
+    "<i class='bi bi-", f$icon, "' style='color: ", f$color, "; font-size: 20px; margin-right: 10px;'></i>",
+    "<span style='font-weight: 600; color: #1A1A2E;'>", f$title, "</span>",
+    "</div>",
+    "<p style='margin: 0; color: #64748B; font-size: 13px; line-height: 1.5;'>", f$text, "</p>",
+    "</div>"
+  )
+})
+
+htmltools::HTML(paste0(
+  "<div style='font-family: DM Sans, sans-serif;'>",
+  paste(cards_html, collapse = ""),
+  "</div>"
+))
+```
+
+# About
+
+## Row
+
+### Column {width=60%}
+
+::: {.card}
+## RespiWatch: Global Respiratory Surveillance Platform
+
+**RespiWatch** is a real-time intelligence dashboard tracking the 2024-2025 respiratory disease season, with focus on the H3N2 Subclade K outbreak.
+
+### Data Sources
+
+| Source | Coverage | Update Frequency |
+|--------|----------|------------------|
+| CDC FluView | US (state/regional) | Weekly |
+| WHO FluMart | International | Weekly |
+| ECDC | EU/EEA | Weekly |
+| UKHSA | United Kingdom | Weekly |
+
+### Key Features
+
+- **Multi-pathogen tracking**: H3N2, RSV, COVID-19 surveillance
+- **Anomaly detection**: Automated flagging of unusual patterns
+- **Vaccine effectiveness**: Real-time VE estimates with confidence intervals
+- **Healthcare capacity**: ICU utilization and hospital stress monitoring
+
+### About This Project
+
+Built entirely via voice-to-text interaction with Claude Code, demonstrating agentic AI capabilities for the R data science community.
+
+**Tech Stack**: R, Quarto Dashboard, Leaflet, Plotly, tidyverse
+
+**Last Updated**: `r format(Sys.time(), "%B %d, %Y %H:%M UTC")`
+:::
+
+### Column {width=40%}
+
+```{r}
+#| title: "Data Quality Overview"
+
+quality_data <- tibble(
+  country = country_df$country_name,
+  confidence = country_df$data_confidence
+) |>
+  count(confidence) |>
+  mutate(confidence = factor(confidence, levels = c("low", "medium", "high")))
+
+plot_ly(quality_data, x = ~confidence, y = ~n, type = 'bar',
+        marker = list(color = c('#E85D4C', '#F59E0B', '#0D9488')),
+        text = ~n,
+        textposition = 'auto') |>
+  layout(
+    xaxis = list(title = "Data Confidence Level"),
+    yaxis = list(title = "Number of Countries", gridcolor = '#E8E8E8'),
+    paper_bgcolor = 'white',
+    plot_bgcolor = 'white',
+    font = list(family = "DM Sans"),
+    margin = list(t = 20, b = 40)
+  )
+```
+
+```{r}
+#| title: "Surveillance Status"
+
+surveillance_html <- paste0(
+"<div style='font-family: DM Sans, sans-serif;'>",
+"<div style='display: flex; align-items: center; padding: 12px; background: #ECFDF5; border-radius: 8px; margin-bottom: 8px;'>",
+"<span style='width: 12px; height: 12px; background: #0D9488; border-radius: 50%; margin-right: 12px;'></span>",
+"<span style='color: #1A1A2E;'><strong>WHO</strong> - Operational</span>",
+"</div>",
+"<div style='display: flex; align-items: center; padding: 12px; background: #FEF3C7; border-radius: 8px; margin-bottom: 8px;'>",
+"<span style='width: 12px; height: 12px; background: #F59E0B; border-radius: 50%; margin-right: 12px;'></span>",
+"<span style='color: #1A1A2E;'><strong>CDC</strong> - Degraded</span>",
+"</div>",
+"<div style='display: flex; align-items: center; padding: 12px; background: #ECFDF5; border-radius: 8px; margin-bottom: 8px;'>",
+"<span style='width: 12px; height: 12px; background: #0D9488; border-radius: 50%; margin-right: 12px;'></span>",
+"<span style='color: #1A1A2E;'><strong>ECDC</strong> - Operational</span>",
+"</div>",
+"</div>"
+)
+
+htmltools::HTML(surveillance_html)
+```

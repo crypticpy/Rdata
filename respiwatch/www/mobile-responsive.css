@@ -1,0 +1,407 @@
+/* ============================================================================
+   RespiWatch Mobile Responsive CSS
+   Purpose: Ensure dashboard works well on mobile, tablet, and desktop
+   ============================================================================ */
+
+/* Base responsive variables */
+:root {
+  --mobile-breakpoint: 576px;
+  --tablet-breakpoint: 768px;
+  --laptop-breakpoint: 992px;
+  --desktop-breakpoint: 1200px;
+}
+
+/* ============================================================================
+   Mobile-First Base Styles
+   ============================================================================ */
+
+/* Ensure content doesn't overflow on small screens */
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+}
+
+.container-fluid {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+/* ============================================================================
+   Value Boxes - Stack on mobile, grid on larger
+   ============================================================================ */
+
+.value-box-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 576px) {
+  .value-box-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 992px) {
+  .value-box-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Value box mobile adjustments */
+.bslib-value-box {
+  min-height: 100px;
+}
+
+@media (max-width: 575px) {
+  .bslib-value-box .value-box-value {
+    font-size: 1.5rem !important;
+  }
+
+  .bslib-value-box .value-box-title {
+    font-size: 0.8rem !important;
+  }
+}
+
+/* ============================================================================
+   Cards and Panels
+   ============================================================================ */
+
+.card {
+  margin-bottom: 15px;
+}
+
+@media (max-width: 575px) {
+  .card {
+    border-radius: 8px;
+  }
+
+  .card-header {
+    padding: 10px 12px;
+  }
+
+  .card-body {
+    padding: 10px 12px;
+  }
+}
+
+/* ============================================================================
+   Navigation and Sidebar
+   ============================================================================ */
+
+/* Sidebar adjustments for mobile */
+@media (max-width: 767px) {
+  .sidebar {
+    width: 100% !important;
+    position: relative !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+  }
+
+  /* Collapsible sidebar on mobile */
+  .sidebar-collapsed {
+    height: auto;
+    overflow: hidden;
+  }
+}
+
+/* Tab navigation on mobile */
+@media (max-width: 575px) {
+  .nav-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .nav-tabs .nav-link {
+    white-space: nowrap;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+}
+
+/* ============================================================================
+   Charts and Plots
+   ============================================================================ */
+
+/* Ensure plots are responsive */
+.plotly, .shiny-plot-output {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 250px;
+}
+
+@media (max-width: 575px) {
+  .plotly, .shiny-plot-output {
+    min-height: 200px;
+  }
+
+  /* Adjust modebar for mobile */
+  .modebar {
+    transform: scale(0.8);
+    transform-origin: top right;
+  }
+}
+
+/* Leaflet map responsive */
+.leaflet-container {
+  width: 100% !important;
+}
+
+@media (max-width: 575px) {
+  .leaflet-container {
+    height: 300px !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .leaflet-container {
+    height: 400px !important;
+  }
+}
+
+/* ============================================================================
+   Tables
+   ============================================================================ */
+
+/* Responsive tables */
+.dataTables_wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 767px) {
+  .dataTables_wrapper table {
+    font-size: 0.8rem;
+  }
+
+  .dataTables_wrapper th,
+  .dataTables_wrapper td {
+    padding: 6px 8px !important;
+  }
+
+  /* Stack pagination and info */
+  .dataTables_info,
+  .dataTables_paginate {
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  .dataTables_length,
+  .dataTables_filter {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+}
+
+/* ============================================================================
+   Forms and Inputs
+   ============================================================================ */
+
+/* Ensure dropdowns work on mobile */
+.selectize-input {
+  min-height: 44px; /* Touch-friendly */
+}
+
+@media (max-width: 575px) {
+  .form-group {
+    margin-bottom: 12px;
+  }
+
+  .form-control, .selectize-input {
+    font-size: 16px !important; /* Prevent iOS zoom */
+  }
+
+  /* Stack form elements */
+  .form-inline .form-group {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+}
+
+/* Slider inputs */
+@media (max-width: 575px) {
+  .irs-bar, .irs-line {
+    height: 8px;
+  }
+
+  .irs-handle {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* ============================================================================
+   Alerts and Notifications
+   ============================================================================ */
+
+.alert {
+  padding: 12px 15px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 575px) {
+  .alert {
+    margin-left: -10px;
+    margin-right: -10px;
+    border-radius: 0;
+  }
+
+  .alert .float-end {
+    float: none !important;
+    display: block;
+    margin-top: 5px;
+  }
+}
+
+/* ============================================================================
+   Buttons
+   ============================================================================ */
+
+.btn {
+  min-height: 44px; /* Touch-friendly */
+  padding: 10px 16px;
+}
+
+@media (max-width: 575px) {
+  .btn-group {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn-group .btn {
+    margin-bottom: 5px;
+    border-radius: 6px !important;
+  }
+
+  /* Full-width action buttons on mobile */
+  .btn-primary, .btn-secondary, .btn-success {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+}
+
+/* ============================================================================
+   Modal Dialogs
+   ============================================================================ */
+
+@media (max-width: 575px) {
+  .modal-dialog {
+    margin: 10px;
+    max-width: calc(100% - 20px);
+  }
+
+  .modal-header, .modal-footer {
+    padding: 12px 15px;
+  }
+
+  .modal-body {
+    padding: 15px;
+  }
+}
+
+/* ============================================================================
+   Typography
+   ============================================================================ */
+
+@media (max-width: 575px) {
+  h1, .h1 { font-size: 1.5rem; }
+  h2, .h2 { font-size: 1.3rem; }
+  h3, .h3 { font-size: 1.15rem; }
+  h4, .h4 { font-size: 1rem; }
+
+  .lead { font-size: 1rem; }
+
+  p, li { font-size: 0.9rem; }
+}
+
+/* ============================================================================
+   Dashboard Header
+   ============================================================================ */
+
+.dashboard-header {
+  padding: 15px;
+}
+
+@media (max-width: 575px) {
+  .dashboard-header {
+    padding: 10px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.2rem;
+  }
+
+  .dashboard-header .subtitle {
+    font-size: 0.8rem;
+  }
+}
+
+/* ============================================================================
+   Footer
+   ============================================================================ */
+
+footer {
+  padding: 15px;
+  text-align: center;
+}
+
+@media (max-width: 575px) {
+  footer {
+    font-size: 0.8rem;
+  }
+}
+
+/* ============================================================================
+   Print Styles
+   ============================================================================ */
+
+@media print {
+  .sidebar, .navbar, .btn, .modebar, .dataTables_filter,
+  .dataTables_paginate, .alert-dismissible .btn-close {
+    display: none !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+/* ============================================================================
+   Utility Classes for Responsive Visibility
+   ============================================================================ */
+
+.hide-mobile {
+  display: block;
+}
+
+.show-mobile {
+  display: none;
+}
+
+@media (max-width: 575px) {
+  .hide-mobile {
+    display: none !important;
+  }
+
+  .show-mobile {
+    display: block !important;
+  }
+}
+
+/* Touch-friendly spacing */
+@media (max-width: 767px) {
+  .touch-spacing > * {
+    margin-bottom: 15px;
+  }
+}

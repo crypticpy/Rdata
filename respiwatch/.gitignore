@@ -1,0 +1,29 @@
+# Data files (too large for git)
+data/*.sqlite
+data/*.db
+data/cache/
+data/raw/*.csv
+data/raw/*.json
+
+# R artifacts
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
+Rplots.pdf
+
+# IDE
+.vscode/
+.idea/
+
+# Deploy artifacts
+deploy/
+*.tar.gz

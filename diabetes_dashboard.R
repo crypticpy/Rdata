@@ -20,6 +20,7 @@ library(scales)
 library(ranger)
 library(pROC)
 library(shinycssloaders)  # Loading spinners for plots
+library(visNetwork)       # Interactive network visualization for DAG
 
 # Set theme for ggplot2 - Clinical Premium (Light Mode) ----------------------
 theme_dashboard <- function() {
@@ -361,7 +362,7 @@ ui <- page_fillable(
           background: #FFFFFF !important;
           color: var(--charcoal) !important;
           font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
-          font-size: 15px;
+          font-size: 16px;
           letter-spacing: 0.01em;
           min-height: 100vh;
           -webkit-font-smoothing: antialiased;
@@ -406,7 +407,7 @@ ui <- page_fillable(
         .nav-link {
           font-family: 'Outfit', sans-serif;
           font-weight: 500;
-          font-size: 0.9rem;
+          font-size: 1rem;
           color: var(--text-secondary) !important;
           transition: all 0.3s ease;
           padding: 0.6rem 1.1rem !important;
@@ -438,7 +439,7 @@ ui <- page_fillable(
         }
         .card-header {
           font-family: 'Playfair Display', serif !important;
-          font-size: 1.1rem;
+          font-size: 1.2rem;
           font-weight: 600;
           color: var(--charcoal) !important;
           background: #FAFAFA !important;
@@ -455,6 +456,65 @@ ui <- page_fillable(
         .card-body {
           padding: 1.5rem;
           color: var(--charcoal);
+          font-size: 1rem;
+          line-height: 1.6;
+        }
+        /* Compact cards for tight layouts - prevent flex stretching */
+        .card-compact {
+          height: auto !important;
+          min-height: unset !important;
+          flex: 0 0 auto !important;
+          align-self: flex-start !important;
+        }
+        .card-compact .card-body {
+          padding: 0.75rem 1rem;
+          flex: 0 0 auto !important;
+        }
+        .card-compact .card-header {
+          padding: 0.5rem 1rem;
+        }
+        /* Force the ATE/E-Value row to not stretch */
+        .card-compact .bslib-card,
+        .card-compact > .card {
+          height: auto !important;
+        }
+        /* Target bslib grid rows containing compact cards */
+        .bslib-grid:has(.card-compact) {
+          grid-auto-rows: min-content !important;
+          align-items: start !important;
+        }
+        .bslib-grid > .card-compact {
+          height: fit-content !important;
+        }
+        /* ATE/E-Value row wrapper - prevent flex expansion */
+        .ate-evalue-row {
+          flex: 0 0 auto !important;
+          align-self: flex-start !important;
+          height: auto !important;
+        }
+        .ate-evalue-row .bslib-grid {
+          grid-auto-rows: min-content !important;
+          align-items: start !important;
+        }
+        .ate-evalue-row .bslib-gap-spacing > * {
+          margin-bottom: 0 !important;
+        }
+        .ate-evalue-row .card,
+        .ate-evalue-row .bslib-card {
+          height: auto !important;
+          min-height: unset !important;
+          flex: none !important;
+        }
+        .ate-evalue-row .card-body {
+          height: auto !important;
+          flex: none !important;
+          overflow: visible !important;
+        }
+        .ate-evalue-row .dataTables_wrapper {
+          height: auto !important;
+        }
+        .ate-evalue-row table.dataTable {
+          margin-bottom: 0 !important;
         }
 
         /* === VALUE BOXES - Clinical Premium KPIs === */
@@ -475,23 +535,23 @@ ui <- page_fillable(
         }
         .value-box .value-box-title {
           font-family: 'DM Sans', sans-serif !important;
-          font-size: 0.75rem;
+          font-size: 0.875rem;
           font-weight: 600;
           text-transform: uppercase;
-          letter-spacing: 0.15em;
+          letter-spacing: 0.12em;
           color: var(--slate) !important;
           margin-bottom: 0.5rem;
         }
         .value-box .value-box-value {
           font-family: 'Playfair Display', serif !important;
-          font-size: 2.5rem;
+          font-size: 2.75rem;
           font-weight: 700;
           color: var(--charcoal) !important;
           letter-spacing: -0.03em;
           line-height: 1.1;
         }
         .value-box p {
-          font-size: 0.85rem;
+          font-size: 0.95rem;
           color: var(--slate) !important;
           margin-top: 0.5rem;
         }
@@ -747,6 +807,10 @@ ui <- page_fillable(
           height: 160%;
           background: radial-gradient(circle, rgba(255, 107, 107, 0.1) 0%, transparent 70%);
           pointer-events: none;
+        }
+        /* Bottom Line specific - gradient applied via inline style */
+        .editorial-callout.bottom-line .card-body {
+          background: transparent !important;
         }
         .editorial-header {
           display: flex;
@@ -1766,7 +1830,16 @@ ui <- page_fillable(
         }
 
         [data-bs-theme='light'] .editorial-callout.bottom-line {
-          border-left-color: #0D9488 !important;
+          background: linear-gradient(to top,
+            rgba(232, 93, 76, 0.15) 0%,      /* coral at bottom */
+            rgba(74, 222, 128, 0.08) 50%,    /* mint midpoint */
+            rgba(13, 148, 136, 0.04) 100%    /* teal at top - fades out */
+          ) !important;
+          border-left-color: #E85D4C !important;
+          border-color: rgba(232, 93, 76, 0.25) !important;
+          border-left-width: 4px !important;
+          position: relative;
+          overflow: hidden;
         }
 
         [data-bs-theme='light'] ::-webkit-scrollbar-track {
@@ -2124,6 +2197,7 @@ ui <- page_fillable(
     # Editorial Bottom Line - Key Takeaway
     card(
       class = "editorial-callout bottom-line",
+      style = "background: linear-gradient(to top, rgba(232, 93, 76, 0.25) 0%, rgba(74, 222, 128, 0.15) 10%, rgba(13, 148, 136, 0.08) 100%) !important; border: 2px solid rgba(232, 93, 76, 0.4) !important; border-radius: 8px;",
       card_body(
         tags$div(
           class = "editorial-header",
@@ -2153,28 +2227,32 @@ ui <- page_fillable(
 
       tags$div(
         class = "insight-card causal-insight",
-        tags$div(class = "insight-number", "42%"),
+        style = "border-left: 4px solid #10B981 !important; background: linear-gradient(90deg, rgba(16, 185, 129, 0.06) 0%, transparent 100%) !important; padding-left: 1.25rem !important;",
+        tags$div(class = "insight-number", style = "color: #10B981 !important;", "42%"),
         tags$div(class = "insight-label", "Preventable via BP Control"),
         tags$div(class = "insight-detail", "Population attributable fraction")
       ),
 
       tags$div(
         class = "insight-card discovery-insight",
-        tags$div(class = "insight-number", "15.4%"),
+        style = "border-left: 4px solid #0891B2 !important; background: linear-gradient(90deg, rgba(8, 145, 178, 0.06) 0%, transparent 100%) !important; padding-left: 1.25rem !important;",
+        tags$div(class = "insight-number", style = "color: #0891B2 !important;", "15.4%"),
         tags$div(class = "insight-label", '"Resilient" Individuals'),
         tags$div(class = "insight-detail", "High risk factors, no diabetes")
       ),
 
       tags$div(
         class = "insight-card fairness-insight",
-        tags$div(class = "insight-number", "20"),
+        style = "border-left: 4px solid #F59E0B !important; background: linear-gradient(90deg, rgba(245, 158, 11, 0.06) 0%, transparent 100%) !important; padding-left: 1.25rem !important;",
+        tags$div(class = "insight-number", style = "color: #D97706 !important;", "20"),
         tags$div(class = "insight-label", "Disparity Flags"),
         tags$div(class = "insight-detail", "Income & education gaps")
       ),
 
       tags$div(
         class = "insight-card variance-insight",
-        tags$div(class = "insight-number", "97%"),
+        style = "border-left: 4px solid #8B5CF6 !important; background: linear-gradient(90deg, rgba(139, 92, 246, 0.06) 0%, transparent 100%) !important; padding-left: 1.25rem !important;",
+        tags$div(class = "insight-number", style = "color: #8B5CF6 !important;", "97%"),
         tags$div(class = "insight-label", "Individual-Level Variance"),
         tags$div(class = "insight-detail", "Only 3% environmental context")
       )
@@ -2225,45 +2303,81 @@ ui <- page_fillable(
       card(
         class = "findings-card",
         card_header(
-          tags$span(bs_icon("lightbulb-fill", class = "me-2"), "Key Findings")
+          class = "d-flex justify-content-between align-items-center",
+          tags$span(bs_icon("lightbulb-fill", class = "me-2"), "Key Findings"),
+          tags$span(class = "badge", style = "background: #F59E0B; color: white;", "4 Insights")
         ),
         card_body(
-          tags$ul(
-            class = "list-unstyled",
-            tags$li(
-              class = "mb-3 d-flex align-items-start",
-              tags$span(bs_icon("check-circle-fill", class = "text-success me-2 mt-1")),
-              tags$div(
-                tags$strong("Age is the strongest demographic predictor"),
-                tags$p(class = "text-muted mb-0 small",
-                       "Risk increases 2-3x from age 45 onwards")
-              )
-            ),
-            tags$li(
-              class = "mb-3 d-flex align-items-start",
-              tags$span(bs_icon("check-circle-fill", class = "text-success me-2 mt-1")),
-              tags$div(
-                tags$strong("General Health perception matters most"),
-                tags$p(class = "text-muted mb-0 small",
-                       "Those reporting 'Poor' health have 10x higher diabetes rates")
-              )
-            ),
-            tags$li(
-              class = "mb-3 d-flex align-items-start",
-              tags$span(bs_icon("check-circle-fill", class = "text-success me-2 mt-1")),
-              tags$div(
-                tags$strong("BMI and physical activity are modifiable"),
-                tags$p(class = "text-muted mb-0 small",
-                       "Obesity increases risk 3x; activity reduces it by 30%")
-              )
-            ),
-            tags$li(
+          style = "padding: 1.25rem;",
+
+          # Finding 1: Age - Coral accent
+          tags$div(
+            style = "border-left: 4px solid #E85D4C !important; background: linear-gradient(90deg, rgba(232, 93, 76, 0.06) 0%, transparent 100%) !important; padding: 1rem 1.25rem; border-radius: 0.5rem; margin-bottom: 0.875rem;",
+            tags$div(
               class = "d-flex align-items-start",
-              tags$span(bs_icon("check-circle-fill", class = "text-success me-2 mt-1")),
               tags$div(
-                tags$strong("Cardiovascular comorbidities cluster together"),
-                tags$p(class = "text-muted mb-0 small",
-                       "High BP + High Cholesterol increases diabetes risk 4x")
+                style = "width: 2.5rem; height: 2.5rem; border-radius: 50%; background: rgba(232, 93, 76, 0.12); display: flex; align-items: center; justify-content: center; margin-right: 1rem; flex-shrink: 0;",
+                bs_icon("calendar3", style = "color: #E85D4C; font-size: 1.1rem;")
+              ),
+              tags$div(
+                tags$div(style = "font-weight: 600; color: #1A1A2E; font-size: 1.05rem; margin-bottom: 0.25rem;", "Age is the strongest demographic predictor"),
+                tags$div(style = "color: #64748B; font-size: 0.95rem;", "Risk increases ",
+                         tags$span(style = "font-family: 'Playfair Display', serif; font-weight: 700; color: #E85D4C;", "2-3x"),
+                         " from age 45 onwards")
+              )
+            )
+          ),
+
+          # Finding 2: General Health - Purple accent
+          tags$div(
+            style = "border-left: 4px solid #8B5CF6 !important; background: linear-gradient(90deg, rgba(139, 92, 246, 0.06) 0%, transparent 100%) !important; padding: 1rem 1.25rem; border-radius: 0.5rem; margin-bottom: 0.875rem;",
+            tags$div(
+              class = "d-flex align-items-start",
+              tags$div(
+                style = "width: 2.5rem; height: 2.5rem; border-radius: 50%; background: rgba(139, 92, 246, 0.12); display: flex; align-items: center; justify-content: center; margin-right: 1rem; flex-shrink: 0;",
+                bs_icon("heart-pulse", style = "color: #8B5CF6; font-size: 1.1rem;")
+              ),
+              tags$div(
+                tags$div(style = "font-weight: 600; color: #1A1A2E; font-size: 1.05rem; margin-bottom: 0.25rem;", "General Health perception matters most"),
+                tags$div(style = "color: #64748B; font-size: 0.95rem;", "Those reporting 'Poor' health have ",
+                         tags$span(style = "font-family: 'Playfair Display', serif; font-weight: 700; color: #8B5CF6;", "10x"),
+                         " higher diabetes rates")
+              )
+            )
+          ),
+
+          # Finding 3: BMI/Activity - Teal accent
+          tags$div(
+            style = "border-left: 4px solid #0D9488 !important; background: linear-gradient(90deg, rgba(13, 148, 136, 0.06) 0%, transparent 100%) !important; padding: 1rem 1.25rem; border-radius: 0.5rem; margin-bottom: 0.875rem;",
+            tags$div(
+              class = "d-flex align-items-start",
+              tags$div(
+                style = "width: 2.5rem; height: 2.5rem; border-radius: 50%; background: rgba(13, 148, 136, 0.12); display: flex; align-items: center; justify-content: center; margin-right: 1rem; flex-shrink: 0;",
+                bs_icon("activity", style = "color: #0D9488; font-size: 1.1rem;")
+              ),
+              tags$div(
+                tags$div(style = "font-weight: 600; color: #1A1A2E; font-size: 1.05rem; margin-bottom: 0.25rem;", "BMI and physical activity are modifiable"),
+                tags$div(style = "color: #64748B; font-size: 0.95rem;", "Obesity increases risk ",
+                         tags$span(style = "font-family: 'Playfair Display', serif; font-weight: 700; color: #0D9488;", "3x"),
+                         "; activity reduces it by ",
+                         tags$span(style = "font-family: 'Playfair Display', serif; font-weight: 700; color: #0D9488;", "30%"))
+              )
+            )
+          ),
+
+          # Finding 4: Cardiovascular - Amber accent
+          tags$div(
+            style = "border-left: 4px solid #F59E0B !important; background: linear-gradient(90deg, rgba(245, 158, 11, 0.06) 0%, transparent 100%) !important; padding: 1rem 1.25rem; border-radius: 0.5rem;",
+            tags$div(
+              class = "d-flex align-items-start",
+              tags$div(
+                style = "width: 2.5rem; height: 2.5rem; border-radius: 50%; background: rgba(245, 158, 11, 0.12); display: flex; align-items: center; justify-content: center; margin-right: 1rem; flex-shrink: 0;",
+                bs_icon("heart", style = "color: #F59E0B; font-size: 1.1rem;")
+              ),
+              tags$div(
+                tags$div(style = "font-weight: 600; color: #1A1A2E; font-size: 1.05rem; margin-bottom: 0.25rem;", "Cardiovascular comorbidities cluster together"),
+                tags$div(style = "color: #64748B; font-size: 0.95rem;", "High BP + High Cholesterol increases diabetes risk ",
+                         tags$span(style = "font-family: 'Playfair Display', serif; font-weight: 700; color: #F59E0B;", "4x"))
               )
             )
           )
@@ -2272,38 +2386,141 @@ ui <- page_fillable(
 
       card(
         card_header(
-          tags$span(bs_icon("clipboard-data", class = "me-2"), "Model Performance Summary")
+          class = "d-flex justify-content-between align-items-center",
+          tags$span(bs_icon("clipboard-data", class = "me-2"), "Model Performance Summary"),
+          tags$span(class = "badge bg-success", bs_icon("check-circle", class = "me-1"), "Models Validated")
         ),
         card_body(
+          style = "padding: 1.5rem;",
+
+          # Primary AUC Metrics - Hero Section
+          tags$div(
+            class = "d-flex justify-content-around mb-4 pb-3",
+            style = "border-bottom: 1px solid var(--border);",
+
+            # Logistic Regression AUC
+            tags$div(
+              class = "text-center px-4",
+              style = "border-left: 4px solid #E85D4C; padding-left: 1.5rem !important; background: linear-gradient(90deg, rgba(232, 93, 76, 0.06) 0%, transparent 100%); border-radius: 8px; padding: 1rem 1.5rem;",
+              tags$div(
+                style = "font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--slate); margin-bottom: 0.5rem;",
+                bs_icon("diagram-3", class = "me-1"), "Logistic Regression"
+              ),
+              tags$div(
+                style = "font-family: 'Playfair Display', serif; font-size: 2.75rem; font-weight: 700; color: #E85D4C; line-height: 1;",
+                round(lr_auc, 3)
+              ),
+              tags$div(
+                style = "font-size: 0.85rem; color: var(--charcoal); margin-top: 0.5rem; font-weight: 500;",
+                "AUC Score"
+              ),
+              # Progress bar visual
+              tags$div(
+                class = "mt-2",
+                style = "height: 6px; background: #E8E8E8; border-radius: 3px; overflow: hidden;",
+                tags$div(style = paste0("width: ", round(lr_auc * 100), "%; height: 100%; background: linear-gradient(90deg, #E85D4C, #F97316); border-radius: 3px;"))
+              )
+            ),
+
+            # Random Forest AUC
+            tags$div(
+              class = "text-center px-4",
+              style = "border-left: 4px solid #0D9488; padding-left: 1.5rem !important; background: linear-gradient(90deg, rgba(13, 148, 136, 0.06) 0%, transparent 100%); border-radius: 8px; padding: 1rem 1.5rem;",
+              tags$div(
+                style = "font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--slate); margin-bottom: 0.5rem;",
+                bs_icon("tree", class = "me-1"), "Random Forest"
+              ),
+              tags$div(
+                style = "font-family: 'Playfair Display', serif; font-size: 2.75rem; font-weight: 700; color: #0D9488; line-height: 1;",
+                round(rf_auc, 3)
+              ),
+              tags$div(
+                style = "font-size: 0.85rem; color: var(--charcoal); margin-top: 0.5rem; font-weight: 500;",
+                "AUC Score"
+              ),
+              # Progress bar visual
+              tags$div(
+                class = "mt-2",
+                style = "height: 6px; background: #E8E8E8; border-radius: 3px; overflow: hidden;",
+                tags$div(style = paste0("width: ", round(rf_auc * 100), "%; height: 100%; background: linear-gradient(90deg, #0D9488, #10B981); border-radius: 3px;"))
+              )
+            )
+          ),
+
+          # Secondary Metrics - Sensitivity/Specificity
           layout_columns(
             col_widths = c(6, 6),
             fill = FALSE,
+            gap = "1rem",
 
+            # Sensitivity
             tags$div(
-              class = "text-center p-3",
-              tags$div(class = "metric-card-title", "Logistic Regression AUC"),
-              tags$div(class = "metric-card-value text-primary", round(lr_auc, 3))
+              style = "background: #FFF7ED; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 1rem 1.25rem;",
+              tags$div(
+                class = "d-flex justify-content-between align-items-center",
+                tags$div(
+                  tags$div(
+                    style = "font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--slate);",
+                    bs_icon("bullseye", class = "me-1"), "Sensitivity"
+                  ),
+                  tags$div(
+                    style = "font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 700; color: #D97706;",
+                    "20.0%"
+                  )
+                ),
+                tags$div(
+                  style = "background: rgba(245, 158, 11, 0.15); border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;",
+                  bs_icon("exclamation-triangle", size = "1.25rem", class = "text-warning")
+                )
+              ),
+              tags$div(
+                style = "font-size: 0.7rem; color: var(--slate); margin-top: 0.5rem;",
+                "True positive rate at 0.5 threshold"
+              )
             ),
+
+            # Specificity
             tags$div(
-              class = "text-center p-3",
-              tags$div(class = "metric-card-title", "Random Forest AUC"),
-              tags$div(class = "metric-card-value text-info", round(rf_auc, 3))
-            ),
-            tags$div(
-              class = "text-center p-3",
-              tags$div(class = "metric-card-title", "Sensitivity (at 0.5)"),
-              tags$div(class = "metric-card-value text-warning", "20.0%")
-            ),
-            tags$div(
-              class = "text-center p-3",
-              tags$div(class = "metric-card-title", "Specificity (at 0.5)"),
-              tags$div(class = "metric-card-value text-success", "97.2%")
+              style = "background: #ECFDF5; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 1rem 1.25rem;",
+              tags$div(
+                class = "d-flex justify-content-between align-items-center",
+                tags$div(
+                  tags$div(
+                    style = "font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--slate);",
+                    bs_icon("shield-check", class = "me-1"), "Specificity"
+                  ),
+                  tags$div(
+                    style = "font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 700; color: #059669;",
+                    "97.2%"
+                  )
+                ),
+                tags$div(
+                  style = "background: rgba(16, 185, 129, 0.15); border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;",
+                  bs_icon("check-circle", size = "1.25rem", class = "text-success")
+                )
+              ),
+              tags$div(
+                style = "font-size: 0.7rem; color: var(--slate); margin-top: 0.5rem;",
+                "True negative rate at 0.5 threshold"
+              )
             )
           ),
-          tags$p(
-            class = "text-muted small text-center mt-3",
-            bs_icon("info-circle", class = "me-1"),
-            "Models optimized for identifying high-risk individuals"
+
+          # Interpretation Footer
+          tags$div(
+            class = "mt-3 p-3",
+            style = "background: var(--cream); border-radius: 8px; border-left: 3px solid #0891B2;",
+            tags$div(
+              class = "d-flex align-items-start gap-2",
+              bs_icon("lightbulb", class = "text-info mt-1"),
+              tags$div(
+                tags$div(style = "font-weight: 600; font-size: 0.85rem; color: var(--charcoal);", "Model Interpretation"),
+                tags$div(
+                  style = "font-size: 0.8rem; color: var(--slate); margin-top: 0.25rem;",
+                  "High specificity minimizes false positives. Low sensitivity at default threshold suggests using a lower cutoff for clinical screening to capture more at-risk patients."
+                )
+              )
+            )
           )
         )
       )
@@ -2666,6 +2883,32 @@ ui <- page_fillable(
     title = tags$span(bs_icon("calculator", class = "me-2"), "Risk Predictor"),
     value = "risk_predictor",
 
+    # Instructional Banner
+    tags$div(
+      style = "background: linear-gradient(135deg, rgba(232, 93, 76, 0.08) 0%, rgba(13, 148, 136, 0.08) 100%); border: 1px solid rgba(232, 93, 76, 0.2); border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: flex-start; gap: 1rem;",
+      tags$div(
+        style = "width: 3rem; height: 3rem; border-radius: 50%; background: rgba(232, 93, 76, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;",
+        bs_icon("hand-index-thumb", style = "color: #E85D4C; font-size: 1.4rem;")
+      ),
+      tags$div(
+        tags$div(
+          style = "font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 600; color: #1A1A2E; margin-bottom: 0.5rem;",
+          "Interactive Risk Assessment Tool"
+        ),
+        tags$div(
+          style = "color: #64748B; font-size: 0.95rem; line-height: 1.6;",
+          tags$span(style = "font-weight: 600; color: #1A1A2E;", "How to use: "),
+          "Enter your personal health information in the form on the left, then click ",
+          tags$span(
+            style = "display: inline-flex; align-items: center; background: #E85D4C; color: white; padding: 0.15rem 0.5rem; border-radius: 0.25rem; font-size: 0.85rem; font-weight: 500; margin: 0 0.25rem;",
+            bs_icon("calculator", style = "margin-right: 0.25rem; font-size: 0.8rem;"),
+            "Calculate Risk"
+          ),
+          " to generate your personalized diabetes risk assessment. Results will appear on the right with detailed interpretations."
+        )
+      )
+    ),
+
     layout_columns(
       col_widths = c(4, 8),
 
@@ -2903,27 +3146,35 @@ ui <- page_fillable(
 
       # DAG Visualization
       card(
+        style = "border-left: 4px solid #8B5CF6;",
         card_header(
-          tags$span(bs_icon("diagram-3", class = "me-2"), "Causal Diagram (DAG)")
+          class = "d-flex align-items-center",
+          tags$div(
+            style = "width: 2rem; height: 2rem; border-radius: 50%; background: rgba(139, 92, 246, 0.12); display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;",
+            bs_icon("diagram-3", style = "color: #8B5CF6; font-size: 1rem;")
+          ),
+          tags$span(style = "font-weight: 600;", "Causal Diagram (DAG)")
         ),
         card_body(
           tags$p(
             class = "text-muted small mb-3",
-            "Arrows represent hypothesized causal relationships. ",
-            "Dashed nodes are unobserved (latent) variables."
+            "Hover over nodes to see descriptions. ",
+            "Dashed borders indicate unobserved (latent) variables."
           ),
-          tags$img(
-            src = "figures/diabetes_causal_dag.png",
-            style = "max-width: 100%; height: auto; border-radius: 8px;",
-            alt = "Causal DAG for Diabetes Risk Factors"
-          )
+          visNetworkOutput("causal_dag_network", height = "400px")
         )
       ),
 
       # Adjustment Sets Panel
       card(
+        style = "border-left: 4px solid #0D9488;",
         card_header(
-          tags$span(bs_icon("sliders2", class = "me-2"), "Adjustment Sets")
+          class = "d-flex align-items-center",
+          tags$div(
+            style = "width: 2rem; height: 2rem; border-radius: 50%; background: rgba(13, 148, 136, 0.12); display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;",
+            bs_icon("sliders2", style = "color: #0D9488; font-size: 1rem;")
+          ),
+          tags$span(style = "font-weight: 600;", "Adjustment Sets")
         ),
         card_body(
           tags$p(
@@ -2935,18 +3186,23 @@ ui <- page_fillable(
       )
     ),
 
-    layout_columns(
-      col_widths = c(8, 4),
+    tags$div(
+      class = "ate-evalue-row",
+      layout_columns(
+        col_widths = c(8, 4),
+        fill = FALSE,
 
-      # ATE Results Table
-      card(
+        # ATE Results Table
+        card(
+          fill = FALSE,
+          class = "card-compact",
         card_header(
           tags$span(bs_icon("graph-up-arrow", class = "me-2"),
                     "Average Treatment Effects (ATE)")
         ),
         card_body(
           tags$p(
-            class = "text-muted small mb-3",
+            class = "text-muted small mb-2",
             "Estimated causal effect of each exposure on diabetes risk (percentage points):"
           ),
           DTOutput("causal_ate_table")
@@ -2955,17 +3211,20 @@ ui <- page_fillable(
 
       # Sensitivity Analysis
       card(
+        fill = FALSE,
+        class = "card-compact",
         card_header(
           tags$span(bs_icon("shield-check", class = "me-2"), "E-Value Sensitivity Analysis")
         ),
         card_body(
           tags$p(
-            class = "text-muted small mb-3",
+            class = "text-muted small mb-2",
             "E-value measures robustness to unmeasured confounding. ",
             "Higher values indicate more robust findings."
           ),
           DTOutput("sensitivity_table")
         )
+      )
       )
     ),
 
@@ -3263,30 +3522,8 @@ ui <- page_fillable(
         )
       ),
 
-      # Editorial Insight - Anomaly Discovery
-      card(
-        class = "editorial-callout",
-        card_body(
-          tags$div(
-            class = "editorial-header",
-            bs_icon("search", class = "editorial-icon"),
-            tags$span(class = "editorial-label", "DISCOVERY INSIGHT")
-          ),
-          tags$p(
-            class = "editorial-lead",
-            "We identified ", tags$em("15.4% of individuals"), " who defy the model's predictions in
-            fascinating ways."
-          ),
-          tags$p(
-            class = "editorial-body",
-            "The ", tags$strong('"Resilient" group'), " has all the risk factors for diabetes but
-            remains healthy. These 39,000+ individuals may hold clues to protective factors our
-            model doesn't capture - perhaps genetics, microbiome composition, or unmeasured lifestyle
-            habits. The ", tags$strong('"Vulnerable" group'), " (0.09%) develops diabetes despite low
-            predicted risk, highlighting model blind spots."
-          )
-        )
-      ),
+      # Editorial Insight - Dynamic based on subgroup selection
+      uiOutput("discovery_insight_callout"),
 
       layout_columns(
         col_widths = c(3, 3, 3, 3),
@@ -3481,25 +3718,41 @@ server <- function(input, output, session) {
 
   output$age_prevalence_plot <- renderPlotly({
     dark <- theme_is_dark()
-    text_label_color <- if (dark) "#94A3B8" else "#64748B"
+    text_label_color <- if (dark) "#94A3B8" else "#1A1A2E"
+    grid_color <- if (dark) "rgba(148, 163, 184, 0.1)" else "rgba(100, 116, 139, 0.1)"
+    bg_color <- if (dark) "#0C1222" else "#FFFFFF"
 
     plot_data <- summary_by_age |>
       filter(diabetes_status == "Diabetes") |>
       mutate(age_group = factor(age_group, levels = levels(diabetes_data$age_group)))
 
-    p <- ggplot(plot_data, aes(x = age_group, y = pct, fill = pct)) +
-      geom_col(width = 0.7) +
-      geom_text(aes(label = paste0(round(pct, 1), "%")),
-                vjust = -0.5, size = 3, color = text_label_color) +
-      scale_fill_gradient(low = "#93C5FD", high = "#1D4ED8", guide = "none") +
-      scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
-      labs(x = "Age Group", y = "Diabetes Prevalence (%)") +
-      theme_worldclass() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    # Create color gradient based on pct values
+    colors <- scales::col_numeric(palette = c("#93C5FD", "#1D4ED8"), domain = range(plot_data$pct))(plot_data$pct)
 
-    ggplotly(p, tooltip = c("x", "y")) |>
-      apply_plotly_theme() |>
-      layout(margin = list(b = 80)) |>
+    plot_ly(plot_data, x = ~age_group, y = ~pct, type = "bar",
+            marker = list(color = colors),
+            text = ~paste0(round(pct, 1), "%"),
+            textposition = "outside",
+            textfont = list(color = text_label_color, size = 13, family = "DM Sans, sans-serif", weight = "bold"),
+            hovertemplate = "<b>%{x}</b><br>Prevalence: %{y:.1f}%<extra></extra>") |>
+      layout(
+        xaxis = list(
+          title = list(text = "Age Group", font = list(size = 12, color = text_label_color)),
+          tickangle = -45,
+          tickfont = list(size = 11, color = text_label_color),
+          gridcolor = grid_color
+        ),
+        yaxis = list(
+          title = list(text = "Diabetes Prevalence (%)", font = list(size = 12, color = text_label_color)),
+          tickfont = list(size = 11, color = text_label_color),
+          gridcolor = grid_color,
+          range = c(0, max(plot_data$pct) * 1.25)
+        ),
+        margin = list(b = 80, t = 30),
+        paper_bgcolor = bg_color,
+        plot_bgcolor = bg_color,
+        bargap = 0.3
+      ) |>
       config(displayModeBar = FALSE)
   })
 
@@ -4159,33 +4412,178 @@ server <- function(input, output, session) {
   # Tab 6: Causal Analysis Outputs
   # ==========================================================================
 
+  # Interactive Causal DAG Visualization
+  output$causal_dag_network <- renderVisNetwork({
+    # Node descriptions for hover tooltips
+    node_descriptions <- list(
+      Age = "Patient's age in years. Older age increases risk of diabetes, hypertension, and cardiovascular disease.",
+      Alcohol = "Alcohol consumption patterns. Moderate to heavy drinking affects liver function and glucose metabolism.",
+      BMI = "Body Mass Index (weight/height²). Higher BMI strongly associated with insulin resistance and Type 2 diabetes.",
+      Diabetes = "OUTCOME: Diabetes diagnosis status. The primary outcome we're trying to predict and understand.",
+      Diet = "Dietary habits and nutrition quality. Poor diet contributes to obesity and directly affects blood sugar levels.",
+      Education = "Educational attainment level. Influences health literacy, lifestyle choices, and access to resources.",
+      Gen_Health = "Self-reported general health status. Reflects overall wellbeing and disease burden.",
+      Genetics = "LATENT: Genetic predisposition (unobserved). Family history and genetic variants affecting metabolism.",
+      Healthcare_Access = "Access to healthcare services. Affects prevention, screening, and management of conditions.",
+      Heart_Disease = "History of heart disease. Shares risk factors with diabetes; diabetes also increases heart disease risk.",
+      High_BP = "High blood pressure (hypertension). Often co-occurs with diabetes; both damage blood vessels.",
+      High_Chol = "High cholesterol levels. Part of metabolic syndrome often seen with insulin resistance.",
+      Income = "Household income level. Affects food quality, healthcare access, and living conditions.",
+      Physical_Activity = "Exercise and physical activity levels. Regular activity improves insulin sensitivity.",
+      Sex = "Biological sex (male/female). Affects body composition, hormones, and disease patterns.",
+      Smoking = "Smoking status. Damages blood vessels and increases insulin resistance.",
+      Stroke = "History of stroke. Shares vascular risk factors with diabetes; diabetes increases stroke risk."
+    )
+
+    # Define nodes with positions and colors
+    nodes <- data.frame(
+      id = c("Age", "Alcohol", "BMI", "Diabetes", "Diet", "Education",
+             "Gen_Health", "Genetics", "Healthcare_Access", "Heart_Disease",
+             "High_BP", "High_Chol", "Income", "Physical_Activity", "Sex",
+             "Smoking", "Stroke"),
+      label = c("Age", "Alcohol", "BMI", "Diabetes", "Diet", "Education",
+                "Gen Health", "Genetics", "Healthcare\nAccess", "Heart\nDisease",
+                "High BP", "High Chol", "Income", "Physical\nActivity", "Sex",
+                "Smoking", "Stroke"),
+      x = c(0, 400, 500, 800, 400, 200, 700, 100, 300, 700, 600, 600, 200, 400, 0, 400, 700) * 1.2,
+      y = c(300, 700, 300, 300, 300, 200, 100, 0, 300, 300, 200, 400, 400, 100, 500, 500, 500) * 1.2,
+      group = c("demographic", "lifestyle", "health", "outcome", "lifestyle", "socioeconomic",
+                "health", "latent", "socioeconomic", "health", "health", "health",
+                "socioeconomic", "lifestyle", "demographic", "lifestyle", "health"),
+      title = sapply(c("Age", "Alcohol", "BMI", "Diabetes", "Diet", "Education",
+                       "Gen_Health", "Genetics", "Healthcare_Access", "Heart_Disease",
+                       "High_BP", "High_Chol", "Income", "Physical_Activity", "Sex",
+                       "Smoking", "Stroke"), function(n) {
+        paste0("<div style='padding: 12px; max-width: 220px; background: #FFFFFF; ",
+               "border: 1px solid #E8E8E8; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); ",
+               "word-wrap: break-word; overflow-wrap: break-word; white-space: normal; ",
+               "font-family: DM Sans, sans-serif; font-size: 13px; line-height: 1.4; color: #1A1A2E;'>",
+               "<strong style='color: #E85D4C; font-size: 14px; display: block; margin-bottom: 8px;'>",
+               gsub("_", " ", n), "</strong>",
+               node_descriptions[[n]], "</div>")
+      }),
+      stringsAsFactors = FALSE
+    )
+
+    # Define edges (causal relationships)
+    edges <- data.frame(
+      from = c("Age", "Age", "Age", "Age", "Age", "Age", "Age", "Age", "Age",
+               "Alcohol", "BMI", "BMI", "BMI", "BMI", "BMI", "Diabetes", "Diabetes",
+               "Diet", "Diet", "Education", "Education", "Education", "Education", "Education",
+               "Genetics", "Genetics", "Genetics", "Genetics", "Healthcare_Access",
+               "Healthcare_Access", "Healthcare_Access", "Heart_Disease", "High_BP",
+               "High_BP", "High_BP", "High_Chol", "High_Chol", "Income", "Income",
+               "Income", "Income", "Physical_Activity", "Physical_Activity", "Sex",
+               "Sex", "Sex", "Sex", "Smoking", "Smoking", "Stroke"),
+      to = c("BMI", "Diabetes", "Education", "Gen_Health", "Heart_Disease", "High_BP",
+             "High_Chol", "Income", "Stroke", "BMI", "Diabetes", "Gen_Health",
+             "Heart_Disease", "High_BP", "High_Chol", "Gen_Health", "Heart_Disease",
+             "BMI", "Diabetes", "Diet", "Healthcare_Access", "Income", "Physical_Activity",
+             "Smoking", "BMI", "Diabetes", "High_BP", "High_Chol", "Gen_Health",
+             "High_BP", "High_Chol", "Gen_Health", "Diabetes", "Heart_Disease",
+             "Stroke", "Diabetes", "Heart_Disease", "Alcohol", "Diet", "Healthcare_Access",
+             "Physical_Activity", "BMI", "Diabetes", "BMI", "Diabetes", "Heart_Disease",
+             "High_BP", "BMI", "Diabetes", "Gen_Health"),
+      stringsAsFactors = FALSE
+    )
+
+    # Create the network visualization
+    visNetwork(nodes, edges, width = "100%", height = "400px") |>
+      visNodes(
+        shape = "ellipse",
+        font = list(size = 16, face = "DM Sans", color = "#1A1A2E", multi = TRUE),
+        borderWidth = 2,
+        shadow = list(enabled = TRUE, size = 5, x = 2, y = 2)
+      ) |>
+      visEdges(
+        arrows = list(to = list(enabled = TRUE, scaleFactor = 0.7)),
+        color = list(color = "#94A3B8", highlight = "#E85D4C"),
+        smooth = list(type = "curvedCW", roundness = 0.2),
+        width = 1.5
+      ) |>
+      visGroups(groupname = "outcome",
+                color = list(background = "#E85D4C", border = "#C74A3C", highlight = "#FF6B5B"),
+                font = list(color = "#FFFFFF")) |>
+      visGroups(groupname = "health",
+                color = list(background = "#0D9488", border = "#0A7A70", highlight = "#10B981")) |>
+      visGroups(groupname = "lifestyle",
+                color = list(background = "#3B82F6", border = "#2563EB", highlight = "#60A5FA")) |>
+      visGroups(groupname = "socioeconomic",
+                color = list(background = "#F59E0B", border = "#D97706", highlight = "#FBBF24")) |>
+      visGroups(groupname = "demographic",
+                color = list(background = "#8B5CF6", border = "#7C3AED", highlight = "#A78BFA")) |>
+      visGroups(groupname = "latent",
+                color = list(background = "#FFFFFF", border = "#64748B", highlight = "#94A3B8"),
+                borderWidthSelected = 3,
+                shapeProperties = list(borderDashes = c(5, 5))) |>
+      visPhysics(enabled = FALSE) |>
+      visInteraction(
+        hover = TRUE,
+        tooltipDelay = 100,
+        hideEdgesOnDrag = FALSE,
+        navigationButtons = FALSE,
+        zoomView = TRUE,
+        dragNodes = FALSE,
+        dragView = TRUE
+      ) |>
+      visLayout(randomSeed = 42) |>
+      visOptions(
+        highlightNearest = list(enabled = TRUE, degree = 1, hover = TRUE, algorithm = "hierarchical")
+      )
+  })
+
   # Adjustment Sets Display
   output$adjustment_sets_display <- renderUI({
     adj_sets <- causal_results$adjustment_sets
 
-    tags$div(
-      lapply(names(adj_sets), function(set_name) {
-        # Format the name nicely
-        display_name <- gsub("_", " ", set_name) |>
-          gsub("to", "->", x = _) |>
-          str_to_title()
+    # Color palette (hex only for simplicity)
+    accent_colors <- c("#E85D4C", "#0D9488", "#8B5CF6", "#F59E0B", "#3B82F6", "#10B981")
 
-        vars <- adj_sets[[set_name]]
-        if (length(vars) == 0) {
-          vars_text <- "No adjustment needed (direct effect)"
-        } else {
-          vars_text <- paste(gsub("_", " ", vars), collapse = ", ")
-        }
+    set_names <- names(adj_sets)
 
-        tags$div(
-          class = "mb-3 p-2 rounded",
-          style = "background-color: #F1F5F9;",
-          tags$h6(class = "fw-bold mb-1", display_name),
-          tags$p(class = "small text-muted mb-0",
-                 tags$strong("Adjust for: "), vars_text)
+    output_list <- lapply(seq_along(set_names), function(i) {
+      set_name <- set_names[i]
+      vars <- adj_sets[[set_name]]
+      accent <- accent_colors[((i - 1) %% length(accent_colors)) + 1]
+
+      # Format display name
+      display_name <- gsub("_", " ", set_name)
+      display_name <- gsub("to", " -> ", display_name)
+      display_name <- tools::toTitleCase(display_name)
+
+      # Format variables as comma-separated styled text
+      if (length(vars) == 0 || (length(vars) == 1 && vars[1] == "")) {
+        vars_text <- tags$span(
+          style = "color: #059669; font-weight: 500;",
+          "No adjustment needed (direct effect)"
         )
-      })
-    )
+      } else {
+        formatted_vars <- sapply(vars, function(v) {
+          v_clean <- gsub("_", " ", as.character(v))
+          tools::toTitleCase(v_clean)
+        })
+        vars_text <- tags$span(
+          style = paste0("color: ", accent, "; font-weight: 500;"),
+          paste(formatted_vars, collapse = ", ")
+        )
+      }
+
+      tags$div(
+        class = "mb-3 p-3 rounded",
+        style = paste0("background-color: #FAFAFA; border-left: 4px solid ", accent, ";"),
+        tags$div(
+          class = "fw-bold mb-2",
+          style = paste0("color: ", accent, ";"),
+          display_name
+        ),
+        tags$div(
+          tags$span(class = "small", style = "color: #64748B;", "Control for: "),
+          vars_text
+        )
+      )
+    })
+
+    tags$div(output_list)
   })
 
   # ATE Results Table
@@ -4548,6 +4946,90 @@ server <- function(input, output, session) {
       filter(subgroup == input$discovery_subgroup) |>
       pull(diabetes_rate)
     paste0(round(rate, 1), "%")
+  })
+
+  # Dynamic Discovery Insight Callout
+  output$discovery_insight_callout <- renderUI({
+    subgroup <- input$discovery_subgroup
+
+    # Get subgroup stats
+    stats <- anomaly_results$subgroup_summary |>
+      filter(subgroup == !!subgroup)
+
+    n <- scales::comma(stats$n)
+    pct <- round(stats$pct, 1)
+
+    # Define insight content based on subgroup
+    insight_content <- switch(subgroup,
+      "Resilient" = list(
+        lead = tagList(
+          "These ", tags$em(paste0(n, " individuals (", pct, "%)")), " have all the risk factors for diabetes but remain healthy."
+        ),
+        body = tagList(
+          tags$strong("What makes them different?"), " The Resilient group shows ",
+          tags$strong("better dietary habits"), " (higher fruit and vegetable consumption), ",
+          tags$strong("higher income levels"), ", and ", tags$strong("better self-rated health perception"),
+          ". These 39,000+ individuals may hold clues to protective factors our model doesn't capture - perhaps genetics, microbiome composition, or unmeasured lifestyle habits that buffer against diabetes despite elevated risk scores."
+        )
+      ),
+      "Vulnerable" = list(
+        lead = tagList(
+          "These ", tags$em(paste0(n, " individuals (", pct, "%)")), " developed diabetes despite having low predicted risk - the model's blind spots."
+        ),
+        body = tagList(
+          tags$strong("What did the model miss?"), " The Vulnerable group shows ",
+          tags$strong("higher hypertension rates"), " (11.3% vs 7.6% in Expected Healthy), ",
+          tags$strong("elevated cholesterol"), " (20.6% vs 14.7%), and ",
+          tags$strong("poorer self-rated health"), ". These hidden comorbidities suggest cardiovascular-metabolic interactions the model underweights. Their diabetes may stem from pathways our features don't fully capture."
+        )
+      ),
+      "Expected Healthy" = list(
+        lead = tagList(
+          "These ", tags$em(paste0(n, " individuals (", pct, "%)")), " are the model's success stories - low risk, no diabetes, exactly as predicted."
+        ),
+        body = tagList(
+          tags$strong("The healthy benchmark."), " This group represents the ideal profile: ",
+          tags$strong("low BMI"), ", ", tags$strong("younger age"), ", ",
+          tags$strong("high physical activity"), ", and ", tags$strong("excellent health behaviors"),
+          ". They serve as the reference population for understanding what 'healthy' looks like in this dataset. Use this group to contrast against Resilient and Vulnerable profiles."
+        )
+      ),
+      "Expected Diabetic" = list(
+        lead = tagList(
+          "These ", tags$em(paste0(n, " individuals (", pct, "%)")), " have high risk and diabetes - confirming known risk factor relationships."
+        ),
+        body = tagList(
+          tags$strong("Classic risk profile."), " This group validates the model: ",
+          tags$strong("elevated BMI"), ", ", tags$strong("older age"), ", ",
+          tags$strong("hypertension and cholesterol issues"), ", combined with ",
+          tags$strong("lower physical activity"), ". Their outcomes align with established diabetes epidemiology. Compare their profile to the Resilient group to identify potential protective factors."
+        )
+      ),
+      "Typical" = list(
+        lead = tagList(
+          "These ", tags$em(paste0(n, " individuals (", pct, "%)")), " fall in the middle risk range where the model performs well."
+        ),
+        body = tagList(
+          tags$strong("The model's comfort zone."), " Typical cases have ",
+          tags$strong("moderate risk scores"), " with outcomes that match predictions. They represent the ",
+          tags$strong("largest population segment"), " (40%) where standard risk assessment works well. Neither the extremes of perfect health nor severe risk - these individuals benefit most from conventional prevention strategies."
+        )
+      )
+    )
+
+    # Return the callout card
+    card(
+      class = "editorial-callout",
+      card_body(
+        tags$div(
+          class = "editorial-header",
+          bs_icon("search", class = "editorial-icon"),
+          tags$span(class = "editorial-label", paste("DISCOVERY INSIGHT:", toupper(subgroup)))
+        ),
+        tags$p(class = "editorial-lead", insight_content$lead),
+        tags$p(class = "editorial-body", insight_content$body)
+      )
+    )
   })
 
   # Residual Distribution Plot

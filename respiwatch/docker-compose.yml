@@ -1,0 +1,45 @@
+# ==============================================================================
+# RespiWatch Docker Compose Configuration
+# For local development and testing before Hugging Face deployment
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  respiwatch:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: respiwatch-dashboard
+    ports:
+      - "7860:7860"
+    volumes:
+      # Mount data directory for persistent storage (optional for dev)
+      - ./data:/srv/shiny-server/respiwatch/data
+      # Mount logs for debugging
+      - ./logs:/srv/shiny-server/respiwatch/logs
+    environment:
+      - LOG_LEVEL=INFO
+      - SHINY_LOG_LEVEL=TRACE
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  # Optional: Simple nginx reverse proxy for additional configuration
+  # nginx:
+  #   image: nginx:alpine
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     - respiwatch
+
+# Networks (optional, for multi-service setups)
+networks:
+  default:
+    name: respiwatch-network

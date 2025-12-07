@@ -1,0 +1,44 @@
+# Git files
+.git
+.gitignore
+.github
+
+# R development files
+.Rhistory
+.RData
+.Rproj.user
+*.Rproj
+
+# Documentation
+*.md
+!README.md
+
+# Development files
+.devcontainer
+.vscode
+
+# Test files
+tests/
+testthat/
+
+# Build artifacts
+*.o
+*.so
+
+# Logs (we create fresh in container)
+logs/*.log
+
+# Large data files not needed for production
+data/raw/*.csv
+data/raw/*.xlsx
+
+# Cache (will be regenerated)
+data/cache/models/*.rds
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# macOS
+.DS_Store

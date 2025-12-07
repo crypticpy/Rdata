@@ -1,0 +1,1197 @@
+{
+  "metadata": {
+    "report_name": "Anomaly Detection Flags - H3N2 Outbreak Tracker",
+    "version": "1.0.0",
+    "last_updated": "2025-12-06T05:51:04Z",
+    "analysis_baseline": "2025-12-05",
+    "detection_methodology": "Cross-referential analysis of official and alternative intelligence sources",
+    "confidence_threshold": "medium",
+    "total_anomalies_detected": 23,
+    "critical_anomalies": 5,
+    "high_priority_anomalies": 8,
+    "investigation_status": {
+      "verified": 14,
+      "investigating": 6,
+      "unverified": 3
+    }
+  },
+  "anomaly_categories": {
+    "timing_anomalies": {
+      "category_description": "Anomalies related to timing and seasonality of outbreak patterns",
+      "anomaly_count": 3,
+      "severity_distribution": {
+        "critical": 1,
+        "high": 2,
+        "medium": 0,
+        "low": 0
+      }
+    },
+    "surveillance_gaps": {
+      "category_description": "Gaps or disruptions in surveillance systems and data reporting",
+      "anomaly_count": 8,
+      "severity_distribution": {
+        "critical": 3,
+        "high": 3,
+        "medium": 2,
+        "low": 0
+      }
+    },
+    "vaccine_mismatch": {
+      "category_description": "Anomalies related to vaccine effectiveness and antigenic mismatch",
+      "anomaly_count": 4,
+      "severity_distribution": {
+        "critical": 1,
+        "high": 3,
+        "medium": 0,
+        "low": 0
+      }
+    },
+    "laboratory_anomalies": {
+      "category_description": "Anomalies in laboratory testing and diagnostic capabilities",
+      "anomaly_count": 5,
+      "severity_distribution": {
+        "critical": 0,
+        "high": 2,
+        "medium": 2,
+        "low": 1
+      }
+    },
+    "capacity_crisis": {
+      "category_description": "Healthcare system capacity and infrastructure stress indicators",
+      "anomaly_count": 2,
+      "severity_distribution": {
+        "critical": 1,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      }
+    },
+    "information_suppression": {
+      "category_description": "Evidence of information suppression or restricted data access",
+      "anomaly_count": 1,
+      "severity_distribution": {
+        "critical": 1,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      }
+    }
+  },
+  "suspicious_patterns": [
+    {
+      "pattern_id": "TIM_001_early_season_ignition",
+      "pattern_type": "timing_anomaly",
+      "pattern_name": "Early Season Ignition Pattern",
+      "description": "H3N2 activity onset occurring 3-4 weeks earlier than historical seasonal patterns across multiple geographic regions",
+      "geographic_scope": ["EU/EEA", "Northern Europe", "United Kingdom", "Japan"],
+      "first_detected": "2025-11-01",
+      "confidence_level": "high",
+      "verification_status": "verified",
+      "data_sources": ["ECDC", "WHO", "UKHSA", "Japan media reports"],
+      "pattern_characteristics": {
+        "typical_season_start": "Mid-December to Early January",
+        "observed_season_start": "Early November",
+        "advance_notice": "4-6 weeks earlier than normal",
+        "geographic_consistency": "Multiple independent regions showing similar pattern"
+      },
+      "potential_implications": [
+        "Prolonged season duration may lead to higher cumulative attack rates",
+        "Healthcare system capacity may be overwhelmed over extended period",
+        "Vaccination campaigns may need acceleration",
+        "Economic impacts may be amplified by extended disruption"
+      ],
+      "recommended_actions": [
+        "Activate early-season surveillance protocols",
+        "Accelerate vaccination campaign timelines",
+        "Prepare extended healthcare surge capacity",
+        "Issue public health advisories for early detection and prevention"
+      ],
+      "follow_up_requirements": [
+        "Monitor for similar patterns in neighboring regions",
+        "Assess impact on vaccine campaign effectiveness",
+        "Evaluate healthcare system preparedness measures",
+        "Coordinate with international surveillance networks"
+      ],
+      "risk_assessment": {
+        "probability_of_prolonged_season": "high",
+        "healthcare_system_impact": "critical",
+        "economic_impact": "high",
+        "public_health_impact": "high"
+      }
+    },
+    {
+      "pattern_id": "TIM_002_japan_precipitous_peak",
+      "pattern_type": "timing_anomaly",
+      "pattern_name": "Japanese Precipitous Peak",
+      "description": "Japan reports rapid outbreak peak with extremely high subclade K prevalence in extremely small sample",
+      "geographic_scope": ["Japan"],
+      "first_detected": "2025-12-02",
+      "confidence_level": "medium",
+      "verification_status": "investigating",
+      "data_sources": ["Japan Times", "Japan Institute for Health Security"],
+      "pattern_characteristics": {
+        "sample_size": "23 samples",
+        "subclade_k_prevalence": "96%",
+        "peak_timing": "December (earlier than typical January-February)",
+        "reporting_source": "Media citing surveillance institute"
+      },
+      "potential_implications": [
+        "Potential surveillance artifact due to small sample size",
+        "May indicate rapid community transmission if verified",
+        "Could represent early wave peak requiring urgent response"
+      ],
+      "recommended_actions": [
+        "Seek official Ministry of Health confirmation",
+        "Expand surveillance sample sizes",
+        "Monitor for similar patterns in neighboring countries",
+        "Prepare for potential rapid spread"
+      ],
+      "follow_up_requirements": [
+        "Verify through official surveillance channels",
+        "Monitor for broader surveillance data",
+        "Assess representativeness of small sample",
+        "Coordinate with WHO regional office"
+      ],
+      "risk_assessment": {
+        "probability_of_verification": "medium",
+        "surveillance_artifact_risk": "high",
+        "public_health_impact": "medium"
+      }
+    },
+    {
+      "pattern_id": "VAC_001_k_mismatch_crisis",
+      "pattern_type": "vaccine_mismatch",
+      "pattern_name": "Subclade K Vaccine Mismatch Crisis",
+      "description": "H3N2 subclade K shows significant antigenic divergence from 2025-26 vaccine strain with only 33.3% well recognition in antigenic characterization",
+      "geographic_scope": ["Global", "United States", "EU/EEA", "United Kingdom"],
+      "first_detected": "2025-11-15",
+      "confidence_level": "high",
+      "verification_status": "verified",
+      "data_sources": ["CDC", "ECDC", "UKHSA"],
+      "pattern_characteristics": {
+        "vaccine_recognition_rate": "33.3%",
+        "subclade_k_prevalence_us": "82%",
+        "subclade_k_prevalence_eu": "50%",
+        "assessment_methods": ["Antigenic characterization", "Phylogenetic analysis", "Serologic testing"]
+      },
+      "potential_implications": [
+        "Significantly reduced vaccine effectiveness against infection",
+        "Higher attack rates in vaccinated populations",
+        "Increased severe disease risk despite vaccination",
+        "Public confidence in vaccination programs may be affected"
+      ],
+      "recommended_actions": [
+        "Communicate clearly about potential reduced protection against infection",
+        "Emphasize continued protection against severe disease and death",
+        "Monitor real-world effectiveness studies closely",
+        "Consider booster strategies for high-risk groups",
+        "Prepare for potential mid-season vaccine updates"
+      ],
+      "follow_up_requirements": [
+        "Track real-world VE studies as they become available",
+        "Monitor for further antigenic drift",
+        "Assess impact on severe disease rates",
+        "Coordinate with vaccine advisory committees"
+      ],
+      "risk_assessment": {
+        "ve_reduction_severity": "major",
+        "public_health_impact": "critical",
+        "vaccine_confidence_risk": "high"
+      }
+    },
+    {
+      "pattern_id": "VAC_002_uk_mismatch_confirmed",
+      "pattern_type": "vaccine_mismatch",
+      "pattern_name": "UK Mismatch Confirmation",
+      "description": "UKHSA confirms 6 of 7 characterized K-clade viruses show low reactivity with post-infection ferret antisera raised against 2025/26 vaccine components",
+      "geographic_scope": ["United Kingdom"],
+      "first_detected": "2025-11-30",
+      "confidence_level": "high",
+      "verification_status": "verified",
+      "data_sources": ["UKHSA"],
+      "pattern_characteristics": {
+        "viruses_tested": 7,
+        "low_reactivity_count": 6,
+        "low_reactivity_percentage": "85.7%",
+        "k_clade_representation": "All low-reactivity viruses were K-clade"
+      },
+      "potential_implications": [
+        "Confirms global mismatch pattern in key surveillance system",
+        "Validates concern about subclade K vaccine effectiveness",
+        "May indicate similar patterns in neighboring countries"
+      ],
+      "recommended_actions": [
+        "Use UK data to inform international vaccine policy",
+        "Accelerate real-world effectiveness studies",
+        "Enhance surveillance for severe outcomes in vaccinated individuals"
+      ],
+      "risk_assessment": {
+        "evidence_strength": "high",
+        "international_implications": "high"
+      }
+    },
+    {
+      "pattern_id": "SUR_001_us_data_blackout",
+      "pattern_type": "surveillance_gap",
+      "pattern_name": "US Federal Surveillance Blackout",
+      "description": "Complete pause of CDC respiratory surveillance systems since September 26, 2025, creating critical data gap during outbreak acceleration",
+      "geographic_scope": ["United States"],
+      "first_detected": "2025-09-26",
+      "confidence_level": "high",
+      "verification_status": "verified",
+      "data_sources": ["CNN", "Governing", "CDC announcements"],
+      "pattern_characteristics": {
+        "surveillance_systems_affected": ["FluView", "Respiratory Illnesses Data Channel", "National surveillance"],
+        "duration": "September 26 - December 1, 2025 (66 days)",
+        "impact_timing": "Critical outbreak acceleration period",
+        "recovery_status": "Partial restoration as of December 1"
+      },
+      "potential_implications": [
+        "Complete loss of national situational awareness",
+        "Inability to assess outbreak scale and trajectory",
+        "Compromised public health decision-making",
+        "Reduced international coordination capability"
+      ],
+      "recommended_actions": [
+        "Expedite full surveillance system restoration",
+        "Implement redundant surveillance systems",
+        "Communicate transparently about data gaps",
+        "Strengthen backup and contingency protocols"
+      ],
+      "follow_up_requirements": [
+        "Assess impact of blackout on outbreak response",
+        "Evaluate completeness of restored surveillance",
+        "Review contingency planning for future disruptions",
+        "Coordinate with international partners on data gaps"
+      ],
+      "risk_assessment": {
+        "surveillance_impact": "critical",
+        "response_capability_impact": "critical",
+        "international_coordination_impact": "high"
+      }
+    },
+    {
+      "pattern_id": "SUR_002_mortality_gap",
+      "pattern_type": "surveillance_gap",
+      "pattern_name": "US Mortality Data Gap",
+      "description": "NCHS mortality surveillance data unavailable for weeks 39-47, preventing assessment of influenza-related mortality during critical period",
+      "geographic_scope": ["United States"],
+      "first_detected": "2025-11-22",
+      "confidence_level": "high",
+      "verification_status": "verified",
+      "data_sources": ["CDC FluView"],
+      "pattern_characteristics": {
+        "affected_weeks": "39-47 (9 weeks)",
+        "time_period": "Late September through November 22",
+        "data_type": "NCHS mortality surveillance",
+        "recovery_status": "Unknown as of December 5"
+      },
+      "potential_implications": [
+        "Cannot assess true mortality burden",
+        "Unable to identify severity trends",
+        "Complicates risk communication",
+        "Impacts healthcare resource planning"
+      ],
+      "recommended_actions": [
+        "Use alternative mortality indicators if available",
+        "Expedite NCHS data restoration",
+        "Develop proxy mortality measures",
+        "Communicate uncertainty in severity assessments"
+      ],
+      "risk_assessment": {
+        "mortality_assessment_impact": "critical",
+        "severity_tracking_impact": "high",
+        "resource_planning_impact": "high"
+      }
+    },
+    {
+      "pattern_id": "LAB_001_test_performance_gaps",
+      "pattern_type": "laboratory_anomaly",
+      "pattern_name": "Multiplex Test Performance Anomalies",
+      "description": "Significant variations in multiplex lateral flow test performance, with some tests showing specificity below WHO recommendations",
+      "geographic_scope": ["Global"],
+      "first_detected": "2025-11-20",
+      "confidence_level": "high",
+      "verification_status": "verified",
+      "data_sources": ["Clinical studies", "WHO guidelines"],
+      "pattern_characteristics": {
+        "tests_evaluated": ["Microprofit", "Goldsite", "SureScreen"],
+        "worst_performer": "SureScreen (86.2% specificity)",
+        "who_minimum_threshold": "97% specificity",
+        "performance_variability": "Significant differences between brands"
+      },
+      "potential_implications": [
+        "False positive results may inflate case counts",
+        "False negative results may miss true cases",
+        "Inconsistent test performance affects surveillance accuracy",
+        "May lead to inappropriate clinical decisions"
+      ],
+      "recommended_actions": [
+        "Prioritize high-specificity tests for surveillance",
+        "Implement confirmatory testing protocols",
+        "Monitor test performance in field conditions",
+        "Update testing guidelines based on performance data"
+      ],
+      "follow_up_requirements": [
+        "Monitor for additional performance studies",
+        "Assess real-world impact of test limitations",
+        "Coordinate with laboratory networks",
+        "Update clinical and public health protocols"
+      ],
+      "risk_assessment": {
+        "surveillance_accuracy_impact": "high",
+        "clinical_decision_impact": "medium",
+        "public_health_action_impact": "medium"
+      }
+    },
+    {
+      "pattern_id": "LAB_002_viral_load_dependence",
+      "pattern_type": "laboratory_anomaly",
+      "pattern_name": "Viral Load Dependent Test Performance",
+      "description": "All lateral flow tests show decreased performance at low viral loads (CT ≥30), creating systematic false negative bias",
+      "geographic_scope": ["Global"],
+      "first_detected": "2025-11-20",
+      "confidence_level": "high",
+      "verification_status": "verified",
+      "data_sources": ["Clinical studies", "Diagnostic performance literature"],
+      "pattern_characteristics": {
+        "ct_threshold": "≥30 cycles",
+        "performance_decline": "Significant reduction in sensitivity",
+        "affected_tests": "All lateral flow formats",
+        "clinical_relevance": "Asymptomatic and early infection periods"
+      },
+      "potential_implications": [
+        "Systematic under-detection in early infection",
+        "Reduced sensitivity for asymptomatic cases",
+        "Potential for silent transmission",
+        "Compromised outbreak detection capability"
+      ],
+      "recommended_actions": [
+        "Use RT-PCR for confirmatory testing",
+        "Target higher viral load populations for screening",
+        "Implement repeat testing protocols",
+        "Enhance surveillance for low-viral-load scenarios"
+      ],
+      "risk_assessment": {
+        "outbreak_detection_impact": "high",
+        "silent_transmission_risk": "medium",
+        "surveillance_sensitivity_impact": "high"
+      }
+    },
+    {
+      "pattern_id": "CAP_001_adelaide_crisis",
+      "pattern_type": "capacity_crisis",
+      "pattern_name": "Adelaide Emergency Department Crisis",
+      "description": "Royal Adelaide Hospital ED operating at 125%+ capacity with admitted patients exceeding available bed spaces",
+      "geographic_scope": ["Adelaide, South Australia"],
+      "first_detected": "2025-11-01",
+      "confidence_level": "high",
+      "verification_status": "verified",
+      "data_sources": ["ACEM", "ABC News Australia", "Hospital reports"],
+      "pattern_characteristics": {
+        "ed_capacity": "68 treatment spaces",
+        "admitted_patients_in_ed": "70+",
+        "capacity_utilization": "125%+",
+        "duration": "Extended periods with all spaces occupied"
+      },
+      "potential_implications": [
+        "Patient safety risks from delayed care",
+        "Increased adverse events and mortality risk",
+        "Staff burnout and reduced quality of care",
+        "Systemic healthcare failure indicators"
+      ],
+      "recommended_actions": [
+        "Activate hospital surge protocols immediately",
+        "Implement patient transfer systems",
+        "Address aged care placement bottlenecks",
+        "Consider temporary capacity expansion"
+      ],
+      "follow_up_requirements": [
+        "Monitor ED capacity metrics continuously",
+        "Assess impact on patient outcomes",
+        "Evaluate effectiveness of surge measures",
+        "Coordinate with state health authorities"
+      ],
+      "risk_assessment": {
+        "patient_safety_risk": "critical",
+        "system_performance_impact": "critical",
+        "staff_burnout_risk": "high"
+      }
+    },
+    {
+      "pattern_id": "CAP_002_northern_ontario_surge",
+      "pattern_type": "capacity_crisis",
+      "pattern_name": "Northern Ontario Early Surge",
+      "description": "Northern Ontario hospitals experiencing early seasonal surge with influenza and COVID-19 co-circulation",
+      "geographic_scope": ["Northern Ontario, Canada"],
+      "first_detected": "2025-11-01",
+      "confidence_level": "high",
+      "verification_status": "verified",
+      "data_sources": ["CBC News", "Provincial health authorities", "Hospital reports"],
+      "pattern_characteristics": {
+        "surge_timing": "Early November (4-6 weeks early)",
+        "co_circulation": "Influenza + COVID-19",
+        "patient_volume": "Significantly above normal seasonal levels",
+        "staffing_impact": "Throughput challenges and staff strain"
+      },
+      "potential_implications": [
+        "Early season compression may lead to sustained high volume",
+        "Co-infection may increase severity",
+        "Staff exhaustion risk before peak season",
+        "Reduced capacity to handle additional surge"
+      ],
+      "recommended_actions": [
+        "Activate early surge protocols",
+        "Implement flexible staffing models",
+        "Prepare for extended high-volume period",
+        "Coordinate with neighboring facilities"
+      ],
+      "follow_up_requirements": [
+        "Monitor for continued volume increases",
+        "Assess staffing sustainability",
+        "Evaluate co-infection rates and severity",
+        "Coordinate provincial response"
+      ],
+      "risk_assessment": {
+        "capacity_strain_risk": "high",
+        "staffing_sustainability_risk": "high",
+        "patient_outcome_impact": "medium"
+      }
+    },
+    {
+      "pattern_id": "INF_001_canada_portal_restriction",
+      "pattern_type": "information_suppression",
+      "pattern_name": "Canadian Federal Data Access Restriction",
+      "description": "FluWatch+ portal inaccessible during critical outbreak monitoring period, limiting federal influenza surveillance visibility",
+      "geographic_scope": ["Canada"],
+      "first_detected": "2025-12-01",
+      "confidence_level": "high",
+      "verification_status": "verified",
+      "data_sources": ["Public Health Ontario", "Federal health agencies"],
+      "pattern_characteristics": {
+        "affected_system": "FluWatch+ federal surveillance portal",
+        "access_status": "Inaccessible since December 1",
+        "alternative_systems": "Provincial tools still operational",
+        "federal_visibility": "Significantly reduced"
+      },
+      "potential_implications": [
+        "Reduced national surveillance capability",
+        "Limited federal coordination and response",
+        "Incomplete national situational awareness",
+        "Impact on interprovincial cooperation"
+      ],
+      "recommended_actions": [
+        "Restore federal portal access immediately",
+        "Implement redundant access systems",
+        "Enhance provincial-federal coordination",
+        "Develop backup surveillance protocols"
+      ],
+      "follow_up_requirements": [
+        "Assess impact on national coordination",
+        "Evaluate completeness of alternative systems",
+        "Review redundancy and backup procedures",
+        "Coordinate with international partners"
+      ],
+      "risk_assessment": {
+        "national_coordination_impact": "high",
+        "surveillance_capability_impact": "medium",
+        "international_cooperation_impact": "medium"
+      }
+    },
+    {
+      "pattern_id": "LAB_003_rare_death_investigation",
+      "pattern_type": "laboratory_anomaly",
+      "pattern_name": "H5N5 Death Investigation Gap",
+      "description": "First US death attributed to H5N5 amid seasonal H3N2 circulation requires immediate investigation for transmission patterns",
+      "geographic_scope": ["United States"],
+      "first_detected": "2025-11-15",
+      "confidence_level": "high",
+      "verification_status": "verified",
+      "data_sources": ["CDC FluView"],
+      "pattern_characteristics": {
+        "case_type": "Avian-linked influenza A(H5N5)",
+        "outcome": "Death",
+        "timing": "Mid-November during H3N2 season",
+        "transmission_assessment": "No evidence of human-to-human transmission"
+      },
+      "potential_implications": [
+        "Potential zoonotic transmission event",
+        "Requires urgent epidemiological investigation",
+        "May indicate broader avian influenza circulation",
+        "Public health communication challenge"
+      ],
+      "recommended_actions": [
+        "Sequence case virus to confirm identification",
+        "Investigate exposure history thoroughly",
+        "Enhanced surveillance for similar cases",
+        "Coordinate with veterinary health authorities",
+        "Transparent public communication"
+      ],
+      "follow_up_requirements": [
+        "Monitor for additional H5 cases",
+        "Assess transmission risk",
+        "Coordinate with agricultural authorities",
+        "Update surveillance protocols"
+      ],
+      "risk_assessment": {
+        "novel_pathogen_risk": "medium",
+        "public_health_communication_risk": "high",
+        "surveillance_enhancement_need": "high"
+      }
+    },
+    {
+      "pattern_id": "LAB_004_ili_positivity_discordance",
+      "pattern_type": "laboratory_anomaly",
+      "pattern_name": "ILI-Positivity Discordance",
+      "description": "Rising ILI rates without corresponding influenza positivity may indicate increased circulation of other respiratory pathogens",
+      "geographic_scope": ["United States"],
+      "first_detected": "2025-11-20",
+      "confidence_level": "medium",
+      "verification_status": "investigating",
+      "data_sources": ["CDC ILINet", "Laboratory surveillance"],
+      "pattern_characteristics": {
+        "ili_trend": "Increasing",
+        "influenza_positivity": "Modest increase",
+        "discrepancy_magnitude": "Significant difference",
+        "alternative_pathogens": ["RSV", "Mycoplasma pneumoniae", "Pertussis"]
+      },
+      "potential_implications": [
+        "Misattribution of respiratory illness to influenza",
+        "Inadequate understanding of true pathogen distribution",
+        "Potential for inappropriate public health responses",
+        "Need for enhanced multi-pathogen surveillance"
+      ],
+      "recommended_actions": [
+        "Enhance pathogen-specific testing",
+        "Implement multi-pathogen surveillance panels",
+        "Clarify ILI attribution in reporting",
+        "Monitor for specific pathogen trends"
+      ],
+      "follow_up_requirements": [
+        "Assess contribution of specific pathogens",
+        "Evaluate surveillance system performance",
+        "Update clinical testing guidelines",
+        "Refine public health messaging"
+      ],
+      "risk_assessment": {
+        "surveillance_accuracy_impact": "medium",
+        "public_health_response_impact": "medium",
+        "clinical_decision_impact": "medium"
+      }
+    },
+    {
+      "pattern_id": "SUR_003_australia_data_sparse",
+      "pattern_type": "surveillance_gap",
+      "pattern_name": "Australian Surveillance Data Gap",
+      "description": "Limited official surveillance data available from Australian sources during critical ED capacity crisis",
+      "geographic_scope": ["Australia"],
+      "first_detected": "2025-11-01",
+      "confidence_level": "high",
+      "verification_status": "verified",
+      "data_sources": ["Hospital reports", "ACEM", "ABC News"],
+      "pattern_characteristics": {
+        "official_reports": "Limited availability",
+        "crisis_evidence": "Primarily from alternative sources",
+        "data_reliability": "Hospital and professional organization reports",
+        "surveillance_status": "Reduced federal visibility"
+      },
+      "potential_implications": [
+        "Incomplete assessment of outbreak scale",
+        "Limited federal response coordination",
+        "Reduced international reporting capability",
+        "Delayed recognition of broader patterns"
+      ],
+      "recommended_actions": [
+        "Enhance federal surveillance reporting",
+        "Improve hospital-to-federal data flow",
+        "Establish automated reporting systems",
+        "Coordinate with state health authorities"
+      ],
+      "risk_assessment": {
+        "national_situational_awareness_impact": "high",
+        "international_coordination_impact": "medium",
+        "response_coordination_impact": "medium"
+      }
+    },
+    {
+      "pattern_id": "VAC_003_eu_seasonal_burden",
+      "pattern_type": "vaccine_mismatch",
+      "pattern_name": "EU/EEA Seasonal Burden Magnification",
+      "description": "ECDC estimates up to 50 million symptomatic cases and 15K-70K deaths annually, potentially amplified by subclade K mismatch",
+      "geographic_scope": ["EU/EEA"],
+      "first_detected": "2025-11-01",
+      "confidence_level": "high",
+      "verification_status": "verified",
+      "data_sources": ["ECDC Threat Assessment"],
+      "pattern_characteristics": {
+        "typical_symptomatic_cases": "Up to 50 million",
+        "typical_deaths": "15,000-70,000",
+        "population_coverage": "Up to 20% annually",
+        "mismatch_amplification": "Potential for increased burden"
+      },
+      "potential_implications": [
+        "Baseline burden already substantial",
+        "Vaccine mismatch may increase attack rates",
+        "Healthcare system strain could be severe",
+        "Economic impacts may be amplified"
+      ],
+      "recommended_actions": [
+        "Accelerate vaccination campaigns urgently",
+        "Prepare for potential healthcare surge",
+        "Monitor for severity indicators",
+        "Coordinate international response"
+      ],
+      "follow_up_requirements": [
+        "Track actual vs. predicted burden",
+        "Assess mismatch impact on severity",
+        "Monitor healthcare capacity",
+        "Evaluate economic impacts"
+      ],
+      "risk_assessment": {
+        "baseline_burden": "high",
+        "amplification_potential": "high",
+        "healthcare_impact_potential": "critical"
+      }
+    },
+    {
+      "pattern_id": "TIM_003_canada_provincial_disparity",
+      "pattern_type": "timing_anomaly",
+      "pattern_name": "Canadian Provincial Timing Disparity",
+      "description": "Northern Ontario experiencing early surge while federal surveillance is limited, creating visibility gap",
+      "geographic_scope": ["Canada - Northern Ontario"],
+      "first_detected": "2025-11-01",
+      "confidence_level": "medium",
+      "verification_status": "investigating",
+      "data_sources": ["CBC", "Provincial health authorities"],
+      "pattern_characteristics": {
+        "provincial_activity": "Early surge detected",
+        "federal_visibility": "Limited due to portal access",
+        "regional_variation": "Significant disparity",
+        "surveillance_asymmetry": "Provincial vs. federal"
+      },
+      "potential_implications": [
+        "Regional patterns may go undetected nationally",
+        "Response coordination may be delayed",
+        "International reporting incomplete",
+        "Resource allocation may be suboptimal"
+      ],
+      "recommended_actions": [
+        "Restore federal portal access",
+        "Enhance provincial-federal data sharing",
+        "Implement regional surveillance protocols",
+        "Coordinate interprovincial response"
+      ],
+      "risk_assessment": {
+        "regional_detection_impact": "medium",
+        "national_coordination_impact": "medium",
+        "resource_allocation_impact": "medium"
+      }
+    },
+    {
+      "pattern_id": "SUR_004_china_surveillance_limitation",
+      "pattern_type": "surveillance_gap",
+      "pattern_name": "China Surveillance Data Limitations",
+      "description": "Limited detailed H3N2 surveillance data publicly available from Chinese sources despite active monitoring programs",
+      "geographic_scope": ["China"],
+      "first_detected": "2025-12-01",
+      "confidence_level": "low",
+      "verification_status": "investigating",
+      "data_sources": ["China CDC Weekly", "Reuters"],
+      "pattern_characteristics": {
+        "surveillance_status": "Active monitoring confirmed",
+        "data_availability": "Limited detailed H3N2 data",
+        "monitoring_focus": "hMPV, pneumonia surveillance",
+        "access_limitations": "Language and access barriers"
+      },
+      "potential_implications": [
+        "Incomplete understanding of regional patterns",
+        "Limited contribution to global surveillance",
+        "Reduced early warning capability",
+        "Potential for delayed international response"
+      ],
+      "recommended_actions": [
+        "Enhance collaboration with Chinese authorities",
+        "Improve data sharing mechanisms",
+        "Strengthen regional surveillance networks",
+        "Coordinate with WHO regional office"
+      ],
+      "risk_assessment": {
+        "regional_awareness_impact": "medium",
+        "global_surveillance_impact": "medium",
+        "early_warning_impact": "medium"
+      }
+    },
+    {
+      "pattern_id": "LAB_005_co_infection_complexity",
+      "pattern_type": "laboratory_anomaly",
+      "pattern_name": "Co-infection Detection Complexity",
+      "description": "Increasing detection of co-infections complicates case attribution and severity assessment",
+      "geographic_scope": ["Global"],
+      "first_detected": "2025-11-15",
+      "confidence_level": "medium",
+      "verification_status": "investigating",
+      "data_sources": ["Co-infection studies", "Clinical reports"],
+      "pattern_characteristics": {
+        "common_combinations": ["Influenza + RSV", "Influenza + COVID-19"],
+        "detection_rates": "Variable by age group and region",
+        "severity_impact": "Mixed evidence on outcome effects",
+        "surveillance_challenge": "Attribution complexity"
+      },
+      "potential_implications": [
+        "Complicated case classification",
+        "Difficulty in severity attribution",
+        "Potential over-attribution to single pathogen",
+        "Surveillance system stress"
+      ],
+      "recommended_actions": [
+        "Implement multi-pathogen testing protocols",
+        "Enhance co-infection surveillance",
+        "Develop severity attribution frameworks",
+        "Update clinical management guidelines"
+      ],
+      "risk_assessment": {
+        "surveillance_complexity_impact": "medium",
+        "clinical_management_impact": "medium",
+        "severity_assessment_impact": "medium"
+      }
+    },
+    {
+      "pattern_id": "VAC_004_uk_ve_assessment",
+      "pattern_type": "vaccine_mismatch",
+      "pattern_name": "UK Real-world VE Assessment",
+      "description": "UKHSA interim VE estimates provide real-world validation of mismatch concerns",
+      "geographic_scope": ["United Kingdom"],
+      "first_detected": "2025-12-01",
+      "confidence_level": "high",
+      "verification_status": "verified",
+      "data_sources": ["UKHSA Interim VE 2025-26"],
+      "pattern_characteristics": {
+        "assessment_type": "Interim effectiveness estimates",
+        "coverage": "Adults and children",
+        "preliminary_findings": "Moderate protection in adults",
+        "confidence": "Early-season estimates"
+      },
+      "potential_implications": [
+        "Real-world validation of mismatch concerns",
+        "Important for public health messaging",
+        "Basis for policy recommendations",
+        "International policy coordination"
+      ],
+      "recommended_actions": [
+        "Use for international policy coordination",
+        "Update public health messaging",
+        "Monitor for updated estimates",
+        "Coordinate with vaccine advisory committees"
+      ],
+      "risk_assessment": {
+        "policy_coordination_value": "high",
+        "public_health_messaging_value": "high",
+        "international_coordination_value": "high"
+      }
+    }
+  ],
+  "potential_misclassification_warnings": [
+    {
+      "warning_id": "MCW_001_surescreen_false_positives",
+      "misclassification_type": "false_positive",
+      "warning_name": "SureScreen Test False Positive Risk",
+      "description": "SureScreen multiplex lateral flow test shows specificity of only 86.2%, significantly below WHO minimum recommendations of 97%",
+      "affected_geographies": ["Global"],
+      "affected_populations": ["All tested populations"],
+      "confidence_level": "high",
+      "investigation_priority": "immediate",
+      "warning_characteristics": {
+        "test_name": "SureScreen Multiplex Lateral Flow",
+        "specificity": "86.2%",
+        "who_minimum": "97%",
+        "deficit": "10.8 percentage points",
+        "false_positive_risk": "13.8%"
+      },
+      "clinical_implications": [
+        "Potential over-diagnosis of influenza",
+        "False positive cases may receive unnecessary treatment",
+        "Surveillance case counts may be inflated",
+        "Public health response may be inappropriately triggered"
+      ],
+      "recommended_actions": [
+        "Avoid use for surveillance purposes",
+        "Implement confirmatory testing for positive results",
+        "Use only in high-specificity scenarios",
+        "Monitor for field performance validation"
+      ],
+      "quality_assurance_requirements": [
+        "Establish specific testing protocols",
+        "Train users on limitations",
+        "Monitor for systematic bias",
+        "Report performance issues promptly"
+      ]
+    },
+    {
+      "warning_id": "MCW_002_viral_load_false_negatives",
+      "misclassification_type": "false_negative",
+      "warning_name": "Viral Load Dependent False Negatives",
+      "description": "All lateral flow tests show significantly reduced sensitivity at low viral loads (CT ≥30), common in early infection and asymptomatic cases",
+      "affected_geographies": ["Global"],
+      "affected_populations": ["Early infection cases", "Asymptomatic carriers"],
+      "confidence_level": "high",
+      "investigation_priority": "high",
+      "warning_characteristics": {
+        "ct_threshold": "≥30 cycles",
+        "sensitivity_decline": "Significant reduction",
+        "affected_tests": "All lateral flow formats",
+        "clinical_relevance": "Early infection periods"
+      },
+      "clinical_implications": [
+        "Under-detection of early infection cases",
+        "Reduced surveillance sensitivity",
+        "Potential for silent transmission",
+        "Compromised outbreak detection"
+      ],
+      "recommended_actions": [
+        "Use RT-PCR for confirmatory testing",
+        "Target higher viral load populations",
+        "Implement repeat testing protocols",
+        "Enhance early infection surveillance"
+      ]
+    },
+    {
+      "warning_id": "MCW_003_ili_attribution_confusion",
+      "misclassification_type": "pathogen_confusion",
+      "warning_name": "ILI Attribution Confusion",
+      "description": "ILI surveillance captures respiratory illness from multiple pathogens; rising ILI without corresponding influenza positivity may indicate other pathogens",
+      "affected_geographies": ["United States"],
+      "affected_populations": ["All age groups"],
+      "confidence_level": "medium",
+      "investigation_priority": "medium",
+      "warning_characteristics": {
+        "surveillance_system": "ILINet",
+        "etiologic_scope": "Multiple respiratory pathogens",
+        "attribution_challenge": "Syndromic surveillance limitation",
+        "alternative_pathogens": ["RSV", "Mycoplasma", "COVID-19", "Other viruses"]
+      },
+      "clinical_implications": [
+        "Potential misattribution to influenza",
+        "Inadequate understanding of true pathogen distribution",
+        "Inappropriate public health responses",
+        "Resource allocation inefficiencies"
+      ],
+      "recommended_actions": [
+        "Enhance pathogen-specific testing",
+        "Clarify ILI attribution in reporting",
+        "Implement multi-pathogen panels",
+        "Monitor alternative pathogen trends"
+      ]
+    },
+    {
+      "warning_id": "MCW_004_single_target_vulnerability",
+      "misclassification_type": "false_negative",
+      "warning_name": "Single Target Molecular Assay Vulnerability",
+      "description": "Single-target molecular assays more vulnerable to false negatives due to genetic drift affecting primer/probe binding sites",
+      "affected_geographies": ["Global"],
+      "affected_populations": "All tested populations",
+      "confidence_level": "high",
+      "investigation_priority": "medium",
+      "warning_characteristics": {
+        "assay_design": "Single gene target",
+        "vulnerability": "Primer/probe mismatch",
+        "genetic_drift_risk": "High for evolving viruses",
+        "target_examples": ["Matrix gene", "Hemagglutinin"]
+      },
+      "clinical_implications": [
+        "False negative results due to genetic changes",
+        "Under-detection of drifted variants",
+        "Compromised surveillance for new variants",
+        "Reduced clinical diagnostic accuracy"
+      ],
+      "recommended_actions": [
+        "Prefer multi-target molecular assays",
+        "Monitor for target sequence changes",
+        "Implement periodic assay validation",
+        "Update targets based on surveillance"
+      ]
+    },
+    {
+      "warning_id": "MCW_005_co_infection_attribution",
+      "misclassification_type": "pathogen_confusion",
+      "warning_name": "Co-infection Attribution Challenges",
+      "description": "Detection of multiple pathogens complicates attribution of illness severity to specific pathogens",
+      "affected_geographies": ["Global"],
+      "affected_populations": ["All age groups"],
+      "confidence_level": "medium",
+      "investigation_priority": "medium",
+      "warning_characteristics": {
+        "common_co_detections": ["Influenza + RSV", "Influenza + COVID-19"],
+        "attribution_challenge": "Which pathogen causes severity?",
+        "surveillance_impact": "Complex case classification"
+      },
+      "clinical_implications": [
+        "Difficulty in severity attribution",
+        "Complex treatment decisions",
+        "Surveillance interpretation challenges",
+        "Public health response complexity"
+      ],
+      "recommended_actions": [
+        "Develop severity attribution frameworks",
+        "Enhance co-infection surveillance",
+        "Update clinical management guidelines",
+        "Improve public health communication"
+      ]
+    }
+  ],
+  "information_suppression_evidence": [
+    {
+      "suppression_id": "SUP_001_us_surveillance_blackout",
+      "suppression_type": "surveillance_blackout",
+      "suppression_name": "US Federal Surveillance Systems Blackout",
+      "description": "Complete pause of CDC respiratory surveillance systems from September 26 to December 1, 2025, creating critical data gap",
+      "affected_data_sources": [
+        "CDC FluView surveillance",
+        "Respiratory Illnesses Data Channel",
+        "National respiratory surveillance systems",
+        "Mortality surveillance data"
+      ],
+      "duration": {
+        "start_date": "2025-09-26",
+        "end_date": "2025-12-01",
+        "total_days": 66
+      },
+      "impact_assessment": "critical",
+      "evidence_sources": [
+        "CNN reporting on federal shutdown impacts",
+        "Governing magazine analysis",
+        "CDC official announcements",
+        "Public health expert statements"
+      ],
+      "suppression_characteristics": {
+        "systems_affected": "Multiple federal surveillance platforms",
+        "timing_impact": "Critical outbreak acceleration period",
+        "recovery_status": "Partial restoration as of December 1",
+        "scope": "National level surveillance complete loss"
+      },
+      "operational_impacts": [
+        "Complete loss of national situational awareness",
+        "Inability to assess outbreak scale and trajectory",
+        "Compromised public health decision-making",
+        "Reduced international coordination capability",
+        "Impact on healthcare resource planning",
+        "Compromised risk communication"
+      ],
+      "historical_context": [
+        "Surveillance systems previously operational",
+        "No advance warning of shutdown",
+        "Limited contingency planning",
+        "Recovery process slow and incomplete"
+      ],
+      "recommended_responses": [
+        "Immediate full system restoration",
+        "Comprehensive contingency planning",
+        "Backup surveillance system implementation",
+        "Transparent communication about gaps",
+        "International coordination for data sharing"
+      ]
+    }
+  ],
+  "surveillance_gaps": [
+    {
+      "gap_id": "GAP_US_001",
+      "gap_type": "temporal_gap",
+      "gap_name": "US Federal Temporal Surveillance Gap",
+      "description": "Complete federal respiratory surveillance pause affecting all major surveillance systems",
+      "affected_area": "United States",
+      "affected_systems": [
+        "CDC FluView",
+        "Respiratory Illnesses Data Channel",
+        "National surveillance platforms"
+      ],
+      "start_date": "2025-09-26",
+      "end_date": "2025-12-01",
+      "duration_days": 66,
+      "severity": "critical",
+      "potential_impact": "Complete loss of national outbreak monitoring during critical period",
+      "recovery_status": "Partial as of December 1",
+      "alternative_systems": [
+        "State-level surveillance (variable)",
+        "Hospital-based systems",
+        "International surveillance reports"
+      ],
+      "international_impact": "Reduced US contribution to global surveillance"
+    },
+    {
+      "gap_id": "GAP_US_002",
+      "gap_type": "mortality_gap",
+      "gap_name": "US NCHS Mortality Surveillance Gap",
+      "description": "NCHS mortality surveillance data unavailable for weeks 39-47",
+      "affected_area": "United States",
+      "affected_systems": ["NCHS mortality surveillance"],
+      "start_date": "2025-09-28",
+      "end_date": "2025-11-22",
+      "duration_days": 55,
+      "severity": "high",
+      "potential_impact": "Cannot assess true mortality burden during outbreak acceleration",
+      "recovery_status": "Unknown as of December 5",
+      "alternative_indicators": "Limited alternative mortality measures"
+    },
+    {
+      "gap_id": "GAP_CAN_001",
+      "gap_type": "access_gap",
+      "gap_name": "Canadian Federal Portal Access Gap",
+      "description": "FluWatch+ portal inaccessible limiting federal influenza surveillance",
+      "affected_area": "Canada",
+      "affected_systems": ["FluWatch+ federal portal"],
+      "start_date": "2025-12-01",
+      "end_date": "2025-12-06",
+      "duration_days": 6,
+      "severity": "medium",
+      "potential_impact": "Reduced federal visibility into Canadian patterns",
+      "recovery_status": "Unknown",
+      "alternative_systems": "Provincial surveillance tools operational"
+    },
+    {
+      "gap_id": "GAP_JPN_001",
+      "gap_type": "data_gap",
+      "gap_name": "Japanese Official Data Gap",
+      "description": "Limited official national surveillance data available for Japan",
+      "affected_area": "Japan",
+      "affected_systems": ["Official national surveillance"],
+      "start_date": "2025-12-01",
+      "end_date": "2025-12-06",
+      "duration_days": 6,
+      "severity": "medium",
+      "potential_impact": "Uncertain assessment of Japanese outbreak scale",
+      "recovery_status": "Unknown",
+      "data_sources": "Reliance on media-cited surveillance institute"
+    },
+    {
+      "gap_id": "GAP_CHN_001",
+      "gap_type": "data_access_gap",
+      "gap_name": "Chinese Detailed Surveillance Data Gap",
+      "description": "Limited detailed H3N2 surveillance data publicly accessible from Chinese sources",
+      "affected_area": "China",
+      "affected_systems": ["Detailed national surveillance"],
+      "start_date": "2025-12-01",
+      "end_date": "2025-12-06",
+      "duration_days": 6,
+      "severity": "medium",
+      "potential_impact": "Limited regional pattern understanding",
+      "recovery_status": "Ongoing limitation",
+      "language_barriers": "Significant access barriers"
+    },
+    {
+      "gap_id": "GAP_AUS_001",
+      "gap_type": "reporting_gap",
+      "gap_name": "Australian Federal Reporting Gap",
+      "gap_name": "Limited federal surveillance reporting during ED crisis",
+      "affected_area": "Australia",
+      "affected_systems": ["Federal surveillance reporting"],
+      "start_date": "2025-11-01",
+      "end_date": "2025-12-06",
+      "duration_days": 35,
+      "severity": "high",
+      "potential_impact": "Reduced federal visibility during crisis",
+      "recovery_status": "Limited reporting available",
+      "alternative_sources": "Hospital and professional organization reports"
+    },
+    {
+      "gap_id": "GAP_GLOBAL_001",
+      "gap_type": "country_level_gap",
+      "gap_name": "Global Country-Level Data Gap",
+      "description": "Limited country-level counts across WHO regions",
+      "affected_area": "Global - Multiple countries",
+      "affected_systems": ["Country-level surveillance"],
+      "start_date": "2025-10-01",
+      "end_date": "2025-12-06",
+      "duration_days": 66,
+      "severity": "medium",
+      "potential_impact": "Incomplete understanding of geographic patterns",
+      "recovery_status": "Ongoing limitation",
+      "affected_countries": "Multiple WHO regions"
+    }
+  ],
+  "priority_action_matrix": {
+    "immediate_actions_required": [
+      {
+        "action": "Restore US federal surveillance systems",
+        "priority": "critical",
+        "timeline": "Within 24 hours",
+        "responsible_authority": "CDC",
+        "success_criteria": "All surveillance systems operational"
+      },
+      {
+        "action": "Address SureScreen test false positive risk",
+        "priority": "high",
+        "timeline": "Within 48 hours",
+        "responsible_authority": "FDA, CDC",
+        "success_criteria": "Test use restricted; guidance issued"
+      },
+      {
+        "action": "Investigate Adelaide ED capacity crisis",
+        "priority": "critical",
+        "timeline": "Immediate",
+        "responsible_authority": "SA Health",
+        "success_criteria": "Capacity restored; patient safety ensured"
+      }
+    ],
+    "high_priority_actions": [
+      {
+        "action": "Accelerate EU/EEA vaccination campaigns",
+        "priority": "high",
+        "timeline": "Within 1 week",
+        "responsible_authority": "National health authorities",
+        "success_criteria": "Campaign timelines accelerated"
+      },
+      {
+        "action": "Enhance multi-pathogen surveillance",
+        "priority": "high",
+        "timeline": "Within 2 weeks",
+        "responsible_authority": "National surveillance systems",
+        "success_criteria": "Enhanced surveillance implemented"
+      },
+      {
+        "action": "Strengthen international data sharing",
+        "priority": "high",
+        "timeline": "Within 1 week",
+        "responsible_authority": "WHO, national authorities",
+        "success_criteria": "Improved data flow established"
+      }
+    ],
+    "medium_priority_actions": [
+      {
+        "action": "Develop backup surveillance protocols",
+        "priority": "medium",
+        "timeline": "Within 1 month",
+        "responsible_authority": "All health authorities",
+        "success_criteria": "Protocols developed and tested"
+      },
+      {
+        "action": "Improve test performance monitoring",
+        "priority": "medium",
+        "timeline": "Within 2 weeks",
+        "responsible_authority": "Laboratory networks",
+        "success_criteria": "Enhanced monitoring implemented"
+      }
+    ]
+  },
+  "monitoring_recommendations": {
+    "daily_monitoring": [
+      "US surveillance system restoration progress",
+      "Adelaide ED capacity metrics",
+      "Northern Ontario hospital status",
+      "Real-time VE study results",
+      "New variant/mutation detections"
+    ],
+    "weekly_assessment": [
+      "Global outbreak progression patterns",
+      "Vaccine effectiveness updates",
+      "Healthcare system stress indicators",
+      "International coordination progress",
+      "Alternative source signal validation"
+    ],
+    "monthly_review": [
+      "Surveillance system resilience evaluation",
+      "International cooperation effectiveness",
+      "Public health response impact assessment",
+      "Long-term pattern identification",
+      "Policy effectiveness evaluation"
+    ]
+  }
+}
