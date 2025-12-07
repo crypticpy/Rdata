@@ -208,6 +208,55 @@ refresh_covid_data <- function(conn) {
   records_stored
 }
 
+#' Fetch global COVID data from OWID and store in database
+#' @param conn Database connection
+#' @return Number of records stored
+refresh_global_covid_data <- function(conn) {
+  message("Refreshing global COVID-19 data from Our World in Data...")
+  records_stored <- 0
+
+  tryCatch({
+    # Fetch global COVID data (already implemented in data_fetch.R)
+    global_data <- fetch_who_data()
+
+    if (!is.null(global_data) && nrow(global_data) > 0) {
+      # Transform to database format
+      # OWID uses 3-letter iso_code which matches our DB
+      global_records <- global_data |>
+        mutate(
+          pathogen_code = "COVID19",  # Match DB pathogen code
+          observation_date = as.character(observation_date),
+          case_count = as.integer(new_cases),
+          deaths = as.integer(new_deaths),
+          # Calculate positivity rate from vaccinations if available
+          positivity_rate = NA_real_,  # OWID latest doesn't have test positivity
+          data_confidence = "high"
+        ) |>
+        select(
+          pathogen_code, iso_code, observation_date,
+          case_count, deaths, positivity_rate, data_confidence
+        ) |>
+        filter(
+          !is.na(iso_code),
+          !is.na(observation_date),
+          # Exclude aggregate regions (OWID includes OWID_* codes)
+          !grepl("^OWID_", iso_code)
+        )
+
+      if (nrow(global_records) > 0) {
+        records_stored <- upsert_surveillance_data(conn, global_records)
+        message(sprintf("  Stored %d global COVID records from %d countries",
+                        records_stored, length(unique(global_records$iso_code))))
+      }
+    }
+
+  }, error = function(e) {
+    warning(paste("Global COVID refresh failed:", e$message))
+  })
+
+  records_stored
+}
+
 #' Update data freshness tracking
 #' @param conn Database connection
 #' @param source_code Source identifier
@@ -293,7 +342,8 @@ run_data_refresh <- function(force = FALSE, db_path = DB_PATH) {
     start_time = Sys.time(),
     influenza = list(records = 0, status = "not_run"),
     rsv = list(records = 0, status = "not_run"),
-    covid = list(records = 0, status = "not_run")
+    covid = list(records = 0, status = "not_run"),
+    global_covid = list(records = 0, status = "not_run")
   )
 
   tryCatch({
@@ -333,20 +383,33 @@ run_data_refresh <- function(force = FALSE, db_path = DB_PATH) {
       0
     })
 
+    # Refresh global COVID data from OWID (international coverage)
+    stats$global_covid$records <- tryCatch({
+      n <- refresh_global_covid_data(conn)
+      update_freshness_tracking(conn, "WHO_FLUMART", "success", n)  # Track as WHO data source
+      stats$global_covid$status <- "success"
+      n
+    }, error = function(e) {
+      update_freshness_tracking(conn, "WHO_FLUMART", "failed", 0, e$message)
+      stats$global_covid$status <- "failed"
+      0
+    })
+
     # Record successful refresh
     record_refresh()
 
     stats$end_time <- Sys.time()
     stats$duration_seconds <- as.numeric(difftime(stats$end_time, stats$start_time, units = "secs"))
-    stats$total_records <- stats$influenza$records + stats$rsv$records + stats$covid$records
+    stats$total_records <- stats$influenza$records + stats$rsv$records + stats$covid$records + stats$global_covid$records
 
     message("\n============================================")
     message("Refresh Complete!")
     message(sprintf("Duration: %.1f seconds", stats$duration_seconds))
     message(sprintf("Total records: %d", stats$total_records))
-    message(sprintf("  - Influenza: %d (%s)", stats$influenza$records, stats$influenza$status))
-    message(sprintf("  - RSV: %d (%s)", stats$rsv$records, stats$rsv$status))
-    message(sprintf("  - COVID: %d (%s)", stats$covid$records, stats$covid$status))
+    message(sprintf("  - Influenza (US): %d (%s)", stats$influenza$records, stats$influenza$status))
+    message(sprintf("  - RSV (US): %d (%s)", stats$rsv$records, stats$rsv$status))
+    message(sprintf("  - COVID (US): %d (%s)", stats$covid$records, stats$covid$status))
+    message(sprintf("  - COVID (Global): %d (%s)", stats$global_covid$records, stats$global_covid$status))
     message("============================================\n")
 
     close_db_connection(conn)
