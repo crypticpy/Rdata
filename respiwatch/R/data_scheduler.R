@@ -228,9 +228,14 @@ refresh_global_covid_data <- function(conn) {
           observation_date = as.character(observation_date),
           case_count = as.integer(new_cases),
           deaths = as.integer(new_deaths),
-          # Calculate positivity rate from vaccinations if available
-          positivity_rate = NA_real_,  # OWID latest doesn't have test positivity
-          data_confidence = "high"
+          # Use new_cases_per_million as proxy for positivity (scaled to 0-50 range)
+          # OWID stopped reporting test positivity globally after pandemic emergency ended
+          # Scale: 100 cases/million ~ 1% proxy, max cap at 50%
+          positivity_rate = pmin(
+            ifelse(is.na(new_cases_per_million), NA_real_, new_cases_per_million / 2),
+            50  # Cap at 50% to match influenza positivity scale
+          ),
+          data_confidence = "medium"  # Lower confidence since using proxy metric
         ) |>
         select(
           pathogen_code, iso_code, observation_date,

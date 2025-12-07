@@ -640,6 +640,9 @@ fetch_who_data <- function() {
            cumulative_cases = total_cases,
            new_deaths = new_deaths,
            cumulative_deaths = total_deaths,
+           # Cases per million for map visualization (positivity no longer available globally)
+           new_cases_per_million = new_cases_per_million,
+           total_cases_per_million = total_cases_per_million,
            # Add vaccination data if available in this snapshot
            # OWID often includes 'total_vaccinations', 'people_vaccinated' etc.
            total_vaccinations = total_vaccinations,
