@@ -657,6 +657,66 @@ fetch_who_data <- function() {
   })
 }
 
+#' Fetch Global Influenza Data from WHO FluNet/FluMart
+#' @param weeks_back Number of weeks of historical data to fetch (default 52)
+#' @return Data frame with global influenza surveillance data
+fetch_who_flumart <- function(weeks_back = 52) {
+  cached_fetch("who_flumart", function() {
+    # WHO FluNet xMart API - public access to global influenza surveillance
+    # Filter to recent weeks for efficiency
+    current_year <- as.numeric(format(Sys.Date(), "%Y"))
+    min_year <- current_year - 1
+
+    base_url <- sprintf(
+      "https://xmart-api-public.who.int/FLUMART/VIW_FNT?$format=csv&$filter=ISO_YEAR%%20ge%%20%d",
+      min_year
+    )
+
+    tryCatch({
+      data <- read.csv(base_url, stringsAsFactors = FALSE) |>
+        as_tibble() |>
+        filter(!is.na(SPEC_PROCESSED_NB) & SPEC_PROCESSED_NB > 0) |>
+        mutate(
+          observation_date = as.Date(ISO_WEEKSTARTDATE),
+          # WHO uses 3-letter codes in COUNTRY_CODE (matches our DB iso_code)
+          iso_code = COUNTRY_CODE,
+          country_name = COUNTRY_AREA_TERRITORY,
+          who_region = WHOREGION,
+          specimens_processed = as.integer(SPEC_PROCESSED_NB),
+          influenza_a = as.integer(ifelse(is.na(INF_A), 0, INF_A)),
+          influenza_b = as.integer(ifelse(is.na(INF_B), 0, INF_B)),
+          influenza_total = as.integer(ifelse(is.na(INF_ALL), 0, INF_ALL)),
+          # Calculate positivity rate
+          positivity_rate = ifelse(
+            specimens_processed > 0,
+            round(influenza_total / specimens_processed * 100, 2),
+            NA_real_
+          ),
+          pathogen = "Influenza",
+          data_source = "WHO FluNet",
+          fetch_time = Sys.time()
+        ) |>
+        filter(
+          !is.na(observation_date),
+          !is.na(iso_code),
+          nchar(iso_code) == 3  # Ensure valid ISO3 codes
+        ) |>
+        select(
+          observation_date, iso_code, country_name, who_region,
+          specimens_processed, influenza_a, influenza_b, influenza_total,
+          positivity_rate, pathogen, data_source, fetch_time
+        )
+
+      message(sprintf("  Fetched %d FluNet records from %d countries",
+                      nrow(data), length(unique(data$iso_code))))
+      data
+    }, error = function(e) {
+      warning(paste("WHO FluNet API failed:", e$message))
+      NULL
+    })
+  })
+}
+
 #' Export surveillance data to JSON format matching existing dashboard structure
 #' @param data List of surveillance data
 #' @param output_file Path to output JSON file

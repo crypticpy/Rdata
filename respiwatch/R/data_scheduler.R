@@ -257,6 +257,55 @@ refresh_global_covid_data <- function(conn) {
   records_stored
 }
 
+#' Fetch global influenza data from WHO FluNet and store in database
+#' @param conn Database connection
+#' @return Number of records stored
+refresh_global_influenza_data <- function(conn) {
+  message("Refreshing global influenza data from WHO FluNet...")
+  records_stored <- 0
+
+  tryCatch({
+    # Fetch global influenza data from WHO FluNet
+    flunet_data <- fetch_who_flumart()
+
+    if (!is.null(flunet_data) && nrow(flunet_data) > 0) {
+      # Get the most recent observation per country (aggregate weekly data)
+      # FluNet provides weekly data, so we take the latest week per country
+      latest_data <- flunet_data |>
+        group_by(iso_code) |>
+        slice_max(observation_date, n = 1, with_ties = FALSE) |>
+        ungroup()
+
+      # Transform to database format
+      global_records <- latest_data |>
+        mutate(
+          pathogen_code = "H3N2",  # Primary influenza subtype tracked
+          observation_date = as.character(observation_date),
+          case_count = as.integer(influenza_total),
+          deaths = NA_integer_,  # FluNet doesn't provide death data directly
+          positivity_rate = positivity_rate,
+          data_confidence = "high"
+        ) |>
+        select(
+          pathogen_code, iso_code, observation_date,
+          case_count, deaths, positivity_rate, data_confidence
+        ) |>
+        filter(!is.na(iso_code), !is.na(observation_date))
+
+      if (nrow(global_records) > 0) {
+        records_stored <- upsert_surveillance_data(conn, global_records)
+        message(sprintf("  Stored %d global influenza records from %d countries",
+                        records_stored, length(unique(global_records$iso_code))))
+      }
+    }
+
+  }, error = function(e) {
+    warning(paste("Global influenza refresh failed:", e$message))
+  })
+
+  records_stored
+}
+
 #' Update data freshness tracking
 #' @param conn Database connection
 #' @param source_code Source identifier
@@ -343,7 +392,8 @@ run_data_refresh <- function(force = FALSE, db_path = DB_PATH) {
     influenza = list(records = 0, status = "not_run"),
     rsv = list(records = 0, status = "not_run"),
     covid = list(records = 0, status = "not_run"),
-    global_covid = list(records = 0, status = "not_run")
+    global_covid = list(records = 0, status = "not_run"),
+    global_influenza = list(records = 0, status = "not_run")
   )
 
   tryCatch({
@@ -386,12 +436,24 @@ run_data_refresh <- function(force = FALSE, db_path = DB_PATH) {
     # Refresh global COVID data from OWID (international coverage)
     stats$global_covid$records <- tryCatch({
       n <- refresh_global_covid_data(conn)
-      update_freshness_tracking(conn, "WHO_FLUMART", "success", n)  # Track as WHO data source
+      update_freshness_tracking(conn, "OWID", "success", n)
       stats$global_covid$status <- "success"
       n
     }, error = function(e) {
-      update_freshness_tracking(conn, "WHO_FLUMART", "failed", 0, e$message)
+      update_freshness_tracking(conn, "OWID", "failed", 0, e$message)
       stats$global_covid$status <- "failed"
+      0
+    })
+
+    # Refresh global influenza data from WHO FluNet (international coverage)
+    stats$global_influenza$records <- tryCatch({
+      n <- refresh_global_influenza_data(conn)
+      update_freshness_tracking(conn, "WHO_FLUMART", "success", n)
+      stats$global_influenza$status <- "success"
+      n
+    }, error = function(e) {
+      update_freshness_tracking(conn, "WHO_FLUMART", "failed", 0, e$message)
+      stats$global_influenza$status <- "failed"
       0
     })
 
@@ -400,7 +462,8 @@ run_data_refresh <- function(force = FALSE, db_path = DB_PATH) {
 
     stats$end_time <- Sys.time()
     stats$duration_seconds <- as.numeric(difftime(stats$end_time, stats$start_time, units = "secs"))
-    stats$total_records <- stats$influenza$records + stats$rsv$records + stats$covid$records + stats$global_covid$records
+    stats$total_records <- stats$influenza$records + stats$rsv$records + stats$covid$records +
+                           stats$global_covid$records + stats$global_influenza$records
 
     message("\n============================================")
     message("Refresh Complete!")
@@ -410,6 +473,7 @@ run_data_refresh <- function(force = FALSE, db_path = DB_PATH) {
     message(sprintf("  - RSV (US): %d (%s)", stats$rsv$records, stats$rsv$status))
     message(sprintf("  - COVID (US): %d (%s)", stats$covid$records, stats$covid$status))
     message(sprintf("  - COVID (Global): %d (%s)", stats$global_covid$records, stats$global_covid$status))
+    message(sprintf("  - Influenza (Global): %d (%s)", stats$global_influenza$records, stats$global_influenza$status))
     message("============================================\n")
 
     close_db_connection(conn)
