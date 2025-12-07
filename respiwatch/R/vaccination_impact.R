@@ -4,11 +4,12 @@
 # Input: Vaccination coverage data, surveillance data
 # Output: Impact analysis, prevented cases estimates
 # ============================================================================
-
 # Load required packages -------------------------------------------------------
 library(dplyr)
 library(tidyr)
 library(lubridate)
+# Load data loader for DB access
+source("R/data_loader.R")
 
 # =============================================================================
 # CONFIGURATION
@@ -59,13 +60,30 @@ VACCINATION_CONFIG <- list(
 #' @return Data frame with coverage by age group and time
 get_vaccination_coverage <- function(country, pathogen, date_range = NULL) {
 
-  # Generate synthetic coverage data based on pathogen characteristics
-  # In production, this would fetch from WHO/CDC APIs
-
   if (is.null(date_range)) {
     date_range <- c(Sys.Date() - 365, Sys.Date())
   }
+  
+  # Try loading from database first
+  db_data <- NULL
+  try({
+    all_vax_data <- load_vaccination_from_db()
+    if (!is.null(all_vax_data) && nrow(all_vax_data) > 0) {
+      db_data <- all_vax_data %>%
+        filter(country_name == country, pathogen_name == pathogen) %>%
+        filter(observation_date >= date_range[1], observation_date <= date_range[2])
+    }
+  }, silent = TRUE)
+  
+  if (!is.null(db_data) && nrow(db_data) > 0) {
+    # If DB has data, format it to match expected output
+    return(db_data %>%
+      rename(date = observation_date, coverage = coverage_pct, country = country_name, pathogen = pathogen_name) %>%
+      mutate(coverage = coverage / 100) %>% # Convert pct to decimal 0-1
+      select(date, country, pathogen, age_group, coverage))
+  }
 
+  # FALLBACK: Generate synthetic coverage data based on pathogen characteristics
   dates <- seq.Date(date_range[1], date_range[2], by = "week")
 
   # Base coverage rates by pathogen
@@ -77,6 +95,7 @@ get_vaccination_coverage <- function(country, pathogen, date_range = NULL) {
     "RSV" = 0.30,
     0.40
   )
+
 
   # Generate coverage trajectory with seasonal uptake
   coverage_data <- expand.grid(
@@ -392,10 +411,22 @@ calculate_prevention_impact <- function(surveillance_data, pathogen, period = 90
     )
 
   # Estimate prevention for each country
+  
+  # Load populations once
+  pop_data <- NULL
+  try({ pop_data <- load_country_populations() }, silent = TRUE)
+  
   results <- lapply(by_country$country, function(c) {
     cases <- by_country$total_cases[by_country$country == c]
-    # Use approximate population (in real app, would have population table)
-    pop <- 10000000  # 10 million default
+    
+    # Lookup population
+    pop <- 10000000 # Default fallback
+    if (!is.null(pop_data)) {
+      match_pop <- pop_data$population[pop_data$country_name == c]
+      if (length(match_pop) > 0 && !is.na(match_pop)) {
+        pop <- match_pop
+      }
+    }
 
     estimate_prevented_cases(c, pathogen, cases, pop)
   })

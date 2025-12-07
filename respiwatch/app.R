@@ -2603,11 +2603,15 @@ server <- function(input, output, session) {
     range <- dbGetQuery(conn, "SELECT MIN(observation_date) as start, MAX(observation_date) as end FROM surveillance_data")
     close_db_connection(conn)
     
-    if (!is.na(range$start) && !is.na(range$end)) {
+    # Parse dates safely - SQLite returns strings
+    start_date <- tryCatch(as.Date(range$start), error = function(e) NA)
+    end_date <- tryCatch(as.Date(range$end), error = function(e) NA)
+
+    if (!is.na(start_date) && !is.na(end_date)) {
         updateSliderInput(session, "animation_date",
-            min = as.Date(range$start),
-            max = as.Date(range$end),
-            value = as.Date(range$end) # Start at latest
+            min = start_date,
+            max = end_date,
+            value = end_date # Start at latest
         )
     }
   })

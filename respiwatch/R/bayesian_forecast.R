@@ -318,9 +318,17 @@ summarize_forecast <- function(predictions, newdata, levels = BAYES_CONFIG$credi
 #' Get cache path for a model
 #' @param pathogen_code Pathogen identifier
 #' @return File path for cached model
-get_model_cache_path <- function(pathogen_code) {
+get_model_cache_path <- function(pathogen_code, country = NULL, start_date = NULL, end_date = NULL) {
   dir.create(BAYES_CONFIG$cache_dir, recursive = TRUE, showWarnings = FALSE)
-  file.path(BAYES_CONFIG$cache_dir, paste0("model_", pathogen_code, ".rds"))
+  suffix <- if (is.null(country)) "ALL" else country
+
+  # Add date range to cache key if provided
+  if (!is.null(start_date) && !is.null(end_date)) {
+    date_suffix <- sprintf("_%s_%s", format(as.Date(start_date), "%Y%m%d"), format(as.Date(end_date), "%Y%m%d"))
+    suffix <- paste0(suffix, date_suffix)
+  }
+
+  file.path(BAYES_CONFIG$cache_dir, paste0("model_", pathogen_code, "_", suffix, ".rds"))
 }
 
 #' Check if cached model is still valid
@@ -339,8 +347,8 @@ is_model_valid <- function(cache_path) {
 #' Save model to cache
 #' @param fit Fitted brms model
 #' @param pathogen_code Pathogen identifier
-save_model_cache <- function(fit, pathogen_code) {
-  cache_path <- get_model_cache_path(pathogen_code)
+save_model_cache <- function(fit, pathogen_code, country = NULL, start_date = NULL, end_date = NULL) {
+  cache_path <- get_model_cache_path(pathogen_code, country, start_date, end_date)
 
   tryCatch({
     saveRDS(fit, cache_path)
@@ -353,8 +361,8 @@ save_model_cache <- function(fit, pathogen_code) {
 #' Load model from cache
 #' @param pathogen_code Pathogen identifier
 #' @return Fitted model or NULL if not available
-load_model_cache <- function(pathogen_code) {
-  cache_path <- get_model_cache_path(pathogen_code)
+load_model_cache <- function(pathogen_code, country = NULL, start_date = NULL, end_date = NULL) {
+  cache_path <- get_model_cache_path(pathogen_code, country, start_date, end_date)
 
   if (!is_model_valid(cache_path)) {
     return(NULL)
@@ -379,7 +387,8 @@ load_model_cache <- function(pathogen_code) {
 #' @param horizon Weeks to forecast
 #' @return List with forecast data and model info
 get_bayesian_forecast <- function(pathogen_code, country = NULL, use_cache = TRUE,
-                                  horizon = BAYES_CONFIG$horizon_weeks) {
+                                  horizon = BAYES_CONFIG$horizon_weeks,
+                                  start_date = NULL, end_date = NULL) {
   # Source database modules if needed
   if (!exists("get_db_connection")) {
     source("R/db_schema.R")
@@ -389,7 +398,7 @@ get_bayesian_forecast <- function(pathogen_code, country = NULL, use_cache = TRU
   # Try to load cached model
   fit <- NULL
   if (use_cache) {
-    fit <- load_model_cache(pathogen_code)
+    fit <- load_model_cache(pathogen_code, country, start_date, end_date)
   }
 
   # Validate input parameters to prevent SQL injection
@@ -422,6 +431,15 @@ get_bayesian_forecast <- function(pathogen_code, country = NULL, use_cache = TRU
     country_clause <- sprintf("AND c.iso_code = '%s'", escape_sql(toupper(country)))
   }
 
+  # Date filtering clause
+  date_clause <- ""
+  if (!is.null(start_date)) {
+    date_clause <- sprintf("%s AND sd.observation_date >= '%s'", date_clause, as.character(start_date))
+  }
+  if (!is.null(end_date)) {
+    date_clause <- sprintf("%s AND sd.observation_date <= '%s'", date_clause, as.character(end_date))
+  }
+
   query <- sprintf("
     SELECT
       sd.observation_date,
@@ -434,10 +452,12 @@ get_bayesian_forecast <- function(pathogen_code, country = NULL, use_cache = TRU
     JOIN countries c ON sd.country_id = c.country_id
     WHERE p.pathogen_code = '%s'
     %s
+    %s
     ORDER BY sd.observation_date
   ",
     escape_sql(pathogen_code),
-    country_clause
+    country_clause,
+    date_clause
   )
 
   surv_data <- DBI::dbGetQuery(conn, query)
@@ -461,7 +481,7 @@ get_bayesian_forecast <- function(pathogen_code, country = NULL, use_cache = TRU
     fit <- fit_simple_model(model_data)
 
     if (!is.null(fit) && use_cache) {
-      save_model_cache(fit, pathogen_code)
+      save_model_cache(fit, pathogen_code, country, start_date, end_date)
     }
   }
 
@@ -510,6 +530,8 @@ get_bayesian_forecast <- function(pathogen_code, country = NULL, use_cache = TRU
     historical_cases = model_data,  # Alias for compatibility with UI
     diagnostics = diagnostics,
     model_summary = if (!is.null(fit)) summary(fit) else NULL,
+    training_start = start_date,
+    training_end = end_date,
     forecast_generated = Sys.time()
   )
 }

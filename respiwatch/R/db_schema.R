@@ -464,19 +464,40 @@ seed_reference_data <- function(conn) {
   dbWriteTable(conn, "regions", regions, append = TRUE, row.names = FALSE)
 
   # Seed countries (key surveillance countries)
+  # Seed countries (G20 + Key Regional Hubs)
   countries <- data.frame(
-    iso_code = c("USA", "GBR", "JPN", "AUS", "CAN", "DEU", "FRA", "ITA", "ESP", "BRA"),
+    iso_code = c(
+      "USA", "GBR", "JPN", "AUS", "CAN", "DEU", "FRA", "ITA", "ESP", "BRA",
+      "IND", "CHN", "ZAF", "MEX", "IDN", "KOR", "TUR", "SAU", "ARG", "RUS",
+      "NGA", "EGY", "KEN", "SGP", "NZL"
+    ),
     country_name = c(
       "United States", "United Kingdom", "Japan", "Australia", "Canada",
-      "Germany", "France", "Italy", "Spain", "Brazil"
+      "Germany", "France", "Italy", "Spain", "Brazil",
+      "India", "China", "South Africa", "Mexico", "Indonesia", "South Korea", "Turkey", "Saudi Arabia", "Argentina", "Russia",
+      "Nigeria", "Egypt", "Kenya", "Singapore", "New Zealand"
     ),
-    region_id = c(1, 2, 3, 4, 1, 2, 2, 2, 2, 5),
+    region_id = c(
+      1, 2, 3, 4, 1, 2, 2, 2, 2, 5,
+      3, 3, 6, 1, 3, 3, 7, 7, 5, 2,
+      6, 6, 6, 3, 4
+    ),
     population = c(
       331900000, 67330000, 125800000, 26000000, 38250000,
-      83240000, 67390000, 59550000, 47420000, 214300000
+      83240000, 67390000, 59550000, 47420000, 214300000,
+      1390000000, 1412000000, 60000000, 126700000, 273800000, 51740000, 85000000, 35000000, 45800000, 143400000,
+      213000000, 109000000, 53000000, 5450000, 5100000
     ),
-    latitude = c(37.09, 55.38, 36.20, -25.27, 56.13, 51.17, 46.23, 41.87, 40.46, -14.24),
-    longitude = c(-95.71, -3.44, 138.25, 133.78, -106.35, 10.45, 2.21, 12.57, -3.75, -51.93)
+    latitude = c(
+      37.09, 55.38, 36.20, -25.27, 56.13, 51.17, 46.23, 41.87, 40.46, -14.24,
+      20.59, 35.86, -30.56, 23.63, -0.79, 35.90, 38.96, 23.88, -38.42, 61.52,
+      9.08, 26.82, -1.29, 1.35, -40.90
+    ),
+    longitude = c(
+      -95.71, -3.44, 138.25, 133.78, -106.35, 10.45, 2.21, 12.57, -3.75, -51.93,
+      78.96, 104.19, 22.94, -102.55, 113.92, 127.77, 35.24, 45.08, -63.62, 105.32,
+      8.67, 30.80, 36.82, 103.82, 174.88
+    )
   )
   dbWriteTable(conn, "countries", countries, append = TRUE, row.names = FALSE)
 
@@ -525,6 +546,16 @@ seed_reference_data <- function(conn) {
     severity_weight = c(1.0, 1.5, 1.2, 2.0, 1.5, 1.3)
   )
   dbWriteTable(conn, "anomaly_types", anomaly_types, append = TRUE, row.names = FALSE)
+  
+  # Seed vaccines
+  vaccines <- data.frame(
+    pathogen_id = c(1, 2, 3), # H3N2, RSV, COVID19 (IDs based on insertion order in pathogens df)
+    vaccine_code = c("FLU_GENERIC", "RSV_GENERIC", "COVID_MRNA"),
+    vaccine_name = c("Seasonal Influenza Vaccine", "RSV Vaccine", "COVID-19 mRNA Vaccine"),
+    vaccine_type = c("Inactivated", "Protein Subunit", "mRNA"),
+    is_active = c(1, 1, 1)
+  )
+  dbWriteTable(conn, "vaccines", vaccines, append = TRUE, row.names = FALSE)
 
   message("Reference data seeded successfully")
 }

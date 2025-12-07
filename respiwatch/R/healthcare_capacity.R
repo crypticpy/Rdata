@@ -474,8 +474,7 @@ get_capacity_forecast <- function(pathogen_code = "all", horizon = 4,
     if (!is.null(forecast_result) && forecast_result$status == "success") {
       # Use ensemble forecast
       case_forecast <- forecast_result$ensemble_forecast |>
-        select(date, predicted_cases = ensemble_mean,
-               lower_95 = ensemble_lower_95, upper_95 = ensemble_upper_95)
+        select(date, predicted_cases, lower_95, upper_95)
 
       # Forecast hospitalizations
       hosp <- forecast_hospitalizations(case_forecast, p)
@@ -575,12 +574,20 @@ get_capacity_forecast <- function(pathogen_code = "all", horizon = 4,
 get_capacity_summary <- function(capacity_result) {
   if (is.null(capacity_result) || capacity_result$status != "success") {
     return(list(
-      hospital_utilization = NA,
-      hospital_status = "unknown",
-      hospital_available = NA,
-      icu_utilization = NA,
-      icu_status = "unknown",
-      icu_available = NA,
+      hospital = list(
+        utilization = 0,
+        status = "unknown",
+        available = 0,
+        occupied = 0,
+        capacity = 0
+      ),
+      icu = list(
+        utilization = 0,
+        status = "unknown",
+        available = 0,
+        occupied = 0,
+        capacity = 0
+      ),
       days_to_hospital_surge = NA,
       days_to_icu_surge = NA,
       alert_count = 0
@@ -588,12 +595,20 @@ get_capacity_summary <- function(capacity_result) {
   }
 
   list(
-    hospital_utilization = capacity_result$hospital_capacity$utilization_pct,
-    hospital_status = capacity_result$hospital_capacity$status,
-    hospital_available = capacity_result$hospital_capacity$available_beds,
-    icu_utilization = capacity_result$icu_capacity$utilization_pct,
-    icu_status = capacity_result$icu_capacity$status,
-    icu_available = capacity_result$icu_capacity$available_beds,
+    hospital = list(
+      utilization = capacity_result$hospital_capacity$utilization_pct,
+      status = capacity_result$hospital_capacity$status,
+      available = capacity_result$hospital_capacity$available_beds,
+      occupied = capacity_result$hospital_capacity$current_occupancy,
+      capacity = capacity_result$hospital_capacity$total_capacity
+    ),
+    icu = list(
+      utilization = capacity_result$icu_capacity$utilization_pct,
+      status = capacity_result$icu_capacity$status,
+      available = capacity_result$icu_capacity$available_beds,
+      occupied = capacity_result$icu_capacity$current_occupancy,
+      capacity = capacity_result$icu_capacity$total_capacity
+    ),
     days_to_hospital_surge = if (capacity_result$hospital_breach$breach_predicted) {
       capacity_result$hospital_breach$days_until_breach
     } else NA,

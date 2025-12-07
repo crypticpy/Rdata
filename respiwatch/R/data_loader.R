@@ -185,6 +185,55 @@ load_freshness_status <- function() {
   data
 }
 
+#' Load country populations from database
+#' @return Data frame with iso_code, country_name, population
+load_country_populations <- function() {
+  conn <- get_db_connection()
+  
+  data <- tryCatch({
+    dbGetQuery(conn, "
+      SELECT iso_code, country_name, population
+      FROM countries
+      WHERE population IS NOT NULL
+    ")
+  }, finally = {
+    close_db_connection(conn)
+  })
+  
+  data
+}
+
+#' Load vaccination coverage from database
+#' @return Data frame with vaccination coverage
+load_vaccination_from_db <- function() {
+  conn <- get_db_connection()
+  
+  data <- tryCatch({
+    dbGetQuery(conn, "
+      SELECT 
+        vc.observation_date,
+        c.country_name,
+        p.pathogen_name,
+        vc.age_group,
+        vc.coverage_pct,
+        vc.doses_administered
+      FROM vaccine_coverage vc
+      JOIN countries c ON vc.country_id = c.country_id
+      JOIN vaccines v ON vc.vaccine_id = v.vaccine_id
+      JOIN pathogens p ON v.pathogen_id = p.pathogen_id
+      ORDER BY vc.observation_date DESC
+    ")
+  }, finally = {
+    close_db_connection(conn)
+  })
+  
+  if (nrow(data) > 0) {
+    data$observation_date <- as.Date(data$observation_date)
+  }
+  
+  data
+}
+
 # =============================================================================
 # SHINY-READY DATA FUNCTIONS
 # =============================================================================
@@ -257,7 +306,7 @@ get_timeline_data <- function() {
     group_by(observation_date, pathogen) |>
     summarize(
       positivity_rate = mean(positivity_rate, na.rm = TRUE),
-      case_numbers = sum(case_count, na.rm = TRUE),
+      case_numbers = sum(coalesce(case_count, estimated_cases, 0), na.rm = TRUE),
       hospitalization_rate = mean(hospitalization_rate, na.rm = TRUE),
       .groups = "drop"
     ) |>

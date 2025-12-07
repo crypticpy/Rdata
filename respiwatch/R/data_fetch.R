@@ -465,7 +465,91 @@ fetch_all_surveillance_data <- function(
     )
   }
 
+  if ("vaccination" %in% pathogens) {
+    message("Fetching vaccination data...")
+    results$vaccination <- fetch_cdc_vaccination()
+  }
+
+  if ("global" %in% pathogens) {
+    message("Fetching WHO global data...")
+    results$who <- fetch_who_data()
+  }
+
   return(results)
+}
+
+#' Fetch CDC Vaccination Data (Flu and COVID-19)
+#' @return Data frame with vaccination coverage
+fetch_cdc_vaccination <- function() {
+  cached_fetch("cdc_vaccination", function() {
+    results <- list()
+    
+    # 1. Flu Vaccination Coverage (General Population) using specific SODA endpoint
+    # Note: Using valid endpoint for Flu Vax coverage
+    flu_url <- "https://data.cdc.gov/resource/p39v-828n.json" 
+    
+    tryCatch({
+      req <- request(flu_url) |>
+        req_url_query(
+          `$limit` = 5000,
+          `$order` = "week_ending DESC"
+        )
+      
+      resp <- req_perform(req)
+      data <- resp_body_json(resp, simplifyVector = TRUE)
+      
+      if (length(data) > 0) {
+         results$flu <- data |>
+          as_tibble() |>
+          mutate(
+            pathogen = "Influenza",
+            data_source = "CDC Flu Vax View",
+            fetch_time = Sys.time(),
+            # Map columns - adjust based on actual API response structure
+            observation_date = as.Date(week_ending),
+            # Extract coverage estimate
+            coverage_pct = as.numeric(coverage_estimate),
+            age_group = geography_type # or specific age column if available
+          )
+      }
+    }, error = function(e) {
+      warning(paste("CDC Flu Vax API failed:", e$message))
+    })
+
+    # 2. COVID-19 Vaccination Trends
+    covid_url <- "https://data.cdc.gov/resource/rh2h-3yt2.json"
+    
+    tryCatch({
+      req <- request(covid_url) |>
+        req_url_query(
+          `$limit` = 5000,
+          `$order` = "date DESC"
+        )
+      
+      resp <- req_perform(req)
+      data <- resp_body_json(resp, simplifyVector = TRUE)
+      
+      if (length(data) > 0) {
+         results$covid <- data |>
+          as_tibble() |>
+          filter(location == "US") |> # Filter for National data only
+          mutate(
+            pathogen = "COVID-19",
+            data_source = "CDC COVID Vax Trends",
+            fetch_time = Sys.time(),
+            observation_date = as.Date(date),
+            # Extract coverage (e.g. administered_dose1_pop_pct or similar)
+            coverage_pct = as.numeric(administered_dose1_pop_pct),
+            age_group = "Overall" # Simplifying for now
+          )
+      }
+    }, error = function(e) {
+      warning(paste("CDC COVID Vax API failed:", e$message))
+    })
+    
+    # Combine results
+    bind_rows(results)
+  })
 }
 
 #' Convert surveillance data to standardized format for dashboard
@@ -528,6 +612,51 @@ force_refresh_all <- function() {
 # EXPORT JSON FOR DASHBOARD
 # =============================================================================
 
+#' Fetch Global COVID-19 Data (Source: Our World in Data)
+#' @return Data frame with global surveillance data
+fetch_who_data <- function() {
+  cached_fetch("who_global_covid", function() {
+    # Using OWID Latest snapshot (much faster/smaller than full history)
+    # This provides current totals and recent daily changes
+    base_url <- "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/latest/owid-covid-latest.csv"
+    
+    tryCatch({
+      # Use read.csv for simple CSV fetch
+      data <- read.csv(base_url, stringsAsFactors = FALSE) |>
+        as_tibble() |>
+        mutate(
+          Date_reported = as.Date(last_updated_date),
+          pathogen = "COVID-19", 
+          data_source = "Our World in Data (OWID)",
+          fetch_time = Sys.time()
+        ) |>
+        # OWID uses 'iso_code' which matches our DB schema (3-letter)
+        filter(!is.na(iso_code)) |>
+        select(
+           observation_date = Date_reported,
+           iso_code = iso_code,
+           country_name = location,
+           new_cases = new_cases,
+           cumulative_cases = total_cases,
+           new_deaths = new_deaths,
+           cumulative_deaths = total_deaths,
+           # Add vaccination data if available in this snapshot
+           # OWID often includes 'total_vaccinations', 'people_vaccinated' etc.
+           total_vaccinations = total_vaccinations,
+           fully_vaccinated = people_fully_vaccinated,
+           pathogen,
+           data_source,
+           fetch_time
+        )
+      
+      data
+    }, error = function(e) {
+      warning(paste("Global Data API (OWID) failed:", e$message))
+      NULL
+    })
+  })
+}
+
 #' Export surveillance data to JSON format matching existing dashboard structure
 #' @param data List of surveillance data
 #' @param output_file Path to output JSON file
@@ -535,12 +664,13 @@ export_to_json <- function(data, output_file) {
   json_data <- list(
     metadata = list(
       last_updated = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ"),
-      data_sources = c("CDC FluView", "CDC NREVSS", "RSV-NET", "CMU Delphi"),
-      version = "2.0.0"
+      data_sources = c("CDC FluView", "CDC NREVSS", "RSV-NET", "CMU Delphi", "WHO Global"),
+      version = "2.1.0"
     ),
     influenza = data$influenza,
     rsv = data$rsv,
-    covid = data$covid
+    covid = data$covid,
+    who_global = data$who
   )
 
   write_json(json_data, output_file, pretty = TRUE, auto_unbox = TRUE)

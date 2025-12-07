@@ -37,6 +37,10 @@ prototype/.browser_screenshots/
 # Test/debug scripts
 debug_*.R
 test_*.R
+check_*.R
+verify_*.R
+investigate_*.R
+reseed_*.R
 
 # Playwright
 .playwright-mcp/

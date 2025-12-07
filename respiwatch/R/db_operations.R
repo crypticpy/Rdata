@@ -160,7 +160,7 @@ upsert_surveillance_data <- function(conn, data) {
         "week_number", "year", "positivity_rate", "case_count",
         "estimated_cases", "hospitalizations", "hospitalization_rate",
         "icu_admissions", "deaths", "death_rate", "test_volume",
-        "data_confidence"
+        "data_confidence", "source_id"
       ))
     )
 
@@ -227,6 +227,77 @@ upsert_surveillance_data <- function(conn, data) {
   }
 
   message(sprintf("Upserted %d surveillance records", rows_affected))
+  rows_affected
+}
+
+#' Upsert vaccination coverage data
+#' @param conn Database connection
+#' @param data Data frame with vaccination data
+#' @return Number of rows affected
+upsert_vaccination_data <- function(conn, data) {
+  required_cols <- c("pathogen", "observation_date", "coverage_pct")
+  # Map generic pathogen names to our specific pathogen_codes if needed
+  # But for now assuming data has mapped 'pathogen' to name or code.
+  
+  if (is.null(data) || nrow(data) == 0) return(0)
+  
+  # Normalize pathogen names to codes usually expected by DB or map them
+  # Here we'll do a simple lookup.
+  pathogens <- dbGetQuery(conn, "SELECT pathogen_id, pathogen_code, pathogen_name FROM pathogens")
+  
+  # Helper to map name to ID
+  get_pathogen_id <- function(name) {
+    # Try exact match on Name
+    p <- pathogens[pathogens$pathogen_name == name, "pathogen_id"]
+    if (length(p) > 0) return(p[1])
+    # Try Code
+    p <- pathogens[pathogens$pathogen_code == name, "pathogen_id"]
+    if (length(p) > 0) return(p[1])
+    # Try fuzzy match
+    if (grepl("Flu", name, ignore.case=TRUE)) return(pathogens[pathogens$pathogen_code == "H3N2", "pathogen_id"][1]) # Default to H3N2 or generic Flu if exists
+    if (grepl("COVID", name, ignore.case=TRUE)) return(pathogens[pathogens$pathogen_code == "COVID19", "pathogen_id"][1])
+    if (grepl("RSV", name, ignore.case=TRUE)) return(pathogens[pathogens$pathogen_code == "RSV", "pathogen_id"][1])
+    return(NA)
+  }
+  
+  # For now, default vaccine_id lookup is hard because we don't have a robust vaccine catalog.
+  # We will just grab the *first* active vaccine for that pathogen to link to, or create a placeholder.
+  vaccines <- dbGetQuery(conn, "SELECT vaccine_id, pathogen_id FROM vaccines")
+  
+  countries <- dbGetQuery(conn, "SELECT country_id, iso_code, country_name FROM countries")
+  # Default to USA for CDC data
+  usa_id <- countries[countries$iso_code == "USA", "country_id"]
+  
+  rows_affected <- 0
+  
+  # Iterate and insert (inefficient but safe for now)
+  for(i in seq_len(nrow(data))) {
+    row <- data[i, ]
+    pid <- get_pathogen_id(row$pathogen)
+    if (is.na(pid)) next
+    
+    # Get a vaccine ID (any)
+    vid <- vaccines[vaccines$pathogen_id == pid, "vaccine_id"][1]
+    if (is.na(vid)) next # Skip if no vaccine defined
+    
+    # Check if exists
+    obs_date <- as.character(row$observation_date)
+    existing <- dbGetQuery(conn, sprintf(
+      "SELECT coverage_id FROM vaccine_coverage 
+       WHERE vaccine_id = %d AND country_id = %d AND observation_date = '%s' AND age_group = '%s'",
+      vid, usa_id, escape_sql(obs_date), escape_sql(row$age_group %||% "All")
+    ))
+    
+    if (nrow(existing) == 0) {
+      dbExecute(conn, sprintf(
+        "INSERT INTO vaccine_coverage (vaccine_id, country_id, observation_date, coverage_pct, age_group, fetch_timestamp)
+         VALUES (%d, %d, '%s', %f, '%s', CURRENT_TIMESTAMP)",
+        vid, usa_id, escape_sql(obs_date), row$coverage_pct, escape_sql(row$age_group %||% "All")
+      ))
+      rows_affected <- rows_affected + 1
+    }
+  }
+  
   rows_affected
 }
 
@@ -303,11 +374,22 @@ get_latest_surveillance <- function(conn, pathogen_codes = NULL) {
       c.latitude,
       c.longitude,
       c.population,
-      r.region_name
+      r.region_name,
+      v.coverage_pct as vaccination_rate  -- Joined vaccination data
     FROM surveillance_data s
     JOIN pathogens p ON s.pathogen_id = p.pathogen_id
     JOIN countries c ON s.country_id = c.country_id
     LEFT JOIN regions r ON c.region_id = r.region_id
+    -- Join with latest vaccination coverage for this country/pathogen (approximate match via pathogen)
+    LEFT JOIN (
+        SELECT country_id, coverage_pct, fetch_timestamp
+        FROM vaccine_coverage
+        WHERE (country_id, fetch_timestamp) IN (
+            SELECT country_id, MAX(fetch_timestamp)
+            FROM vaccine_coverage
+            GROUP BY country_id
+        )
+    ) v ON s.country_id = v.country_id
     WHERE s.observation_date = (
       SELECT MAX(s2.observation_date)
       FROM surveillance_data s2
@@ -324,6 +406,55 @@ get_latest_surveillance <- function(conn, pathogen_codes = NULL) {
 
   query <- paste0(query, " ORDER BY p.pathogen_code, c.country_name")
 
+  dbGetQuery(conn, query)
+}
+
+#' Get surveillance snapshot for a specific date (closest available match)
+#' @param conn Database connection
+#' @param target_date Date string ("YYYY-MM-DD")
+#' @param pathogen_codes Vector of pathogen codes (NULL for all)
+#' @return Data frame with snapshot data
+get_surveillance_snapshot <- function(conn, target_date, pathogen_codes = NULL) {
+  # Logic: Find the latest record on or before target_date for each country
+  # This serves as a "state of the world" at that time
+  query <- sprintf("
+    SELECT
+      s.*,
+      p.pathogen_code,
+      p.pathogen_name,
+      c.iso_code,
+      c.country_name,
+      c.latitude,
+      c.longitude,
+      c.population,
+      r.region_name,
+      v.coverage_pct as vaccination_rate
+    FROM surveillance_data s
+    JOIN pathogens p ON s.pathogen_id = p.pathogen_id
+    JOIN countries c ON s.country_id = c.country_id
+    LEFT JOIN regions r ON c.region_id = r.region_id
+    -- Join with simple latest vaccination (vax doesn't vary much week to week in this dataset context)
+    LEFT JOIN (
+        SELECT country_id, coverage_pct FROM vaccine_coverage GROUP BY country_id HAVING MAX(fetch_timestamp)
+    ) v ON s.country_id = v.country_id
+    WHERE s.observation_date = (
+        SELECT MAX(s2.observation_date)
+        FROM surveillance_data s2
+        WHERE s2.pathogen_id = s.pathogen_id 
+          AND s2.country_id = s.country_id
+          AND s2.observation_date <= '%s' -- Time travel logic
+    )
+  ", escape_sql(target_date))
+
+  if (!is.null(pathogen_codes)) {
+    codes <- sanitize_code_list(pathogen_codes, is_valid_pathogen_code)
+    if (!is.null(codes)) {
+      query <- paste0(query, sprintf(" AND p.pathogen_code IN (%s)", codes))
+    }
+  }
+
+  query <- paste0(query, " ORDER BY p.pathogen_code, c.country_name")
+  
   dbGetQuery(conn, query)
 }
 
@@ -576,7 +707,8 @@ import_h3n2_json <- function(conn, json_path = "data/raw/h3n2_outbreak_tracker.j
     })
 
     surveillance_df <- bind_rows(surveillance_records)
-    stats$surveillance <- upsert_surveillance_data(conn, surveillance_df)
+    # stats$surveillance <- upsert_surveillance_data(conn, surveillance_df)
+    message("Skipping surveillance snapshot import to prevent time-series pollution")
   }
 
   # Import regional overview
@@ -703,7 +835,8 @@ import_rsv_json <- function(conn, json_path = "data/raw/rsv_tracker.json") {
     })
 
     surveillance_df <- bind_rows(surveillance_records)
-    stats$surveillance <- upsert_surveillance_data(conn, surveillance_df)
+    # stats$surveillance <- upsert_surveillance_data(conn, surveillance_df)
+    message("Skipping surveillance snapshot import to prevent time-series pollution")
   }
 
   # Import regional overview
@@ -800,7 +933,8 @@ import_covid_json <- function(conn, json_path = "data/raw/covid_tracker.json") {
     })
 
     surveillance_df <- bind_rows(surveillance_records)
-    stats$surveillance <- upsert_surveillance_data(conn, surveillance_df)
+    # stats$surveillance <- upsert_surveillance_data(conn, surveillance_df)
+    message("Skipping surveillance snapshot import to prevent time-series pollution")
   }
 
   # Import regional overview

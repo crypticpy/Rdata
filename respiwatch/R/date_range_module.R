@@ -42,7 +42,7 @@ dateRangeControlUI <- function(id, label = "Date Range",
       ),
       actionButton(
         ns("reset"),
-        "Reset to 30 days",
+        sprintf("Reset to %d days", default_days),
         class = "btn-sm btn-outline-secondary",
         style = "margin-bottom: 15px;"
       )
@@ -58,7 +58,7 @@ dateRangeControlUI <- function(id, label = "Date Range",
 #' @param data_reactive Reactive expression returning a data frame with 'date' column
 #' @param date_col Name of the date column in the data (default: "date")
 #' @return Reactive expression with filtered data
-dateRangeControlServer <- function(id, data_reactive, date_col = "date") {
+dateRangeControlServer <- function(id, data_reactive, date_col = "date", default_days = 30) {
   moduleServer(id, function(input, output, session) {
 
     # Reset button functionality
@@ -66,7 +66,7 @@ dateRangeControlServer <- function(id, data_reactive, date_col = "date") {
       updateDateRangeInput(
         session,
         "date_range",
-        start = Sys.Date() - 30,
+        start = Sys.Date() - default_days,
         end = Sys.Date()
       )
     })
