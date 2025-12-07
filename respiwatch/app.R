@@ -13,6 +13,7 @@ library(plotly)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(shinyjs)
 library(scales)
 library(DT)
 library(sf)
@@ -62,59 +63,67 @@ if (db_has_timeline) {
   # No database timeline - JSON will be used for everything
 }
 
-# Extract country data for map (with error handling)
-# When using database, try to use database countries_map; fallback to JSON
-if (db_has_timeline && !is.null(dashboard_data$countries_map)) {
-  # Database returns multiple rows per country (one per pathogen)
-  # Aggregate to one row per country for map visualization
-  countries_df <- dashboard_data$countries_map |>
-    group_by(iso_code, country_name) |>
-    summarize(
-      positivity_rate = mean(positivity_rate, na.rm = TRUE),
-      hospitalization_rate = mean(hospitalization_rate, na.rm = TRUE),
-      case_count = sum(case_count, na.rm = TRUE),
-      data_confidence = first(data_confidence),
-      observation_date = max(observation_date, na.rm = TRUE),
-      .groups = "drop"
-    ) |>
-    mutate(
-      outbreak_status = case_when(
-        positivity_rate >= 15 ~ "epidemic",
-        positivity_rate >= 10 ~ "high",
-        positivity_rate >= 5 ~ "moderate",
-        positivity_rate >= 2 ~ "low",
-        TRUE ~ "baseline"
-      ),
-      subclade_k_prevalence = NA_real_,
-      confirmed_cases = case_count
+# Populate countries_df from Database or JSON
+if (USE_DATABASE) {
+  # Fetch latest surveillance snapshot from DB
+  conn <- get_db_connection()
+  map_snapshot <- get_latest_surveillance(conn)
+  close_db_connection(conn)
+  
+  if (!is.null(map_snapshot) && nrow(map_snapshot) > 0) {
+    countries_df <- map_snapshot |>
+      transmute(
+        iso_code = iso_code,
+        country_name = country_name,
+        population = population,
+        outbreak_status = ifelse(!is.na(positivity_rate) & positivity_rate > 10, "High Activity", "Monitoring"), # Simple logic
+        positivity_rate = positivity_rate,
+        # subclade_k not in main table yet, leaving as NA or 0
+        subclade_k_prevalence = 0,
+        hospitalization_rate = hospitalization_rate %||% 0,
+        confirmed_cases = case_count,
+        vaccination_rate = vaccination_rate, # New column from join
+        data_confidence = data_confidence,
+        last_updated = as.character(observation_date),
+        stringsAsFactors = FALSE
+      )
+  } else {
+    # Fallback structure if DB empty
+     countries_df <- data.frame(
+      iso_code = character(), country_name = character(), population = numeric(),
+      outbreak_status = character(), positivity_rate = numeric(),
+      vaccination_rate = numeric(),
+      subclade_k_prevalence = numeric(), hospitalization_rate = numeric(),
+      confirmed_cases = numeric(), data_confidence = character(),
+      last_updated = character(), stringsAsFactors = FALSE
     )
-  message("Using database country data")
+  }
 } else {
+  # Legacy JSON Fallback
   countries_df <- tryCatch({
-    bind_rows(
-      lapply(names(outbreak_data$countries), function(iso) {
-        country <- outbreak_data$countries[[iso]]
-        data.frame(
-          iso_code = iso,
-          country_name = country$country_name,
-          population = country$population,
-          outbreak_status = country$outbreak_status,
-          positivity_rate = country$h3n2_data$positivity_rate %||% 0,
-          subclade_k_prevalence = country$h3n2_data$subclade_k_prevalence %||% 0,
-          hospitalization_rate = country$h3n2_data$hospitalization_rate %||% 0,
-          confirmed_cases = country$h3n2_data$case_numbers$confirmed_cases %||%
-                            country$h3n2_data$case_numbers$estimated_cases %||% 0,
-          data_confidence = country$data_confidence_level,
-          last_updated = country$last_updated,
-          stringsAsFactors = FALSE
-        )
-      })
-    )
+    do.call(rbind, lapply(outbreak_data$affected_countries, function(country) {
+      data.frame(
+        iso_code = country$iso_code,
+        country_name = country$country_name,
+        population = country$population,
+        outbreak_status = country$outbreak_status,
+        positivity_rate = country$h3n2_data$positivity_rate %||% 0,
+        vaccination_rate = 0, # JSON doesn't have this
+        subclade_k_prevalence = country$h3n2_data$subclade_k_prevalence %||% 0,
+        hospitalization_rate = country$h3n2_data$hospitalization_rate %||% 0,
+        confirmed_cases = country$h3n2_data$case_numbers$confirmed_cases %||%
+                          country$h3n2_data$case_numbers$estimated_cases %||% 0,
+        data_confidence = country$data_confidence_level,
+        last_updated = country$last_updated,
+        stringsAsFactors = FALSE
+      )
+    }))
   }, error = function(e) {
     message("Warning: Failed to extract country data: ", e$message)
     data.frame(
       iso_code = character(), country_name = character(), population = numeric(),
       outbreak_status = character(), positivity_rate = numeric(),
+      vaccination_rate = numeric(),
       subclade_k_prevalence = numeric(), hospitalization_rate = numeric(),
       confirmed_cases = numeric(), data_confidence = character(),
       last_updated = character(), stringsAsFactors = FALSE
@@ -856,6 +865,7 @@ ui <- page_navbar(
   title = "RespiWatch",
   theme = clinical_premium_theme,
   header = tags$head(
+    useShinyjs(),
     tags$style(HTML(custom_css)),
     tags$link(
       href = "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&family=IBM+Plex+Mono&display=swap",
@@ -918,6 +928,24 @@ ui <- page_navbar(
             h4(class = "section-header", "Global Outbreak Distribution"),
             leafletOutput("global_map", height = "500px"),
 
+            # Map Metric Selector Overlay
+            absolutePanel(
+              top = 80, right = 40, width = 220,
+              draggable = TRUE,
+              style = "background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000;",
+              selectInput("map_metric", "Select Metric:", 
+                          choices = c(
+                            "Positivity Rate (%)" = "positivity_rate",
+                            "Vaccination Coverage (%)" = "vaccination_rate",
+                            "Confirmed Cases (Total)" = "confirmed_cases"
+                          ),
+                          selected = "positivity_rate"
+              ),
+              checkboxInput("show_bubbles", "Show Case Volume (Bubbles)", value = FALSE),
+              checkboxInput("show_anomalies", "Show Alerts (High Activity)", value = TRUE),
+              div(class="small text-muted", "Draggable panel")
+            ),
+
             # Animation Controls Panel
             div(
               class = "animation-controls-panel mt-3 p-3",
@@ -927,30 +955,11 @@ ui <- page_navbar(
               div(
                 class = "d-flex justify-content-between align-items-center mb-3",
                 div(
-                  class = "layer-toggle-group",
-                  tags$label(class = "me-2 fw-medium", "Map Layer:"),
-                  div(
-                    class = "btn-group btn-group-sm",
-                    role = "group",
-                    actionButton("layer_cases", "Cases",
-                      class = "layer-toggle-btn btn btn-outline-primary active",
-                      `data-layer` = "cases"
-                    ),
-                    actionButton("layer_rt", "Rt",
-                      class = "layer-toggle-btn btn btn-outline-primary",
-                      `data-layer` = "rt"
-                    ),
-                    actionButton("layer_capacity", "Capacity",
-                      class = "layer-toggle-btn btn btn-outline-primary",
-                      `data-layer` = "capacity"
-                    )
-                  )
-                ),
-                div(
-                  class = "animation-date-display",
+                  class = "animation-date-display w-100 text-center",
                   tags$span(class = "text-muted me-2", "Current Date:"),
                   tags$span(id = "animation_current_date", class = "fw-bold", "---")
-                )
+                ),
+
               ),
 
               # Playback Controls Row
@@ -985,14 +994,15 @@ ui <- page_navbar(
                 # Timeline Slider
                 div(
                   class = "timeline-slider flex-grow-1",
-                  tags$input(
-                    type = "range",
-                    id = "animation_timeline",
-                    class = "form-range",
-                    min = "0",
-                    max = "100",
-                    value = "0",
-                    style = "width: 100%;"
+                  sliderInput("animation_date", NULL,
+                              min = as.Date("2023-01-01"),
+                              max = Sys.Date(),
+                              value = Sys.Date(),
+                              timeFormat = "%Y-%m-%d",
+                              ticks = FALSE,
+                              step = 7, # Weekly steps
+                              animate = FALSE, # We control animation manually
+                              width = "100%"
                   )
                 ),
 
@@ -1683,7 +1693,7 @@ ui <- page_navbar(
           div(
             class = "chart-container",
             h4(class = "section-header", "Training Data Range"),
-            dateRangeControlUI("bayes_date_range", label = NULL)
+            dateRangeControlUI("bayes_date_range", label = NULL, default_days = 120)
           )
         ),
         div(
@@ -2260,7 +2270,8 @@ server <- function(input, output, session) {
   # Bayesian Forecast tab date filtering
   bayes_date_filter <- dateRangeControlServer(
     "bayes_date_range",
-    timeline_data_reactive
+    timeline_data_reactive,
+    default_days = 120
   )
 
   # Scenario Analysis tab date filtering
@@ -2451,50 +2462,77 @@ server <- function(input, output, session) {
       )
     }
 
-    # Color palette for fill intensity based on positivity rate
-    # Light to dark gradient: low activity = light, high activity = dark
+    # Determine metric to display based on input
+    metric <- input$map_metric %||% "positivity_rate"
+    
+    # Configure visualization based on metric
+    if (metric == "vaccination_rate") {
+        display_val <- world_map_data$vaccination_rate
+        pal_colors <- c("#F7FCF5", "#E5F5E0", "#C7E9C0", "#A1D99B", "#74C476", "#41AB5D", "#238B45") # Green scale
+        legend_title <- "Vaccination (%)"
+        domain_range <- c(0, 100)
+        border_color <- "#006d2c"
+        val_suffix <- "%"
+    } else if (metric == "confirmed_cases") {
+        display_val <- world_map_data$confirmed_cases
+        pal_colors <- c("#F3E5F5", "#E1BEE7", "#CE93D8", "#BA68C8", "#AB47BC", "#8E24AA", "#4A148C") # Purple scale
+        legend_title <- "Total Cases"
+        domain_range <- NULL # Auto-scale
+        border_color <- "#4A148C"
+        val_suffix <- ""
+    } else {
+        # Default: Positivity Rate
+        display_val <- world_map_data$positivity_rate
+        pal_colors <- c("#FEE2E2", "#FECACA", "#FCA5A5", "#F87171", "#EF4444", "#DC2626", "#B91C1C") # Red scale
+        legend_title <- "Positivity (%)"
+        domain_range <- c(0, 50)
+        border_color <- "#991B1B"
+        val_suffix <- "%"
+    }
+    
+    # Create palette
     fill_pal <- colorNumeric(
-      palette = c("#FEE2E2", "#FECACA", "#FCA5A5", "#F87171", "#EF4444", "#DC2626", "#B91C1C"),
-      domain = c(0, 50),
-      na.color = "#F3F4F6"  # Gray for countries with no data
-    )
-
-    # Border color palette - thicker, darker borders for countries with data
-    border_pal <- colorNumeric(
-      palette = c("#E85D4C", "#DC2626", "#B91C1C", "#991B1B", "#7F1D1D"),
-      domain = c(0, 50),
-      na.color = "#D1D5DB"  # Light gray border for no-data countries
+      palette = pal_colors,
+      domain = if(is.null(domain_range)) display_val else domain_range,
+      na.color = "#F3F4F6"
     )
 
     # Create labels for popups
     labels <- sprintf(
       "<strong style='font-size: 14px;'>%s</strong><br/>
-       <span style='color: #E85D4C; font-weight: bold;'>Status: %s</span><br/>
-       Positivity Rate: <strong>%s%%</strong><br/>
-       Subclade K: %s%%<br/>
+       <span style='color: %s; font-weight: bold;'>%s: %s%s</span><br/>
+       <hr style='margin: 4px 0;'/>
+       Positivity Rate: %s%%<br/>
+       Vaccination: %s%%<br/>
        Confirmed Cases: %s<br/>
-       Data Confidence: %s",
+       Status: %s",
       ifelse(is.na(world_map_data$country_name), world_map_data$country_name_geo, world_map_data$country_name),
-      ifelse(is.na(world_map_data$outbreak_status), "No Data", world_map_data$outbreak_status),
+      border_color,
+      legend_title,
+      ifelse(is.na(display_val), "N/A", 
+             if(metric == "confirmed_cases") format(display_val, big.mark=",") 
+             else round(display_val, 1)),
+      val_suffix,
       ifelse(is.na(world_map_data$positivity_rate), "N/A", round(world_map_data$positivity_rate, 1)),
-      ifelse(is.na(world_map_data$subclade_k_prevalence), "N/A", round(world_map_data$subclade_k_prevalence, 1)),
+      ifelse(is.na(world_map_data$vaccination_rate), "N/A", round(world_map_data$vaccination_rate, 1)),
       ifelse(is.na(world_map_data$confirmed_cases), "N/A", format(world_map_data$confirmed_cases, big.mark = ",")),
-      ifelse(is.na(world_map_data$data_confidence), "N/A", world_map_data$data_confidence)
+      ifelse(is.na(world_map_data$outbreak_status), "Unknown", world_map_data$outbreak_status)
     ) |> lapply(htmltools::HTML)
 
-    leaflet(world_map_data) |>
+    # Base Map with Polygons
+    map <- leaflet(world_map_data) |>
       addProviderTiles(providers$CartoDB.Positron) |>
       setView(lng = 0, lat = 30, zoom = 2) |>
       addPolygons(
-        fillColor = ~fill_pal(positivity_rate),
+        fillColor = ~fill_pal(display_val),
         fillOpacity = 0.7,
-        color = ~border_pal(positivity_rate),  # Border color based on intensity
-        weight = ~ifelse(is.na(positivity_rate), 0.5, 2.5),  # Thicker borders for countries with data
+        color = border_color,
+        weight = ~ifelse(is.na(display_val), 0.5, 2.0),
         opacity = 1,
-        dashArray = ~ifelse(is.na(positivity_rate), "3", ""),  # Dashed for no-data countries
+        dashArray = ~ifelse(is.na(display_val), "3", ""),
         highlightOptions = highlightOptions(
           weight = 4,
-          color = "#1A1A2E",  # Dark charcoal highlight
+          color = "#1A1A2E",
           fillOpacity = 0.9,
           bringToFront = TRUE
         ),
@@ -2514,146 +2552,121 @@ server <- function(input, output, session) {
       addLegend(
         position = "bottomright",
         pal = fill_pal,
-        values = ~positivity_rate,
-        title = "Positivity Rate (%)",
+        values = if(is.null(domain_range)) display_val else domain_range,
+        title = legend_title,
         opacity = 0.8,
         na.label = "No Data",
-        labFormat = labelFormat(suffix = "%")
+        labFormat = labelFormat(suffix = val_suffix)
       )
+
+    # Optional: Bubble Layer for Case Volume
+    if (isTRUE(input$show_bubbles)) {
+      # Scale bubbles based on confirmed cases (sqrt scale for area)
+      # Normalize max size
+      max_cases <- max(world_map_data$confirmed_cases, na.rm = TRUE)
+      if (!is.finite(max_cases) || max_cases <= 0) max_cases <- 1
+      
+      map <- map |>
+        addCircleMarkers(
+          lng = ~st_coordinates(st_centroid(geometry))[,1],
+          lat = ~st_coordinates(st_centroid(geometry))[,2],
+          radius = ~ifelse(is.na(confirmed_cases), 0, sqrt(confirmed_cases) / sqrt(max_cases) * 20), # Max radius 20px
+          color = "#1A1A2E",
+          weight = 1,
+          opacity = 0.8,
+          fillColor = "#FFFFFF",
+          fillOpacity = 0.3,
+          label = ~paste0(country_name, ": ", format(confirmed_cases, big.mark=","), " Cases")
+        )
+    }
+    
+    map
   })
 
+
   # =============================================================================
-  # EPIDEMIC ANIMATION HANDLERS
+  # =============================================================================
+  # MAP TIME-LAPSE ANIMATION HANDLERS
   # =============================================================================
 
-  # Reactive values for animation state
-  animation_data <- reactiveVal(NULL)
-  animation_current_layer <- reactiveVal("cases")
+  # Animation State
+  animation_playing <- reactiveVal(FALSE)
+  
+  # Timer for animation loop (1 second per frame)
+  autoInvalidate <- reactiveTimer(1000)
 
-  # Initialize animation when page loads
+  # Initialize Slider Range from DB
   observe({
-    # Prepare animation frame data from combined timeline data
-    if (!is.null(combined_timeline_df) && nrow(combined_timeline_df) > 0) {
-      frames <- combined_timeline_df |>
-        group_by(date) |>
-        summarise(
-          total_cases = sum(case_numbers, na.rm = TRUE),
-          avg_positivity = mean(positivity_rate, na.rm = TRUE),
-          pathogens_reporting = n_distinct(pathogen),
-          .groups = "drop"
-        ) |>
-        arrange(date) |>
-        mutate(frame = row_number() - 1)
-
-      animation_data(frames)
-
-      # Send initialization to JavaScript
-      session$sendCustomMessage("epidemicAnimation_init", list(
-        mapId = "global_map",
-        totalFrames = nrow(frames),
-        layer = "cases"
-      ))
-
-      # Send frame data to JavaScript
-      session$sendCustomMessage("epidemicAnimation_loadData", frames |>
-        mutate(date = as.character(date)) |>
-        select(frame, date, total_cases, avg_positivity, pathogens_reporting) |>
-        as.list()
-      )
+    req(USE_DATABASE)
+    conn <- get_db_connection()
+    # Get range of available data
+    range <- dbGetQuery(conn, "SELECT MIN(observation_date) as start, MAX(observation_date) as end FROM surveillance_data")
+    close_db_connection(conn)
+    
+    if (!is.na(range$start) && !is.na(range$end)) {
+        updateSliderInput(session, "animation_date",
+            min = as.Date(range$start),
+            max = as.Date(range$end),
+            value = as.Date(range$end) # Start at latest
+        )
     }
   })
 
-  # Handle layer toggle buttons (using JavaScript for class manipulation)
-  observeEvent(input$layer_cases, {
-    animation_current_layer("cases")
-    session$sendCustomMessage("epidemicAnimation_setLayer", "cases")
+  # Toggle Play/Pause
+  observeEvent(input$animation_play_pause, {
+    new_state <- !animation_playing()
+    animation_playing(new_state)
+    
+    # Update button icon
+    if (new_state) {
+        updateActionButton(session, "animation_play_pause", icon = icon("pause"))
+    } else {
+        updateActionButton(session, "animation_play_pause", icon = icon("play"))
+    }
+  })
+  
+  # Step Forward Button
+  observeEvent(input$animation_step_forward, {
+    current <- input$animation_date
+    updateSliderInput(session, "animation_date", value = as.Date(current) + 7)
   })
 
-  observeEvent(input$layer_rt, {
-    animation_current_layer("rt")
-    session$sendCustomMessage("epidemicAnimation_setLayer", "rt")
+  # Step Backward Button
+  observeEvent(input$animation_step_backward, {
+    current <- input$animation_date
+    updateSliderInput(session, "animation_date", value = as.Date(current) - 7)
   })
 
-  observeEvent(input$layer_capacity, {
-    animation_current_layer("capacity")
-    session$sendCustomMessage("epidemicAnimation_setLayer", "capacity")
+  # Stop Button
+  observeEvent(input$animation_stop, {
+    animation_playing(FALSE)
+    updateActionButton(session, "animation_play_pause", icon = icon("play"))
+    # Reset to latest? or just stop? "Stop" usually resets.
+    # Let's just stop for now to keep it simple, or maybe reset to end.
   })
 
-  # Handle animation frame updates from JavaScript
-  observeEvent(input$animation_update_map, {
-    req(input$animation_update_map)
-    frame_info <- input$animation_update_map
-    layer <- frame_info$layer
-    frame <- frame_info$frame
-
-    # Get frame data
-    frames <- animation_data()
-    if (!is.null(frames) && frame < nrow(frames)) {
-      frame_data <- frames[frame + 1, ]
-
-      # Update map based on layer
-      if (layer == "cases") {
-        # Update map colors based on cases
-        leafletProxy("global_map") |>
-          clearShapes() |>
-          addPolygons(
-            data = world_map_data,
-            fillColor = ~colorNumeric(
-              palette = c("#FEE2E2", "#FECACA", "#FCA5A5", "#F87171", "#EF4444", "#DC2626", "#B91C1C"),
-              domain = c(0, 50),
-              na.color = "#F3F4F6"
-            )(positivity_rate),
-            fillOpacity = 0.7,
-            color = "#B91C1C",
-            weight = 1.5,
-            opacity = 0.8
-          )
-      } else if (layer == "rt") {
-        # Update map colors based on Rt (placeholder - would need Rt data)
-        leafletProxy("global_map") |>
-          clearShapes() |>
-          addPolygons(
-            data = world_map_data,
-            fillColor = ~colorNumeric(
-              palette = c("#10B981", "#3B82F6", "#F59E0B", "#EF4444", "#DC2626"),
-              domain = c(0.5, 2.0),
-              na.color = "#F3F4F6"
-            )(pmin(pmax(positivity_rate / 10, 0.5), 2.0)),  # Simulated Rt from positivity
-            fillOpacity = 0.7,
-            color = "#1E40AF",
-            weight = 1.5,
-            opacity = 0.8
-          )
-      } else if (layer == "capacity") {
-        # Update map colors based on capacity (placeholder)
-        leafletProxy("global_map") |>
-          clearShapes() |>
-          addPolygons(
-            data = world_map_data,
-            fillColor = ~colorNumeric(
-              palette = c("#10B981", "#3B82F6", "#F59E0B", "#EF4444", "#DC2626"),
-              domain = c(0, 100),
-              na.color = "#F3F4F6"
-            )(pmin(positivity_rate * 2, 100)),  # Simulated capacity utilization
-            fillOpacity = 0.7,
-            color = "#059669",
-            weight = 1.5,
-            opacity = 0.8
-          )
-      }
+  # Animation Loop
+  observe({
+    if (animation_playing()) {
+      autoInvalidate() # Trigger timer
+      isolate({
+        # Advance date
+        current <- input$animation_date
+        # Check if we hit the end
+        if (current >= Sys.Date()) {
+            animation_playing(FALSE)
+            updateActionButton(session, "animation_play_pause", icon = icon("play"))
+        } else {
+            updateSliderInput(session, "animation_date", value = as.Date(current) + 7)
+        }
+      })
     }
   })
 
-  # Handle frame requests from JavaScript
-  observeEvent(input$animation_request_frame, {
-    req(input$animation_request_frame)
-    frame_req <- input$animation_request_frame
-    frames <- animation_data()
-
-    if (!is.null(frames) && frame_req$frame < nrow(frames)) {
-      frame_data <- frames[frame_req$frame + 1, ]
-      # Could send back specific frame data if needed
-    }
+  # Update Map on Date Change (Commented out for debug)
+  observeEvent(input$animation_date, {
+     message("Animation date changed")
+     # Logic temporarily disabled
   })
 
   # ==========================================================================
@@ -3451,7 +3464,7 @@ server <- function(input, output, session) {
   # Comparative Positivity Chart -----------------------------------------------
   output$comparative_positivity_chart <- renderPlotly({
     # Use filtered data from date range control
-    filtered_data <- country_date_filter$data()
+    filtered_data <- pathogen_date_filter$data()
 
     # Defensive null check
     if (is.null(filtered_data) || nrow(filtered_data) == 0) {
@@ -3503,7 +3516,7 @@ server <- function(input, output, session) {
   # Comparative Hospitalization Chart ------------------------------------------
   output$comparative_hospitalization_chart <- renderPlotly({
     # Use filtered data from date range control
-    filtered_data <- country_date_filter$data()
+    filtered_data <- pathogen_date_filter$data()
 
     # Defensive null check
     if (is.null(filtered_data) || nrow(filtered_data) == 0) {
@@ -4108,14 +4121,24 @@ server <- function(input, output, session) {
 
   # Run Bayesian model when button is clicked
   observeEvent(input$run_bayesian_model, {
+    # Set loading state
     bayes_running(TRUE)
+    updateActionButton(session, "run_bayesian_model",
+                       label = "Generating...",
+                       icon = icon("spinner", class = "fa-spin"))
+    shinyjs::disable("run_bayesian_model")
 
     # Run the forecast in a tryCatch to handle errors gracefully
     result <- tryCatch({
+      # Get selected date range
+      dates <- bayes_date_filter$range()
+      
       get_bayesian_forecast(
         pathogen_code = input$bayes_pathogen,
         horizon = 4,
-        use_cache = TRUE
+        use_cache = TRUE,
+        start_date = dates$start,
+        end_date = dates$end
       )
     }, error = function(e) {
       list(
@@ -4127,6 +4150,12 @@ server <- function(input, output, session) {
 
     bayes_result(result)
     bayes_running(FALSE)
+    
+    # Restore button state
+    updateActionButton(session, "run_bayesian_model",
+                       label = "Generate Forecast",
+                       icon = icon("play"))
+    shinyjs::enable("run_bayesian_model")
   })
 
   # Model Status Display
@@ -4191,9 +4220,17 @@ server <- function(input, output, session) {
         class = "col-md-4",
         div(
           class = "kpi-card",
-          div(class = "kpi-label", "Horizon"),
-          div(class = "kpi-value", "4 Weeks"),
-          div(class = "kpi-change", "Forecast period")
+          div(class = "kpi-label", "Training Range"),
+          div(class = "kpi-value", style = "font-size: 1.2rem;",
+              if (!is.null(result$training_start) && !is.null(result$training_end)) {
+                # Calculate days difference
+                days <- as.numeric(difftime(result$training_end, result$training_start, units = "days"))
+                sprintf("%d Days", days)
+              } else "Unknown"),
+          div(class = "kpi-change",
+              if (!is.null(result$training_start)) {
+                sprintf("%s to %s", format(result$training_start, "%b %d"), format(result$training_end, "%b %d"))
+              } else "Full History")
         )
       ),
       div(
@@ -4212,6 +4249,20 @@ server <- function(input, output, session) {
   # Bayesian Forecast Plot
   output$bayes_forecast_plot <- renderPlotly({
     result <- bayes_result()
+
+    # Show loading placeholder if running
+    if (bayes_running()) {
+      return(plotly_empty() |> layout(
+        title = list(text = "Generating Forecast...", y = 0.5),
+        annotations = list(
+          list(
+            x = 0.5, y = 0.4, xref = "paper", yref = "paper",
+            text = "Please wait while the model fits...",
+            showarrow = FALSE, font = list(size = 14, color = "gray")
+          )
+        )
+      ))
+    }
 
     if (is.null(result) || is.null(result$forecast)) {
       return(plotly_empty() |> layout(
@@ -4234,6 +4285,25 @@ server <- function(input, output, session) {
     # Prepare forecast data
     forecast_plot <- forecast_df |>
       mutate(type = "Forecast")
+      
+    # Connect historical to forecast visually
+    # Create a small bridge dataframe if we have history
+    bridge_plot <- NULL
+    if (nrow(historical_plot) > 0) {
+      last_hist <- tail(historical_plot, 1)
+      first_fcast <- head(forecast_plot, 1)
+      
+      # Only bridge if there is a gap (e.g. 1 week)
+      if (first_fcast$date > last_hist$date) {
+         bridge_plot <- bind_rows(
+           last_hist |> select(date, cases) |> mutate(type = "Forecast", ymin=NA, ymax=NA), # Use Forecast type to match color
+           first_fcast |> select(date, cases = mean) |> mutate(type="Forecast") # Ensure columns match
+         )
+         # Fill in NA intervals for the bridge point (last hist) so ribbons start there too
+         # actually, usually we want the ribbon to flare out from the last point.
+         # For simplicity, let's just make sure the dashed line connects.
+      }
+    }
 
     p <- ggplot() +
       # 95% credible interval
@@ -4256,6 +4326,17 @@ server <- function(input, output, session) {
                   color = "#374151", linewidth = 1) +
         geom_point(data = historical_plot, aes(x = date, y = cases),
                    color = "#374151", size = 2)
+       
+       # Add the connecting dashed line from last observed to first forecast
+       if (!is.null(bridge_plot)) {
+          # We manually draw a segment
+          last_hist <- tail(historical_plot, 1)
+          first_fcast <- head(forecast_plot, 1)
+          p <- p + 
+            geom_segment(aes(x = last_hist$date, y = last_hist$cases, 
+                             xend = first_fcast$date, yend = first_fcast$mean),
+                         color = "#7C3AED", linewidth = 1.2, linetype = "dashed", alpha=0.7)
+       }
     }
 
     # Add forecast line
@@ -4379,11 +4460,11 @@ server <- function(input, output, session) {
           ),
           tags$tr(
             tags$td(tags$strong("Min Bulk ESS")),
-            tags$td(sprintf("%d", diag$convergence$ess_min_bulk %||% NA))
+            tags$td(sprintf("%.0f", diag$convergence$ess_min_bulk %||% NA))
           ),
           tags$tr(
             tags$td(tags$strong("Divergences")),
-            tags$td(sprintf("%d", diag$convergence$n_divergences %||% 0))
+            tags$td(sprintf("%.0f", diag$convergence$n_divergences %||% 0))
           )
         )
       ),
@@ -4654,14 +4735,28 @@ server <- function(input, output, session) {
 
   # Run scenario analysis when button clicked
   observeEvent(input$run_scenarios, {
-    req(input$scenario_pathogen, input$selected_scenarios)
+    req(input$scenario_pathogen, input$scenario_selection)
+
+    # UI Loading State
+    shinyjs::disable("run_scenarios")
+    updateActionButton(session, "run_scenarios",
+                       label = "Running...",
+                       icon = icon("spinner", class = "fa-spin"))
+
+    # Ensure reset happens even on error
+    on.exit({
+      shinyjs::enable("run_scenarios")
+      updateActionButton(session, "run_scenarios",
+                         label = "Run Scenarios",
+                         icon = icon("play"))
+    })
 
     showNotification("Running scenario analysis...", type = "message", duration = 2)
 
     result <- tryCatch({
       get_scenario_projections(
         pathogen_code = input$scenario_pathogen,
-        scenarios = input$selected_scenarios,
+        scenarios = input$scenario_selection,
         horizon = input$scenario_horizon
       )
     }, error = function(e) {
@@ -4991,6 +5086,20 @@ server <- function(input, output, session) {
   # Generate capacity forecast when button clicked
   observeEvent(input$generate_capacity_forecast, {
     req(input$capacity_pathogen, input$capacity_horizon)
+    
+    # UI Loading State
+    shinyjs::disable("generate_capacity_forecast")
+    updateActionButton(session, "generate_capacity_forecast",
+                       label = "Processing...",
+                       icon = icon("spinner", class = "fa-spin"))
+    
+    # Ensure reset happens even on error
+    on.exit({
+      shinyjs::enable("generate_capacity_forecast")
+      updateActionButton(session, "generate_capacity_forecast",
+                         label = "Generate Forecast",
+                         icon = icon("sync"))
+    })
 
     showNotification("Generating capacity forecast...", type = "message", duration = 2)
 
@@ -5170,7 +5279,7 @@ server <- function(input, output, session) {
                ))
     }
 
-    plot_data <- prepare_capacity_plot_data(result)
+    plot_data <- result$timeline
     if (is.null(plot_data) || nrow(plot_data) == 0) {
       return(plotly_empty() |>
                layout(title = "No timeline data available"))
@@ -5242,13 +5351,13 @@ server <- function(input, output, session) {
 
     plot_ly(hosp_data, x = ~date) |>
       add_trace(
-        y = ~daily_admissions,
+        y = ~total_admissions,
         type = "bar",
         name = "Projected Admissions",
         marker = list(color = "#3B82F6")
       ) |>
       add_trace(
-        y = ~cumulative_occupancy,
+        y = ~total_occupancy,
         type = "scatter",
         mode = "lines",
         name = "Projected Occupancy",
