@@ -2557,16 +2557,18 @@ server <- function(input, output, session) {
     ) |> lapply(htmltools::HTML)
 
     # Base Map with Polygons
-    # Configure bounds to prevent infinite horizontal scrolling
+    # Configure bounds to prevent infinite horizontal scrolling and tile 400 errors
     map <- leaflet(map_data, options = leafletOptions(
       worldCopyJump = FALSE,
-      maxBoundsViscosity = 1.0
+      maxBoundsViscosity = 1.0,
+      minZoom = 2  # Prevent zoom out beyond tile grid bounds
     )) |>
       addProviderTiles(providers$CartoDB.Positron, options = providerTileOptions(
-        noWrap = TRUE
+        noWrap = TRUE,
+        bounds = list(c(-85.06, -180), c(85.06, 180))  # Limit tile requests to Web Mercator valid area
       )) |>
-      setView(lng = 0, lat = 30, zoom = 2) |>
-      setMaxBounds(lng1 = -180, lat1 = -90, lng2 = 180, lat2 = 90) |>
+      setView(lng = 0, lat = 20, zoom = 2) |>  # Adjusted center to avoid polar edge
+      setMaxBounds(lng1 = -180, lat1 = -85, lng2 = 180, lat2 = 85) |>  # Web Mercator limits
       addPolygons(
         fillColor = ~fill_pal(display_val),
         fillOpacity = 0.7,
