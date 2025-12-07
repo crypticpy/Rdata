@@ -71,18 +71,23 @@ if (USE_DATABASE) {
   close_db_connection(conn)
   
   if (!is.null(map_snapshot) && nrow(map_snapshot) > 0) {
+    # Filter to H3N2 (influenza) data and get most recent observation per country
+    # This prevents duplicate geometry rows from multi-pathogen data
     countries_df <- map_snapshot |>
+      filter(pathogen_code == "H3N2") |>  # Focus on influenza for choropleth
+      group_by(iso_code) |>
+      slice_max(observation_date, n = 1, with_ties = FALSE) |>
+      ungroup() |>
       transmute(
         iso_code = iso_code,
         country_name = country_name,
         population = population,
-        outbreak_status = ifelse(!is.na(positivity_rate) & positivity_rate > 10, "High Activity", "Monitoring"), # Simple logic
+        outbreak_status = ifelse(!is.na(positivity_rate) & positivity_rate > 10, "High Activity", "Monitoring"),
         positivity_rate = positivity_rate,
-        # subclade_k not in main table yet, leaving as NA or 0
         subclade_k_prevalence = 0,
         hospitalization_rate = hospitalization_rate %||% 0,
         confirmed_cases = case_count,
-        vaccination_rate = vaccination_rate, # New column from join
+        vaccination_rate = vaccination_rate,
         data_confidence = data_confidence,
         last_updated = as.character(observation_date),
         stringsAsFactors = FALSE
@@ -2513,9 +2518,16 @@ server <- function(input, output, session) {
     ) |> lapply(htmltools::HTML)
 
     # Base Map with Polygons
-    map <- leaflet(world_map_data) |>
-      addProviderTiles(providers$CartoDB.Positron) |>
+    # Configure bounds to prevent infinite horizontal scrolling
+    map <- leaflet(world_map_data, options = leafletOptions(
+      worldCopyJump = FALSE,
+      maxBoundsViscosity = 1.0
+    )) |>
+      addProviderTiles(providers$CartoDB.Positron, options = providerTileOptions(
+        noWrap = TRUE
+      )) |>
       setView(lng = 0, lat = 30, zoom = 2) |>
+      setMaxBounds(lng1 = -180, lat1 = -90, lng2 = 180, lat2 = 90) |>
       addPolygons(
         fillColor = ~fill_pal(display_val),
         fillOpacity = 0.7,

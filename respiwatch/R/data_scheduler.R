@@ -269,15 +269,11 @@ refresh_global_influenza_data <- function(conn) {
     flunet_data <- fetch_who_flumart()
 
     if (!is.null(flunet_data) && nrow(flunet_data) > 0) {
-      # Get the most recent observation per country (aggregate weekly data)
-      # FluNet provides weekly data, so we take the latest week per country
-      latest_data <- flunet_data |>
-        group_by(iso_code) |>
-        slice_max(observation_date, n = 1, with_ties = FALSE) |>
-        ungroup()
+      # Store ALL historical weeks - needed for timeline animation and trend analysis
+      # FluNet provides 52 weeks of data per country
 
-      # Transform to database format
-      global_records <- latest_data |>
+      # Transform to database format (keep all historical records)
+      global_records <- flunet_data |>
         mutate(
           pathogen_code = "H3N2",  # Primary influenza subtype tracked
           observation_date = as.character(observation_date),
