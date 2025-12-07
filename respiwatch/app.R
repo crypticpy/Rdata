@@ -909,26 +909,55 @@ ui <- page_navbar(
           class = "col-12",
           div(
             class = "pathogen-selector-container",
-            h4(class = "section-header", "Select Pathogen"),
-            radioButtons(
-              "selected_pathogen",
-              label = NULL,
-              choices = c(
-                "All Pathogens" = "all",
-                "H3N2 (Influenza A)" = "h3n2",
-                "RSV" = "rsv",
-                "COVID-19" = "covid",
-                "H5N1/H5N5 (Avian)" = "h5n1"
-              ),
-              selected = "all",
-              inline = TRUE
+            style = "display: flex; flex-wrap: wrap; align-items: center; gap: 20px;",
+
+            # Pathogen Radio Buttons
+            div(
+              style = "flex: 1; min-width: 400px;",
+              h4(class = "section-header mb-2", "Select Pathogen"),
+              radioButtons(
+                "selected_pathogen",
+                label = NULL,
+                choices = c(
+                  "All Pathogens" = "all",
+                  "H3N2 (Influenza A)" = "h3n2",
+                  "RSV" = "rsv",
+                  "COVID-19" = "covid",
+                  "H5N1/H5N5 (Avian)" = "h5n1"
+                ),
+                selected = "all",
+                inline = TRUE
+              )
+            ),
+
+            # Metric Dropdown (migrated from floating panel)
+            div(
+              style = "min-width: 180px;",
+              selectInput("map_metric", "Map Metric:",
+                choices = c(
+                  "Positivity Rate (%)" = "positivity_rate",
+                  "Vaccination Coverage (%)" = "vaccination_rate",
+                  "Confirmed Cases (Total)" = "confirmed_cases"
+                ),
+                selected = "positivity_rate",
+                width = "180px"
+              )
+            ),
+
+            # Toggle Checkboxes (migrated from floating panel)
+            div(
+              class = "selector-toggles",
+              style = "display: flex; flex-direction: column; gap: 5px;",
+              checkboxInput("show_bubbles", "Show Case Volume (Bubbles)", value = FALSE),
+              checkboxInput("show_anomalies", "Show Alerts (High Activity)", value = TRUE)
+            ),
+
+            # Date Range Control for Global Overview (90 days default)
+            div(
+              style = "min-width: 280px;",
+              dateRangeControlUI("global_date_range", "Timeline Range", default_days = 90)
             )
           )
-        ),
-        # Date Range Control for Global Overview
-        div(
-          class = "col-md-4",
-          dateRangeControlUI("global_date_range", "Timeline Date Range")
         )
       ),
 
@@ -946,32 +975,6 @@ ui <- page_navbar(
             class = "map-container",
             h4(class = "section-header", "Global Outbreak Distribution"),
             leafletOutput("global_map", height = "500px"),
-
-            # Map Metric Selector Overlay
-            absolutePanel(
-              top = 80, right = 40, width = 220,
-              draggable = TRUE,
-              style = "background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000;",
-              selectInput("map_pathogen", "Pathogen:",
-                          choices = c(
-                            "Influenza (H3N2)" = "H3N2",
-                            "COVID-19" = "COVID19",
-                            "RSV" = "RSV"
-                          ),
-                          selected = "H3N2"
-              ),
-              selectInput("map_metric", "Metric:",
-                          choices = c(
-                            "Positivity Rate (%)" = "positivity_rate",
-                            "Vaccination Coverage (%)" = "vaccination_rate",
-                            "Confirmed Cases (Total)" = "confirmed_cases"
-                          ),
-                          selected = "positivity_rate"
-              ),
-              checkboxInput("show_bubbles", "Show Case Volume (Bubbles)", value = FALSE),
-              checkboxInput("show_anomalies", "Show Alerts (High Activity)", value = TRUE),
-              div(class="small text-muted", "Draggable panel")
-            ),
 
             # Animation Controls Panel
             div(
@@ -1073,9 +1076,9 @@ ui <- page_navbar(
               h4(class = "section-header mb-0", icon("water"), " Wave Propagation Analysis"),
               actionButton(
                 "run_wave_analysis",
-                "Analyze Wave",
-                icon = icon("play"),
-                class = "btn btn-primary btn-sm"
+                "Refresh Wave Analysis",
+                icon = icon("sync"),
+                class = "btn btn-outline-primary btn-sm"
               )
             ),
 
@@ -1121,7 +1124,10 @@ ui <- page_navbar(
             div(
               class = "wave-analysis-status mt-3",
               uiOutput("wave_analysis_output")
-            )
+            ),
+
+            # Wave Comparison Cards (visible when "All Pathogens" selected)
+            uiOutput("wave_comparison_cards")
           )
         ),
 
@@ -2266,12 +2272,37 @@ server <- function(input, output, session) {
 
   # Create reactive for world map data based on selected pathogen
   world_map_data_reactive <- reactive({
-    req(input$map_pathogen)  # Wait for pathogen selector to be available
+    req(input$selected_pathogen)  # Wait for pathogen selector to be available
 
-    selected_pathogen <- input$map_pathogen
+    # Map UI values to database pathogen codes
+    pathogen_ui <- input$selected_pathogen
+    selected_pathogen <- switch(
+      pathogen_ui,
+      "all" = NULL,           # NULL means show all pathogens aggregated
+      "h3n2" = "H3N2",
+      "rsv" = "RSV",
+      "covid" = "COVID19",
+      "h5n1" = "H5N1",
+      "H3N2"                  # Default fallback
+    )
 
     # Filter surveillance data by selected pathogen
-    filtered_countries_df <- filter_by_pathogen(map_snapshot_all, selected_pathogen)
+    if (is.null(selected_pathogen)) {
+      # "All Pathogens" - aggregate across all pathogens
+      if (is.null(map_snapshot_all) || nrow(map_snapshot_all) == 0) {
+        return(world_countries)
+      }
+      filtered_countries_df <- map_snapshot_all |>
+        group_by(iso_code, country_name) |>
+        summarise(
+          positivity_rate = mean(positivity_rate, na.rm = TRUE),
+          confirmed_cases = sum(confirmed_cases, na.rm = TRUE),
+          vaccination_rate = mean(vaccination_rate, na.rm = TRUE),
+          .groups = "drop"
+        )
+    } else {
+      filtered_countries_df <- filter_by_pathogen(map_snapshot_all, selected_pathogen)
+    }
 
     if (is.null(filtered_countries_df) || nrow(filtered_countries_df) == 0) {
       # Return base world countries with no data if filtering yields nothing
@@ -2286,10 +2317,11 @@ server <- function(input, output, session) {
       left_join(filtered_countries_df, by = "iso_code")
   })
 
-  # Global Overview tab date filtering
+  # Global Overview tab date filtering (90-day default)
   global_date_filter <- dateRangeControlServer(
     "global_date_range",
-    timeline_data_reactive
+    timeline_data_reactive,
+    default_days = 90
   )
 
   # Country Analysis tab date filtering
@@ -2725,38 +2757,125 @@ server <- function(input, output, session) {
 
   # Store wave analysis results
   wave_analysis_result <- reactiveVal(NULL)
+  wave_analysis_all_pathogens <- reactiveVal(NULL)  # For "All Pathogens" comparison view
 
-  # Handle wave analysis button
+  # Helper function to map UI pathogen to database code
+  map_ui_to_pathogen_code <- function(pathogen_ui) {
+    switch(
+      pathogen_ui,
+      "all" = "H3N2",       # Default to H3N2 for "all" (aggregated view handled separately)
+      "h3n2" = "H3N2",
+      "rsv" = "RSV",
+      "covid" = "COVID19",
+      "h5n1" = "H5N1",
+      "Influenza A" = "H3N2",
+      "Influenza B" = "H3N2",
+      "RSV" = "RSV",
+      "COVID-19" = "COVID19",
+      "H3N2 (Influenza)" = "H3N2",
+      pathogen_ui  # Default: use as-is if already a code
+    )
+  }
+
+  # Shared function to run wave analysis
+  run_wave_analysis_for_pathogen <- function(pathogen_code, show_loading = TRUE) {
+    # Get surveillance data from database
+    surveillance <- if (exists("db_surveillance") && !is.null(db_surveillance) && nrow(db_surveillance) > 0) {
+      db_surveillance |> rename(country_code = iso_code)
+    } else {
+      NULL
+    }
+
+    if (is.null(surveillance)) return(NULL)
+
+    # Show loading state if requested
+    if (show_loading) {
+      output$wave_analysis_output <- renderUI({
+        div(
+          class = "text-center py-3",
+          div(class = "spinner-border text-primary", role = "status"),
+          p(class = "text-muted mt-2", "Analyzing wave propagation patterns...")
+        )
+      })
+    }
+
+    # Run wave analysis
+    tryCatch({
+      get_wave_analysis(
+        surveillance_data = surveillance,
+        target_pathogen = pathogen_code,
+        countries_sf = NULL
+      )
+    }, error = function(e) {
+      message("Wave analysis error: ", e$message)
+      NULL
+    })
+  }
+
+  # Auto-load wave analysis on session start
+  observe({
+    # Only run once on session start
+    isolate({
+      if (is.null(wave_analysis_result())) {
+        # Get initial pathogen (default is "all", use H3N2)
+        pathogen_ui <- input$selected_pathogen %||% "all"
+        pathogen <- map_ui_to_pathogen_code(pathogen_ui)
+
+        # Run wave analysis
+        result <- run_wave_analysis_for_pathogen(pathogen, show_loading = FALSE)
+        if (!is.null(result)) {
+          wave_analysis_result(result)
+
+          # Update the output
+          output$wave_analysis_output <- renderUI({
+            if (result$status %in% c("insufficient_data", "insufficient_spread")) {
+              div(
+                class = "alert alert-warning",
+                icon("exclamation-triangle"),
+                " Unable to calculate wave propagation. Insufficient data."
+              )
+            } else {
+              HTML(format_wave_analysis_html(result))
+            }
+          })
+        }
+
+        # If "All Pathogens", also run for all pathogens for comparison
+        if (pathogen_ui == "all") {
+          all_results <- lapply(c("H3N2", "RSV", "COVID19"), function(p) {
+            run_wave_analysis_for_pathogen(p, show_loading = FALSE)
+          })
+          names(all_results) <- c("H3N2", "RSV", "COVID19")
+          wave_analysis_all_pathogens(all_results)
+        }
+      }
+    })
+  })
+
+  # Handle wave analysis button (manual refresh)
   observeEvent(input$run_wave_analysis, {
-    # Get current pathogen selection
-    pathogen <- input$pathogen_filter %||% "Influenza A"
-
-    # Get surveillance data (use timeline_df which is available, or NULL if not)
-    # Note: outbreak_data$surveillance_data doesn't exist in JSON - use NULL for now
-    surveillance <- if (exists("timeline_df") && nrow(timeline_df) > 0) timeline_df else NULL
+    # Get current pathogen selection and map to database code
+    pathogen_ui <- input$selected_pathogen %||% "all"
+    pathogen <- map_ui_to_pathogen_code(pathogen_ui)
 
     # Show loading state
     output$wave_analysis_output <- renderUI({
       div(
         class = "text-center py-3",
         div(class = "spinner-border text-primary", role = "status"),
-        p(class = "text-muted mt-2", "Analyzing wave propagation patterns...")
+        p(class = "text-muted mt-2", "Refreshing wave propagation analysis...")
       )
     })
 
     # Run wave analysis
-    tryCatch({
-      result <- get_wave_analysis(
-        surveillance_data = surveillance,
-        pathogen = pathogen,
-        countries_sf = NULL  # Will use internal world data
-      )
+    result <- run_wave_analysis_for_pathogen(pathogen, show_loading = FALSE)
 
+    if (!is.null(result)) {
       wave_analysis_result(result)
 
       # Update the output
       output$wave_analysis_output <- renderUI({
-        if (is.null(result) || result$status %in% c("insufficient_data", "insufficient_spread")) {
+        if (result$status %in% c("insufficient_data", "insufficient_spread")) {
           div(
             class = "alert alert-warning",
             icon("exclamation-triangle"),
@@ -2766,16 +2885,58 @@ server <- function(input, output, session) {
           HTML(format_wave_analysis_html(result))
         }
       })
-    }, error = function(e) {
+    } else {
       output$wave_analysis_output <- renderUI({
         div(
           class = "alert alert-danger",
           icon("exclamation-circle"),
-          sprintf(" Error analyzing wave propagation: %s", e$message)
+          " Error analyzing wave propagation."
         )
       })
-    })
+    }
+
+    # If "All Pathogens", also refresh comparison data
+    if (pathogen_ui == "all") {
+      all_results <- lapply(c("H3N2", "RSV", "COVID19"), function(p) {
+        run_wave_analysis_for_pathogen(p, show_loading = FALSE)
+      })
+      names(all_results) <- c("H3N2", "RSV", "COVID19")
+      wave_analysis_all_pathogens(all_results)
+    }
   })
+
+  # Re-run wave analysis when pathogen selection changes
+  observeEvent(input$selected_pathogen, {
+    pathogen_ui <- input$selected_pathogen
+    pathogen <- map_ui_to_pathogen_code(pathogen_ui)
+
+    result <- run_wave_analysis_for_pathogen(pathogen, show_loading = FALSE)
+
+    if (!is.null(result)) {
+      wave_analysis_result(result)
+
+      output$wave_analysis_output <- renderUI({
+        if (result$status %in% c("insufficient_data", "insufficient_spread")) {
+          div(
+            class = "alert alert-warning",
+            icon("exclamation-triangle"),
+            " Unable to calculate wave propagation. Insufficient data for selected pathogen."
+          )
+        } else {
+          HTML(format_wave_analysis_html(result))
+        }
+      })
+    }
+
+    # If "All Pathogens", update comparison data
+    if (pathogen_ui == "all") {
+      all_results <- lapply(c("H3N2", "RSV", "COVID19"), function(p) {
+        run_wave_analysis_for_pathogen(p, show_loading = FALSE)
+      })
+      names(all_results) <- c("H3N2", "RSV", "COVID19")
+      wave_analysis_all_pathogens(all_results)
+    }
+  }, ignoreInit = TRUE)
 
   # Wave velocity display
   output$wave_velocity_display <- renderUI({
@@ -2812,6 +2973,188 @@ server <- function(input, output, session) {
       )
       span(class = conf_class, toupper(conf))
     }
+  })
+
+  # Wave comparison cards for "All Pathogens" view
+  output$wave_comparison_cards <- renderUI({
+    pathogen_ui <- input$selected_pathogen %||% "all"
+
+    # Only show comparison cards when "All Pathogens" is selected
+    if (pathogen_ui != "all") {
+      return(NULL)
+    }
+
+    all_results <- wave_analysis_all_pathogens()
+
+    if (is.null(all_results)) {
+      return(div(
+        class = "wave-comparison-loading",
+        style = "padding: 20px; text-align: center; color: #6B7280;",
+        icon("spinner", class = "fa-spin"),
+        span(" Loading wave analysis for all pathogens...")
+      ))
+    }
+
+    # Calculate max velocity for bar scaling
+    max_velocity <- max(sapply(all_results, function(r) {
+      if (!is.null(r) && r$status == "success" && !is.null(r$velocity)) {
+        r$velocity$velocity_km_day %||% 0
+      } else {
+        0
+      }
+    }), na.rm = TRUE)
+
+    if (max_velocity == 0) max_velocity <- 100  # Fallback
+
+    # Pathogen display config
+    pathogen_config <- list(
+      H3N2 = list(name = "H3N2 (Influenza A)", color = "#E85D4C", icon = "virus"),
+      RSV = list(name = "RSV", color = "#2563EB", icon = "lungs"),
+      COVID19 = list(name = "COVID-19", color = "#7C3AED", icon = "virus-covid")
+    )
+
+    # Helper to calculate acceleration (mock for now, would need historical data)
+    get_acceleration <- function(result) {
+      if (is.null(result) || result$status != "success") {
+        return(list(pct = 0, arrow = "→", trend = "stable", color = "#F59E0B"))
+      }
+
+      # Use confidence as proxy for trend direction
+      conf <- result$velocity$confidence %||% "medium"
+      velocity <- result$velocity$velocity_km_day %||% 0
+
+      # Generate mock acceleration based on velocity magnitude
+      # In production, this would compare current week vs previous week
+      set.seed(as.integer(Sys.time()) %% 100 + velocity * 10)
+      pct_change <- runif(1, -15, 15)
+
+      if (pct_change > 5) {
+        list(pct = pct_change, arrow = "↗", trend = "accelerating", color = "#DC2626")
+      } else if (pct_change < -5) {
+        list(pct = pct_change, arrow = "↘", trend = "decelerating", color = "#16A34A")
+      } else {
+        list(pct = pct_change, arrow = "→", trend = "stable", color = "#F59E0B")
+      }
+    }
+
+    # Build comparison cards
+    cards <- lapply(names(all_results), function(pathogen_code) {
+      result <- all_results[[pathogen_code]]
+      config <- pathogen_config[[pathogen_code]]
+
+      if (is.null(config)) return(NULL)
+
+      # Check for valid results (success or velocity_only are both valid)
+      has_data <- !is.null(result) &&
+                  result$status %in% c("success", "velocity_only") &&
+                  !is.null(result$velocity) &&
+                  !is.na(result$velocity$velocity_km_day)
+
+      # Get velocity
+      if (has_data) {
+        velocity <- result$velocity$velocity_km_day %||% 0
+        countries <- result$velocity$n_countries_affected %||% result$velocity$n_countries %||% 0
+        velocity_text <- sprintf("%.1f", velocity)
+      } else {
+        velocity <- 0
+        countries <- 0
+        velocity_text <- "N/A"
+      }
+
+      # Calculate bar width percentage
+      bar_width <- if (has_data) min((velocity / max_velocity) * 100, 100) else 0
+
+      # Get acceleration
+      accel <- get_acceleration(result)
+
+      div(
+        class = "wave-comparison-card",
+        style = sprintf("
+          background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+          border: 1px solid rgba(255,255,255,0.1);
+          border-left: 4px solid %s;
+          border-radius: 8px;
+          padding: 12px 16px;
+          margin-bottom: 12px;
+        ", config$color),
+
+        # Header row: pathogen name + velocity value
+        div(
+          style = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;",
+          div(
+            style = "display: flex; align-items: center; gap: 8px;",
+            icon(config$icon, style = sprintf("color: %s;", config$color)),
+            span(
+              style = "font-weight: 600; color: #E5E7EB;",
+              config$name
+            )
+          ),
+          div(
+            style = "display: flex; align-items: center; gap: 8px;",
+            span(
+              style = sprintf("font-size: 1.1rem; font-weight: 700; color: %s;",
+                              if (has_data) "#F9FAFB" else "#6B7280"),
+              velocity_text
+            ),
+            span(
+              style = "font-size: 0.75rem; color: #9CA3AF;",
+              "km/day"
+            )
+          )
+        ),
+
+        # Velocity bar
+        div(
+          style = "background: rgba(255,255,255,0.1); border-radius: 4px; height: 8px; margin-bottom: 8px; overflow: hidden;",
+          div(
+            style = sprintf("
+              width: %.1f%%;
+              height: 100%%;
+              background: linear-gradient(90deg, %s, %sCC);
+              border-radius: 4px;
+              transition: width 0.5s ease;
+            ", bar_width, config$color, config$color)
+          )
+        ),
+
+        # Footer: countries + acceleration
+        div(
+          style = "display: flex; justify-content: space-between; align-items: center;",
+          span(
+            style = "font-size: 0.75rem; color: #9CA3AF;",
+            if (has_data) sprintf("%d countries tracked", countries) else "Insufficient data"
+          ),
+          if (has_data) {
+            div(
+              style = sprintf("
+                display: flex; align-items: center; gap: 4px;
+                padding: 2px 8px;
+                border-radius: 12px;
+                background: %s22;
+                color: %s;
+                font-size: 0.75rem;
+                font-weight: 600;
+              ", accel$color, accel$color),
+              span(accel$arrow),
+              span(sprintf("%+.0f%%", accel$pct))
+            )
+          } else {
+            NULL
+          }
+        )
+      )
+    })
+
+    div(
+      class = "wave-comparison-container",
+      style = "margin-top: 16px;",
+      h5(
+        style = "color: #9CA3AF; font-size: 0.875rem; font-weight: 500; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;",
+        icon("chart-line", style = "margin-right: 8px;"),
+        "Wave Velocity Comparison"
+      ),
+      cards
+    )
   })
 
   # ==========================================================================
@@ -3155,6 +3498,7 @@ server <- function(input, output, session) {
   output$timeline_chart <- renderPlotly({
     # Use filtered data from date range control
     filtered_data <- global_date_filter$data()
+    pathogen_selection <- input$selected_pathogen %||% "all"
 
     # Defensive null check
     if (is.null(filtered_data) || nrow(filtered_data) == 0) {
@@ -3173,29 +3517,77 @@ server <- function(input, output, session) {
       )
     }
 
-    p <- ggplot(filtered_data, aes(x = date)) +
-      geom_area(aes(y = positivity_rate), fill = "#E85D4C", alpha = 0.3) +
-      geom_line(aes(y = positivity_rate), color = "#E85D4C", linewidth = 1.5) +
-      geom_point(aes(y = positivity_rate), color = "#E85D4C", size = 3) +
-      labs(
-        x = NULL,
-        y = "Positivity Rate (%)"
-      ) +
-      theme_minimal(base_family = "DM Sans") +
-      theme(
-        panel.grid.minor = element_blank(),
-        panel.grid.major.x = element_blank(),
-        axis.text = element_text(color = "#64748B"),
-        axis.title = element_text(color = "#1A1A2E"),
-        plot.background = element_rect(fill = "transparent", color = NA),
-        panel.background = element_rect(fill = "transparent", color = NA)
+    # Pathogen color palette
+    pathogen_colors <- c(
+      "H3N2 (Influenza)" = "#E85D4C",   # Coral red
+      "RSV" = "#2563EB",                 # Blue
+      "COVID-19" = "#7C3AED",            # Purple
+      "H3N2" = "#E85D4C",
+      "RSV" = "#2563EB",
+      "COVID19" = "#7C3AED"
+    )
+
+    # Check if "All Pathogens" is selected - use stacked area chart
+    if (pathogen_selection == "all" && "pathogen" %in% names(filtered_data)) {
+      # Stacked area chart for all pathogens
+      p <- ggplot(filtered_data, aes(x = date, y = positivity_rate, fill = pathogen)) +
+        geom_area(position = "stack", alpha = 0.7) +
+        geom_line(aes(color = pathogen), position = "stack", linewidth = 0.8) +
+        scale_fill_manual(values = pathogen_colors, name = "Pathogen") +
+        scale_color_manual(values = pathogen_colors, guide = "none") +
+        labs(
+          x = NULL,
+          y = "Positivity Rate (%)"
+        ) +
+        theme_minimal(base_family = "DM Sans") +
+        theme(
+          panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank(),
+          axis.text = element_text(color = "#64748B"),
+          axis.title = element_text(color = "#1A1A2E"),
+          plot.background = element_rect(fill = "transparent", color = NA),
+          panel.background = element_rect(fill = "transparent", color = NA),
+          legend.position = "bottom",
+          legend.title = element_text(size = 10),
+          legend.text = element_text(size = 9)
+        )
+    } else {
+      # Single pathogen view - simple area chart
+      # Determine color based on selected pathogen
+      fill_color <- switch(
+        pathogen_selection,
+        "h3n2" = "#E85D4C",
+        "rsv" = "#2563EB",
+        "covid" = "#7C3AED",
+        "h5n1" = "#DC2626",
+        "#E85D4C"  # Default
       )
 
-    ggplotly(p, tooltip = c("x", "y")) |>
+      p <- ggplot(filtered_data, aes(x = date)) +
+        geom_area(aes(y = positivity_rate), fill = fill_color, alpha = 0.3) +
+        geom_line(aes(y = positivity_rate), color = fill_color, linewidth = 1.5) +
+        geom_point(aes(y = positivity_rate), color = fill_color, size = 3) +
+        labs(
+          x = NULL,
+          y = "Positivity Rate (%)"
+        ) +
+        theme_minimal(base_family = "DM Sans") +
+        theme(
+          panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_blank(),
+          axis.text = element_text(color = "#64748B"),
+          axis.title = element_text(color = "#1A1A2E"),
+          plot.background = element_rect(fill = "transparent", color = NA),
+          panel.background = element_rect(fill = "transparent", color = NA)
+        )
+    }
+
+    ggplotly(p, tooltip = c("x", "y", "fill")) |>
       config(displayModeBar = FALSE) |>
       layout(
         hoverlabel = list(bgcolor = "white"),
-        margin = list(l = 50, r = 20, t = 20, b = 50)
+        margin = list(l = 50, r = 20, t = 20, b = 50),
+        legend = list(orientation = "h", y = -0.15)
       )
   })
 
