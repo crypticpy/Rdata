@@ -47,8 +47,7 @@ _publish.yml
 *.zip
 *.tar.gz
 
-# Claude Code
-.claude/
+# Claude Code (keeping .claude/ for shared settings)
 
 # Playwright / Browser automation
 .playwright-mcp/

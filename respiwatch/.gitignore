@@ -38,8 +38,5 @@ prototype/.browser_screenshots/
 debug_*.R
 test_*.R
 
-# Claude Code
-.claude/
-
 # Playwright
 .playwright-mcp/
