@@ -223,16 +223,27 @@ generate_surveillance_alerts <- function(surveillance_data) {
     return(alerts)
   }
 
+  # Determine which column name is used for pathogen
+  pathogen_col <- if ("pathogen_code" %in% names(surveillance_data)) {
+    "pathogen_code"
+  } else if ("pathogen" %in% names(surveillance_data)) {
+    "pathogen"
+  } else {
+    return(alerts)  # No pathogen column found
+  }
+
   # Get most recent data by pathogen
   recent <- surveillance_data |>
-    group_by(pathogen_code) |>
+    group_by(across(all_of(pathogen_col))) |>
     arrange(desc(observation_date)) |>
     slice(1:2) |>
     ungroup()
 
   # Check each pathogen
-  for (pathogen in unique(recent$pathogen_code)) {
-    pathogen_data <- recent |> filter(pathogen_code == pathogen)
+  pathogen_values <- unique(recent[[pathogen_col]])
+  for (p in pathogen_values) {
+    pathogen_data <- recent |> filter(.data[[pathogen_col]] == p)
+    pathogen <- p  # Keep for alert creation
 
     # High positivity rate
     if ("positivity_rate" %in% names(pathogen_data)) {

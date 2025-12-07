@@ -101,7 +101,7 @@ if (USE_DATABASE) {
 } else {
   # Legacy JSON Fallback
   countries_df <- tryCatch({
-    do.call(rbind, lapply(outbreak_data$affected_countries, function(country) {
+    do.call(rbind, lapply(outbreak_data$countries, function(country) {
       data.frame(
         iso_code = country$iso_code,
         country_name = country$country_name,
@@ -2292,157 +2292,164 @@ server <- function(input, output, session) {
 
   # Pathogen KPIs (reactive) --------------------------------------------------
   output$pathogen_kpis <- renderUI({
-    pathogen <- input$selected_pathogen
+    tryCatch({
+      pathogen <- input$selected_pathogen
 
-    # Defensive null check for outbreak_data
-    if (is.null(outbreak_data) || is.null(outbreak_data$global_overview)) {
-      return(div(
-        class = "row g-3",
-        lapply(1:4, function(i) {
-          div(class = "col-md-3",
-            div(class = "kpi-card severity-low",
-              div(class = "kpi-title", "Loading..."),
-              div(class = "kpi-value", "--"),
-              div(class = "kpi-change", "Data loading")
+      # Defensive null check for outbreak_data
+      if (is.null(outbreak_data) || is.null(outbreak_data$global_overview)) {
+        return(div(
+          class = "row g-3",
+          lapply(1:4, function(i) {
+            div(class = "col-md-3",
+              div(class = "kpi-card severity-low",
+                div(class = "kpi-title", "Loading..."),
+                div(class = "kpi-value", "--"),
+                div(class = "kpi-change", "Data loading")
+              )
             )
+          })
+        ))
+      }
+
+      # Define pathogen-specific data
+      kpi_data <- switch(pathogen,
+        "all" = list(
+          title1 = "Active Pathogens",
+          value1 = "5",
+          change1 = "Multi-Pathogen View",
+          severity1 = "severity-moderate",
+          title2 = "Global Severity",
+          value2 = toupper(outbreak_data$global_overview$severity_assessment$global_severity),
+          change2 = "Combined Assessment",
+          severity2 = "severity-high",
+          title3 = "Dominant Pathogen",
+          value3 = "H3N2",
+          change3 = "73.5% Prevalence",
+          severity3 = "severity-high",
+          title4 = "Data Quality",
+          value4 = paste0(outbreak_data$metadata$data_quality_score, "%"),
+          change4 = paste("Updated:", format(as.Date(outbreak_data$metadata$data_baseline), "%b %d")),
+          severity4 = "severity-moderate"
+        ),
+        "h3n2" = list(
+          title1 = "Global Severity",
+          value1 = toupper(outbreak_data$global_overview$severity_assessment$global_severity),
+          change1 = "H3N2 Dominant",
+          severity1 = "severity-high",
+          title2 = "Vaccine Effectiveness",
+          value2 = paste0(outbreak_data$global_overview$severity_assessment$vaccine_effectiveness$h3n2_effectiveness, "%"),
+          change2 = "Against H3N2",
+          severity2 = "severity-moderate",
+          title3 = "Subclade K Effectiveness",
+          value3 = paste0(outbreak_data$global_overview$severity_assessment$vaccine_effectiveness$subclade_k_effectiveness, "%"),
+          change3 = "Major Mismatch",
+          severity3 = "severity-high",
+          title4 = "Data Quality",
+          value4 = paste0(outbreak_data$metadata$data_quality_score, "%"),
+          change4 = paste("Updated:", format(as.Date(outbreak_data$metadata$data_baseline), "%b %d")),
+          severity4 = "severity-moderate"
+        ),
+        "rsv" = list(
+          title1 = "RSV Status",
+          value1 = "ELEVATED",
+          change1 = "Winter Peak",
+          severity1 = "severity-moderate",
+          title2 = "Positivity Rate",
+          value2 = "12%",
+          change2 = "Lab Confirmed",
+          severity2 = "severity-moderate",
+          title3 = "Hospitalization Rate",
+          value3 = "2.3%",
+          change3 = "Age <2 & 65+",
+          severity3 = "severity-moderate",
+          title4 = "Vaccine Coverage",
+          value4 = "42%",
+          change4 = "High-Risk Groups",
+          severity4 = "severity-low"
+        ),
+        "covid" = list(
+          title1 = "COVID-19 Status",
+          value1 = "MODERATE",
+          change1 = "Endemic Phase",
+          severity1 = "severity-moderate",
+          title2 = "Positivity Rate",
+          value2 = "5%",
+          change2 = "7-Day Average",
+          severity2 = "severity-low",
+          title3 = "Variant Dominant",
+          value3 = "JN.1",
+          change3 = "Omicron Lineage",
+          severity3 = "severity-moderate",
+          title4 = "Booster Uptake",
+          value4 = "28%",
+          change4 = "2024-25 Season",
+          severity4 = "severity-moderate"
+        ),
+        "h5n1" = list(
+          title1 = "Avian Flu Status",
+          value1 = "WATCHING",
+          change1 = "Animal Spillover",
+          severity1 = "severity-high",
+          title2 = "Human Cases",
+          value2 = "61",
+          change2 = "2024 YTD (Global)",
+          severity2 = "severity-high",
+          title3 = "CFR Estimate",
+          value3 = "52%",
+          change3 = "Historical",
+          severity3 = "severity-high",
+          title4 = "Poultry Outbreaks",
+          value4 = "847",
+          change4 = "Farms Affected",
+          severity4 = "severity-high"
+        )
+      )
+
+      div(
+        class = "row g-4 mb-4",
+        div(
+          class = "col-md-3",
+          div(
+            class = paste("kpi-card", kpi_data$severity1),
+            div(class = "kpi-label", kpi_data$title1),
+            div(class = "kpi-value", kpi_data$value1),
+            div(class = "kpi-change", kpi_data$change1)
           )
-        })
-      ))
-    }
-
-    # Define pathogen-specific data
-    kpi_data <- switch(pathogen,
-      "all" = list(
-        title1 = "Active Pathogens",
-        value1 = "5",
-        change1 = "Multi-Pathogen View",
-        severity1 = "severity-moderate",
-        title2 = "Global Severity",
-        value2 = toupper(outbreak_data$global_overview$severity_assessment$global_severity),
-        change2 = "Combined Assessment",
-        severity2 = "severity-high",
-        title3 = "Dominant Pathogen",
-        value3 = "H3N2",
-        change3 = "73.5% Prevalence",
-        severity3 = "severity-high",
-        title4 = "Data Quality",
-        value4 = paste0(outbreak_data$metadata$data_quality_score, "%"),
-        change4 = paste("Updated:", format(as.Date(outbreak_data$metadata$data_baseline), "%b %d")),
-        severity4 = "severity-moderate"
-      ),
-      "h3n2" = list(
-        title1 = "Global Severity",
-        value1 = toupper(outbreak_data$global_overview$severity_assessment$global_severity),
-        change1 = "H3N2 Dominant",
-        severity1 = "severity-high",
-        title2 = "Vaccine Effectiveness",
-        value2 = paste0(outbreak_data$global_overview$severity_assessment$vaccine_effectiveness$h3n2_effectiveness, "%"),
-        change2 = "Against H3N2",
-        severity2 = "severity-moderate",
-        title3 = "Subclade K Effectiveness",
-        value3 = paste0(outbreak_data$global_overview$severity_assessment$vaccine_effectiveness$subclade_k_effectiveness, "%"),
-        change3 = "Major Mismatch",
-        severity3 = "severity-high",
-        title4 = "Data Quality",
-        value4 = paste0(outbreak_data$metadata$data_quality_score, "%"),
-        change4 = paste("Updated:", format(as.Date(outbreak_data$metadata$data_baseline), "%b %d")),
-        severity4 = "severity-moderate"
-      ),
-      "rsv" = list(
-        title1 = "RSV Status",
-        value1 = "ELEVATED",
-        change1 = "Winter Peak",
-        severity1 = "severity-moderate",
-        title2 = "Positivity Rate",
-        value2 = "12%",
-        change2 = "Lab Confirmed",
-        severity2 = "severity-moderate",
-        title3 = "Hospitalization Rate",
-        value3 = "2.3%",
-        change3 = "Age <2 & 65+",
-        severity3 = "severity-moderate",
-        title4 = "Vaccine Coverage",
-        value4 = "42%",
-        change4 = "High-Risk Groups",
-        severity4 = "severity-low"
-      ),
-      "covid" = list(
-        title1 = "COVID-19 Status",
-        value1 = "MODERATE",
-        change1 = "Endemic Phase",
-        severity1 = "severity-moderate",
-        title2 = "Positivity Rate",
-        value2 = "5%",
-        change2 = "7-Day Average",
-        severity2 = "severity-low",
-        title3 = "Variant Dominant",
-        value3 = "JN.1",
-        change3 = "Omicron Lineage",
-        severity3 = "severity-moderate",
-        title4 = "Booster Uptake",
-        value4 = "28%",
-        change4 = "2024-25 Season",
-        severity4 = "severity-moderate"
-      ),
-      "h5n1" = list(
-        title1 = "Avian Flu Status",
-        value1 = "WATCHING",
-        change1 = "Animal Spillover",
-        severity1 = "severity-high",
-        title2 = "Human Cases",
-        value2 = "61",
-        change2 = "2024 YTD (Global)",
-        severity2 = "severity-high",
-        title3 = "CFR Estimate",
-        value3 = "52%",
-        change3 = "Historical",
-        severity3 = "severity-high",
-        title4 = "Poultry Outbreaks",
-        value4 = "847",
-        change4 = "Farms Affected",
-        severity4 = "severity-high"
-      )
-    )
-
-    div(
-      class = "row g-4 mb-4",
-      div(
-        class = "col-md-3",
+        ),
         div(
-          class = paste("kpi-card", kpi_data$severity1),
-          div(class = "kpi-label", kpi_data$title1),
-          div(class = "kpi-value", kpi_data$value1),
-          div(class = "kpi-change", kpi_data$change1)
-        )
-      ),
-      div(
-        class = "col-md-3",
+          class = "col-md-3",
+          div(
+            class = paste("kpi-card", kpi_data$severity2),
+            div(class = "kpi-label", kpi_data$title2),
+            div(class = "kpi-value", kpi_data$value2),
+            div(class = "kpi-change", kpi_data$change2)
+          )
+        ),
         div(
-          class = paste("kpi-card", kpi_data$severity2),
-          div(class = "kpi-label", kpi_data$title2),
-          div(class = "kpi-value", kpi_data$value2),
-          div(class = "kpi-change", kpi_data$change2)
-        )
-      ),
-      div(
-        class = "col-md-3",
+          class = "col-md-3",
+          div(
+            class = paste("kpi-card", kpi_data$severity3),
+            div(class = "kpi-label", kpi_data$title3),
+            div(class = "kpi-value", kpi_data$value3),
+            div(class = "kpi-change", kpi_data$change3)
+          )
+        ),
         div(
-          class = paste("kpi-card", kpi_data$severity3),
-          div(class = "kpi-label", kpi_data$title3),
-          div(class = "kpi-value", kpi_data$value3),
-          div(class = "kpi-change", kpi_data$change3)
-        )
-      ),
-      div(
-        class = "col-md-3",
-        div(
-          class = paste("kpi-card", kpi_data$severity4),
-          div(class = "kpi-label", kpi_data$title4),
-          div(class = "kpi-value", kpi_data$value4),
-          div(class = "kpi-change", kpi_data$change4)
+          class = "col-md-3",
+          div(
+            class = paste("kpi-card", kpi_data$severity4),
+            div(class = "kpi-label", kpi_data$title4),
+            div(class = "kpi-value", kpi_data$value4),
+            div(class = "kpi-change", kpi_data$change4)
+          )
         )
       )
-    )
+    }, error = function(e) {
+      message("Error in pathogen_kpis renderUI: ", e$message)
+      div(class = "alert alert-danger", "Error loading Pathogen KPIs")
+    })
+
+
   })
 
   # Global Map ----------------------------------------------------------------
@@ -3155,48 +3162,53 @@ server <- function(input, output, session) {
 
   # Continental Status --------------------------------------------------------
   output$continental_status <- renderUI({
-    # Defensive null check
-    if (is.null(outbreak_data) || is.null(outbreak_data$global_overview) ||
-        is.null(outbreak_data$global_overview$current_status)) {
-      return(div(
-        class = "text-center text-muted py-4",
-        icon("globe", class = "fa-2x mb-2"),
-        tags$p("Continental status data unavailable")
-      ))
-    }
+    tryCatch({
+      # Defensive null check
+      if (is.null(outbreak_data) || is.null(outbreak_data$global_overview) ||
+          is.null(outbreak_data$global_overview$current_status)) {
+        return(div(
+          class = "text-center text-muted py-4",
+          icon("globe", class = "fa-2x mb-2"),
+          tags$p("Continental status data unavailable")
+        ))
+      }
 
-    continents <- outbreak_data$global_overview$current_status
+      continents <- outbreak_data$global_overview$current_status
 
-    div(
-      lapply(names(continents), function(name) {
-        continent <- continents[[name]]
-        status_class <- switch(
-          continent$status,
-          "active" = "active",
-          "elevated" = "elevated",
-          "peak" = "peak",
-          "monitoring" = "monitoring",
-          "monitoring"
-        )
+      div(
+        lapply(names(continents), function(name) {
+          continent <- continents[[name]]
+          status_class <- switch(
+            continent$status,
+            "active" = "active",
+            "elevated" = "elevated",
+            "peak" = "peak",
+            "monitoring" = "monitoring",
+            "monitoring"
+          )
 
-        div(
-          class = "continent-card",
           div(
-            class = "d-flex justify-content-between align-items-center",
+            class = "continent-card",
             div(
-              span(class = "continent-name", gsub("_", " ", name)),
-              tags$br(),
-              span(class = paste("status-badge", status_class), continent$status)
-            ),
-            div(
-              class = "text-end",
-              div(class = "continent-rate", paste0(continent$positivity_rate %||% "N/A", "%")),
-              div(style = "font-size: 0.75rem; color: var(--slate);", continent$dominant_pathogen %||% "")
+              class = "d-flex justify-content-between align-items-center",
+              div(
+                span(class = "continent-name", gsub("_", " ", name)),
+                tags$br(),
+                span(class = paste("status-badge", status_class), continent$status)
+              ),
+              div(
+                class = "text-end",
+                div(class = "continent-rate", paste0(continent$positivity_rate %||% "N/A", "%")),
+                div(style = "font-size: 0.75rem; color: var(--slate);", continent$dominant_pathogen %||% "")
+              )
             )
           )
-        )
-      })
-    )
+        })
+      )
+    }, error = function(e) {
+      message("Error in continental_status: ", e$message)
+      div(class = "alert alert-danger", "Error loading Continental Status")
+    })
   })
 
   # Anomaly Alerts ------------------------------------------------------------
@@ -3235,141 +3247,161 @@ server <- function(input, output, session) {
   })
 
   output$country_kpis <- renderUI({
-    country <- selected_country_data()
-    req(country)
+    tryCatch({
+      country <- selected_country_data()
+      req(country)
 
-    div(
-      class = "row g-3",
       div(
-        class = "col-md-3",
+        class = "row g-3",
         div(
-          class = "kpi-card severity-high",
-          div(class = "kpi-label", "Positivity Rate"),
-          div(class = "kpi-value", paste0(country$h3n2_data$positivity_rate %||% "N/A", "%")),
-          div(class = "kpi-change", country$outbreak_status)
-        )
-      ),
-      div(
-        class = "col-md-3",
+          class = "col-md-3",
+          div(
+            class = "kpi-card severity-high",
+            div(class = "kpi-label", "Positivity Rate"),
+            div(class = "kpi-value", paste0(country$h3n2_data$positivity_rate %||% "N/A", "%")),
+            div(class = "kpi-change", country$outbreak_status)
+          )
+        ),
         div(
-          class = "kpi-card severity-moderate",
-          div(class = "kpi-label", "Subclade K Prevalence"),
-          div(class = "kpi-value", paste0(country$h3n2_data$subclade_k_prevalence %||% "N/A", "%")),
-          div(class = "kpi-change", country$subclade_data$dominant_clade %||% "")
-        )
-      ),
-      div(
-        class = "col-md-3",
+          class = "col-md-3",
+          div(
+            class = "kpi-card severity-moderate",
+            div(class = "kpi-label", "Subclade K Prevalence"),
+            div(class = "kpi-value", paste0(country$h3n2_data$subclade_k_prevalence %||% "N/A", "%")),
+            div(class = "kpi-change", country$subclade_data$dominant_clade %||% "")
+          )
+        ),
         div(
-          class = "kpi-card",
-          div(class = "kpi-label", "Confirmed Cases"),
-          div(class = "kpi-value", style = "font-size: 1.8rem;",
-              format(country$h3n2_data$case_numbers$confirmed_cases %||%
-                    country$h3n2_data$case_numbers$estimated_cases %||% 0, big.mark = ",")),
-          div(class = "kpi-change", "Estimated total")
-        )
-      ),
-      div(
-        class = "col-md-3",
+          class = "col-md-3",
+          div(
+            class = "kpi-card",
+            div(class = "kpi-label", "Confirmed Cases"),
+            div(class = "kpi-value", style = "font-size: 1.8rem;",
+                format(country$h3n2_data$case_numbers$confirmed_cases %||%
+                      country$h3n2_data$case_numbers$estimated_cases %||% 0, big.mark = ",")),
+            div(class = "kpi-change", "Estimated total")
+          )
+        ),
         div(
-          class = paste0("kpi-card ", ifelse(country$data_confidence_level == "high", "severity-low", "severity-moderate")),
-          div(class = "kpi-label", "Data Confidence"),
-          div(class = "kpi-value", style = "font-size: 1.8rem;", toupper(country$data_confidence_level)),
-          div(class = "kpi-change", country$primary_data_source %||% "")
+          class = "col-md-3",
+          div(
+            class = "kpi-card ",
+            div(class = "kpi-label", "Data Confidence"),
+            div(class = "kpi-value", style = "font-size: 1.8rem;", toupper(country$data_confidence_level)),
+            div(class = "kpi-change", country$primary_data_source %||% "")
+          )
         )
       )
-    )
+    }, error = function(e) {
+      message("Error in country_kpis: ", e$message)
+      div(class = "alert alert-danger", "Error loading Country KPIs")
+    })
   })
 
   output$country_anomalies <- renderUI({
-    country <- selected_country_data()
-    req(country)
+    tryCatch({
+      country <- selected_country_data()
+      req(country)
 
-    anomaly_flags <- country$anomaly_flags
-    if (length(anomaly_flags) == 0 || is.null(anomaly_flags)) {
-      return(tags$p("No anomaly flags for this country.", class = "text-muted"))
-    }
+      anomaly_flags <- country$anomaly_flags
+      if (length(anomaly_flags) == 0 || is.null(anomaly_flags)) {
+        return(tags$p("No anomaly flags for this country.", class = "text-muted"))
+      }
 
-    # Handle both data.frame and list formats from jsonlite
-    if (is.data.frame(anomaly_flags)) {
-      cards <- lapply(seq_len(nrow(anomaly_flags)), function(i) {
-        severity_class <- switch(
-          anomaly_flags$severity[i],
-          "critical" = "critical",
-          "high" = "high",
-          "high"
-        )
+      # Handle both data.frame and list formats from jsonlite
+      if (is.data.frame(anomaly_flags)) {
+        cards <- lapply(seq_len(nrow(anomaly_flags)), function(i) {
+          severity_class <- switch(
+            anomaly_flags$severity[i],
+            "critical" = "critical",
+            "high" = "high",
+            "high"
+          )
+          div(
+            class = paste("alert-card", severity_class),
+            div(class = "alert-title", gsub("_", " ", anomaly_flags$anomaly_type[i])),
+            div(class = "alert-description", anomaly_flags$description[i]),
+            div(class = "alert-meta",
+              paste(country$country_name, "|", format(as.Date(anomaly_flags$first_detected[i]), "%b %d, %Y"))
+            )
+          )
+        })
+        do.call(div, cards)
+      } else {
+        # List of lists format
         div(
-          class = paste("alert-card", severity_class),
-          div(class = "alert-title", gsub("_", " ", anomaly_flags$anomaly_type[i])),
-          div(class = "alert-description", anomaly_flags$description[i]),
-          div(class = "alert-meta",
-              paste("Severity:", anomaly_flags$severity[i], "| Status:", anomaly_flags$verification_status[i]))
+          lapply(anomaly_flags, function(alert) {
+            severity_class <- switch(
+              alert$severity,
+              "critical" = "critical",
+              "high" = "high",
+              "high"
+            )
+            div(
+              class = paste("alert-card", severity_class),
+              div(class = "alert-title", gsub("_", " ", alert$pattern_type)),
+              div(class = "alert-description", alert$description),
+              div(
+                class = "alert-meta",
+                paste(alert$geographic_scope, "|", format(as.Date(alert$first_detected), "%b %d, %Y"))
+              )
+            )
+          })
         )
-      })
-    } else {
-      cards <- lapply(anomaly_flags, function(flag) {
-        severity_class <- switch(
-          flag$severity,
-          "critical" = "critical",
-          "high" = "high",
-          "high"
-        )
-        div(
-          class = paste("alert-card", severity_class),
-          div(class = "alert-title", gsub("_", " ", flag$anomaly_type)),
-          div(class = "alert-description", flag$description),
-          div(class = "alert-meta",
-              paste("Severity:", flag$severity, "| Status:", flag$verification_status))
-        )
-      })
-    }
-
-    div(cards)
+      }
+    }, error = function(e) {
+      message("Error in country_anomalies: ", e$message)
+      div(class = "alert alert-danger", "Error loading Country Anomalies")
+    })
   })
 
   output$country_healthcare <- renderUI({
-    country <- selected_country_data()
-    req(country)
+    tryCatch({
+      country <- selected_country_data()
+      req(country)
 
-    hc <- country$healthcare_capacity
+      hc <- country$healthcare_capacity
 
-    div(
       div(
-        class = "mb-3",
-        div(class = "d-flex justify-content-between"),
-        tags$small(class = "text-muted", "ICU Bed Utilization"),
         div(
-          class = "progress",
-          style = "height: 8px;",
+          class = "mb-3",
+          div(class = "d-flex justify-content-between"),
+          tags$small(class = "text-muted", "ICU Bed Utilization"),
           div(
-            class = paste0("progress-bar ",
-                          ifelse(hc$icu_bed_utilization > 80, "bg-danger",
-                                ifelse(hc$icu_bed_utilization > 60, "bg-warning", "bg-success"))),
-            style = paste0("width: ", hc$icu_bed_utilization, "%;"),
-            role = "progressbar"
+            class = "progress",
+            style = "height: 8px;",
+            div(
+              class = paste0("progress-bar ",
+                            ifelse(hc$icu_bed_utilization > 80, "bg-danger",
+                                  ifelse(hc$icu_bed_utilization > 60, "bg-warning", "bg-success"))),
+              style = paste0("width: ", hc$icu_bed_utilization, "%;"),
+              role = "progressbar"
+            )
+          ),
+          tags$small(paste0(hc$icu_bed_utilization, "%"))
+        ),
+        div(
+          class = "mb-3",
+          tags$strong("Hospital Capacity Stress: "),
+          span(
+            class = paste("status-badge",
+                        switch(hc$hospital_capacity_stress,
+                              "critical" = "active",
+                              "high" = "elevated",
+                              "moderate" = "monitoring",
+                              "monitoring")),
+            hc$hospital_capacity_stress
           )
         ),
-        tags$small(paste0(hc$icu_bed_utilization, "%"))
-      ),
-      div(
-        class = "mb-3",
-        tags$strong("Hospital Capacity Stress: "),
-        span(
-          class = paste("status-badge",
-                       switch(hc$hospital_capacity_stress,
-                             "critical" = "active",
-                             "high" = "elevated",
-                             "moderate" = "monitoring",
-                             "monitoring")),
-          hc$hospital_capacity_stress
+        div(
+          tags$strong("Healthcare Worker Status: "),
+          span(hc$healthcare_worker_status)
         )
-      ),
-      div(
-        tags$strong("Healthcare Worker Status: "),
-        span(hc$healthcare_worker_status)
       )
-    )
+    }, error = function(e) {
+      message("Error in country_healthcare: ", e$message)
+      div(class = "alert alert-danger", "Error loading Healthcare Capacity")
+    })
   })
 
   output$country_policies <- renderUI({

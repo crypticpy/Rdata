@@ -189,12 +189,21 @@ simulate_spatial_spread <- function(grid, adj_matrix, params, n_days = WAVE_CONF
 
 #' Estimate wave propagation velocity from time series
 #' @param surveillance_data Data with dates and geographic info
-#' @param pathogen Pathogen code
+#' @param target_pathogen Pathogen code or name to filter by
 #' @return List with velocity estimate and direction
-estimate_wave_velocity <- function(surveillance_data, pathogen) {
-  # Filter to pathogen
+estimate_wave_velocity <- function(surveillance_data, target_pathogen) {
+  # Filter to pathogen - determine which column name is used
+  pathogen_col <- if ("pathogen_code" %in% names(surveillance_data)) {
+    "pathogen_code"
+  } else if ("pathogen" %in% names(surveillance_data)) {
+    "pathogen"
+  } else {
+    warning("Surveillance data missing pathogen column")
+    return(list(status = "insufficient_data", velocity_km_day = NA, confidence = "low"))
+  }
+
   data <- surveillance_data |>
-    filter(pathogen_code == pathogen) |>
+    filter(.data[[pathogen_col]] == target_pathogen) |>
     arrange(observation_date)
 
   if (nrow(data) < 10) {
@@ -289,15 +298,15 @@ extract_wave_front <- function(sim_results, threshold = WAVE_CONFIG$wave_thresho
 
 #' Predict wave front position N days ahead
 #' @param surveillance_data Current surveillance data
-#' @param pathogen Pathogen code
+#' @param target_pathogen Pathogen code or name
 #' @param countries_sf Country boundaries (sf object)
 #' @param forecast_days Days to forecast
 #' @return Prediction results with wave front positions
-predict_wave_front <- function(surveillance_data, pathogen, countries_sf,
+predict_wave_front <- function(surveillance_data, target_pathogen, countries_sf,
                                 forecast_days = WAVE_CONFIG$forecast_horizon) {
 
   # Get current velocity estimate
-  velocity <- estimate_wave_velocity(surveillance_data, pathogen)
+  velocity <- estimate_wave_velocity(surveillance_data, target_pathogen)
 
   if (velocity$status != "success") {
     return(list(
@@ -319,15 +328,32 @@ predict_wave_front <- function(surveillance_data, pathogen, countries_sf,
     ))
   })
 
-  # Seed infection based on current data
-  current_data <- surveillance_data |>
-    filter(pathogen_code == pathogen) |>
-    filter(observation_date >= max(observation_date) - days(7))
+  # Seed infection based on current data - determine which column name is used
+  pathogen_col <- if ("pathogen_code" %in% names(surveillance_data)) {
+    "pathogen_code"
+  } else if ("pathogen" %in% names(surveillance_data)) {
+    "pathogen"
+  } else {
+    NULL
+  }
 
-  # Set initial infected fraction based on positivity rates
-  # This is a simplified seeding - real implementation would use geocoding
-  initial_prevalence <- mean(current_data$positivity_rate, na.rm = TRUE) / 100
-  initial_prevalence <- min(max(initial_prevalence, 0.001), 0.1)
+  if (!is.null(pathogen_col)) {
+    current_data <- surveillance_data |>
+      filter(.data[[pathogen_col]] == target_pathogen) |>
+      filter(observation_date >= max(observation_date) - days(7))
+  } else {
+    current_data <- NULL
+  }
+  
+  if (is.null(current_data) || nrow(current_data) == 0) {
+     # Fallback if no recent data found
+     initial_prevalence <- 0.01
+  } else {
+     # Set initial infected fraction based on positivity rates
+     # This is a simplified seeding - real implementation would use geocoding
+     initial_prevalence <- mean(current_data$positivity_rate, na.rm = TRUE) / 100
+     initial_prevalence <- min(max(initial_prevalence, 0.001), 0.1)
+  }
 
   # Seed some cells as infected (placeholder - would use actual locations)
   n_seed <- max(1, round(nrow(grid) * 0.05))
@@ -369,7 +395,7 @@ predict_wave_front <- function(surveillance_data, pathogen, countries_sf,
 
   list(
     status = "success",
-    pathogen = pathogen,
+    pathogen = target_pathogen,
     velocity = velocity,
     predictions = Filter(Negate(is.null), predictions),
     simulation = sim_results,
@@ -507,18 +533,18 @@ check_subnational_availability <- function(country_code) {
 
 #' Get wave propagation analysis for dashboard
 #' @param surveillance_data Surveillance data
-#' @param pathogen Pathogen code
+#' @param target_pathogen Pathogen code or name
 #' @param countries_sf Country boundaries (sf object)
 #' @return Complete wave analysis results
-get_wave_analysis <- function(surveillance_data, pathogen, countries_sf = NULL) {
+get_wave_analysis <- function(surveillance_data, target_pathogen, countries_sf = NULL) {
   results <- list(
-    pathogen = pathogen,
+    pathogen = target_pathogen,
     timestamp = Sys.time(),
     status = "processing"
   )
 
   # Estimate current velocity
-  velocity <- estimate_wave_velocity(surveillance_data, pathogen)
+  velocity <- estimate_wave_velocity(surveillance_data, target_pathogen)
   results$velocity <- velocity
 
   # If we have country boundaries, run spatial simulation
@@ -526,7 +552,7 @@ get_wave_analysis <- function(surveillance_data, pathogen, countries_sf = NULL) 
     tryCatch({
       prediction <- predict_wave_front(
         surveillance_data,
-        pathogen,
+        target_pathogen,
         countries_sf,
         forecast_days = 28
       )
