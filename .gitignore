@@ -4,6 +4,7 @@
 .RData
 .Ruserdata
 *.Rproj.user/
+Rplots.pdf
 
 # renv
 renv/library/
@@ -11,9 +12,9 @@ renv/staging/
 renv/python/
 renv/sandbox/
 
-# Output files (uncomment to ignore generated outputs)
-# output/
-# reports/*.html
+# Output files
+output/
+reports/*.html
 
 # Environment
 .Renviron
@@ -32,11 +33,46 @@ renv/sandbox/
 *~
 *.swp
 *.swo
+*.tmp
+*.log
+*_backup.R
 
 # Quarto
 /.quarto/
 *_cache/
 *_files/
+_publish.yml
 
 # Archives
 *.zip
+*.tar.gz
+
+# Claude Code
+.claude/
+
+# Playwright / Browser automation
+.playwright-mcp/
+.browser_screenshots/
+**/.browser_screenshots/
+
+# Deployment artifacts
+deploy/
+deploy_lite/
+hf-deploy-temp/
+hf-spaces/
+rsconnect/
+
+# Large data files
+data/raw/*.csv
+data/raw/*.json
+data/raw/external/
+data/*.sqlite
+data/*.db
+data/cache/
+
+# Test/debug scripts (keep in proper test directories)
+debug_*.R
+test_*.R
+
+# Package development temp
+r-data-science-claude-pkg/

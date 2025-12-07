@@ -10,6 +10,7 @@ data/raw/*.json
 .RData
 .Rproj.user/
 *.Rproj
+Rplots.pdf
 
 # System files
 .DS_Store
@@ -18,7 +19,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.log
-Rplots.pdf
 
 # IDE
 .vscode/
@@ -27,3 +27,19 @@ Rplots.pdf
 # Deploy artifacts
 deploy/
 *.tar.gz
+
+# Browser automation / screenshots
+.browser_screenshots/
+prototype/.browser_screenshots/
+*.png
+!www/*.png
+
+# Test/debug scripts
+debug_*.R
+test_*.R
+
+# Claude Code
+.claude/
+
+# Playwright
+.playwright-mcp/
