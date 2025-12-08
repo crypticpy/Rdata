@@ -203,8 +203,10 @@ get_forecast_for_pathogen <- function(pathogen_code, country = NULL, horizon = 4
   query <- sprintf("
     SELECT
       sd.observation_date,
-      sd.case_count,
-      sd.estimated_cases
+      COALESCE(sd.case_count, sd.estimated_cases) as case_count,
+      sd.estimated_cases,
+      sd.positivity_rate,
+      sd.test_volume
     FROM surveillance_data sd
     JOIN pathogens p ON sd.pathogen_id = p.pathogen_id
     WHERE p.pathogen_code = '%s'

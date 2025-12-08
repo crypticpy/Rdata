@@ -30,6 +30,7 @@ has_database_data <- function() {
     close_db_connection(conn)
     count > 0
   }, error = function(e) {
+    log_error(sprintf("Database check failed: %s", e$message), category = "database")
     FALSE
   })
 }

@@ -344,11 +344,21 @@ update_freshness_tracking <- function(conn, source_code, status, records = 0, er
     status <- "failed"
   }
 
-  # Escape error message if present
+  # Escape error message if present (safely extract from condition objects)
   error_sql <- if (is.null(error_msg)) {
     "NULL"
   } else {
-    sprintf("'%s'", gsub("'", "''", substr(as.character(error_msg), 1, 500)))
+    # Extract message safely from various error types
+    error_text <- if (inherits(error_msg, "condition")) {
+      conditionMessage(error_msg)
+    } else if (is.list(error_msg) && !is.null(error_msg$message)) {
+      as.character(error_msg$message)
+    } else if (is.character(error_msg)) {
+      error_msg[1]
+    } else {
+      tryCatch(as.character(error_msg)[1], error = function(e) "Unknown error")
+    }
+    sprintf("'%s'", gsub("'", "''", substr(error_text, 1, 500)))
   }
 
   # Insert new record with properly escaped values
