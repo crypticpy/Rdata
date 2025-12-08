@@ -282,12 +282,18 @@ get_scenario_projections <- function(pathogen_code, scenarios = NULL, horizon = 
 
     conn <- get_db_connection()
     # Use parameterized query to prevent SQL injection
+    # Include all columns needed by prepare_incidence_data()
     query <- "
-      SELECT observation_date, case_count, estimated_cases
+      SELECT 
+        sd.observation_date,
+        sd.case_count,
+        sd.estimated_cases,
+        sd.positivity_rate,
+        sd.test_volume
       FROM surveillance_data sd
       JOIN pathogens p ON sd.pathogen_id = p.pathogen_id
       WHERE p.pathogen_code = ?
-      ORDER BY observation_date
+      ORDER BY sd.observation_date
     "
 
     surv_data <- tryCatch({

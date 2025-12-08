@@ -159,7 +159,12 @@ get_coverage_summary <- function(country, pathogen) {
     summarise(mean_cov = mean(coverage)) %>%
     pull(mean_cov)
 
-  trend <- (end_coverage - start_coverage) / start_coverage * 100
+  # Guard against division by zero
+  trend <- if (start_coverage > 0) {
+    (end_coverage - start_coverage) / start_coverage * 100
+  } else {
+    0
+  }
 
   list(
     overall_coverage = overall,

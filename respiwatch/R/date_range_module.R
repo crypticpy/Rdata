@@ -95,12 +95,21 @@ dateRangeControlServer <- function(id, data_reactive, date_col = "date", default
         data[[col]] <- as.Date(data[[col]])
       }
 
-      # Filter by date range
-      data |>
+      # Filter by date range - preserve R attributes through dplyr filter
+      original_attrs <- attributes(data)
+      filtered <- data |>
         dplyr::filter(
           .data[[col]] >= input$date_range[1],
           .data[[col]] <= input$date_range[2]
         )
+
+      # Restore custom attributes (has_fallback, source_coverage, etc.)
+      for (attr_name in names(original_attrs)) {
+        if (!attr_name %in% c("names", "row.names", "class")) {
+          attr(filtered, attr_name) <- original_attrs[[attr_name]]
+        }
+      }
+      filtered
     })
 
     # Return date range values (for other uses)
@@ -158,11 +167,21 @@ dateRangeFilterStatic <- function(id, data, date_col = "date") {
         data[[col]] <- as.Date(data[[col]])
       }
 
-      data |>
+      # Preserve R attributes through dplyr filter
+      original_attrs <- attributes(data)
+      filtered <- data |>
         dplyr::filter(
           .data[[col]] >= input$date_range[1],
           .data[[col]] <= input$date_range[2]
         )
+
+      # Restore custom attributes (has_fallback, source_coverage, etc.)
+      for (attr_name in names(original_attrs)) {
+        if (!attr_name %in% c("names", "row.names", "class")) {
+          attr(filtered, attr_name) <- original_attrs[[attr_name]]
+        }
+      }
+      filtered
     })
 
     return(filtered_data)

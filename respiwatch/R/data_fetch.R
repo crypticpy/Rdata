@@ -60,10 +60,10 @@ cached_fetch <- function(cache_key, fetch_fn, max_age_hours = CACHE_DURATION_HOU
     saveRDS(data, cache_file)
     return(data)
   }, error = function(e) {
-    warning(paste("Failed to fetch", cache_key, ":", e$message))
+    log_error(sprintf("Failed to fetch %s: %s", cache_key, e$message), category = "api")
     # Return cached data if available, even if stale
     if (file.exists(cache_file)) {
-      warning("Returning stale cached data")
+      log_warning("Returning stale cached data", category = "api")
       return(readRDS(cache_file))
     }
     return(NULL)
@@ -165,7 +165,7 @@ fetch_ilinet_direct <- function(years) {
     # Parse and return as data frame
     as.data.frame(data)
   }, error = function(e) {
-    warning(paste("Direct CDC API failed:", e$message))
+    log_error(sprintf("Direct CDC API failed: %s", e$message), category = "api")
     NULL
   })
 }
@@ -207,11 +207,11 @@ fetch_rsv_nrevss <- function(years = NULL) {
             )
           return(clinical_labs)
         } else {
-          warning("RSV data not found in NREVSS response")
+          log_warning("RSV data not found in NREVSS response", category = "api")
           return(NULL)
         }
       }, error = function(e) {
-        warning(paste("cdcfluview RSV fetch failed:", e$message))
+        log_error(sprintf("cdcfluview RSV fetch failed: %s", e$message), category = "api")
         NULL
       })
     } else {
@@ -253,7 +253,7 @@ fetch_rsv_direct <- function() {
         )
       )
   }, error = function(e) {
-    warning(paste("Direct Respiratory Hospital API failed:", e$message))
+    log_error(sprintf("Direct Respiratory Hospital API failed: %s", e$message), category = "api")
     NULL
   })
 }
@@ -287,7 +287,7 @@ fetch_rsv_net <- function() {
           fetch_time = Sys.time()
         )
     }, error = function(e) {
-      warning(paste("RSV-NET API failed:", e$message))
+      log_error(sprintf("RSV-NET API failed: %s", e$message), category = "api")
       NULL
     })
   })
@@ -335,7 +335,7 @@ fetch_covid_covidcast <- function(
             fetch_time = Sys.time()
           )
       }, error = function(e) {
-        warning(paste("COVIDcast API failed:", e$message))
+        log_error(sprintf("COVIDcast API failed: %s", e$message), category = "api")
         NULL
       })
     } else {
@@ -379,7 +379,7 @@ fetch_covid_cdc_direct <- function() {
           new_deaths = as.numeric(new_deaths)
         )
     }, error = function(e) {
-      warning(paste("CDC COVID API failed:", e$message))
+      log_error(sprintf("CDC COVID API failed: %s", e$message), category = "api")
       NULL
     })
   })
@@ -414,7 +414,7 @@ fetch_covid_variants <- function() {
           fetch_time = Sys.time()
         )
     }, error = function(e) {
-      warning(paste("COVID variants API failed:", e$message))
+      log_error(sprintf("COVID variants API failed: %s", e$message), category = "api")
       NULL
     })
   })
@@ -513,7 +513,7 @@ fetch_cdc_vaccination <- function() {
           )
       }
     }, error = function(e) {
-      warning(paste("CDC Flu Vax API failed:", e$message))
+      log_error(sprintf("CDC Flu Vax API failed: %s", e$message), category = "api")
     })
 
     # 2. COVID-19 Vaccination Trends
@@ -544,7 +544,7 @@ fetch_cdc_vaccination <- function() {
           )
       }
     }, error = function(e) {
-      warning(paste("CDC COVID Vax API failed:", e$message))
+      log_error(sprintf("CDC COVID Vax API failed: %s", e$message), category = "api")
     })
     
     # Combine results
@@ -654,7 +654,7 @@ fetch_who_data <- function() {
       
       data
     }, error = function(e) {
-      warning(paste("Global Data API (OWID) failed:", e$message))
+      log_error(sprintf("Global Data API (OWID) failed: %s", e$message), category = "api")
       NULL
     })
   })
@@ -714,7 +714,7 @@ fetch_who_flumart <- function(weeks_back = 52) {
                       nrow(data), length(unique(data$iso_code))))
       data
     }, error = function(e) {
-      warning(paste("WHO FluNet API failed:", e$message))
+      log_error(sprintf("WHO FluNet API failed: %s", e$message), category = "api")
       NULL
     })
   })

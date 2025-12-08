@@ -76,10 +76,11 @@ get_serial_interval <- function(pathogen_code) {
 # DATA PREPARATION
 # =============================================================================
 
-#' Prepare surveillance data for EpiEstim incidence format
+#' Prepare surveillance data for EpiEstim incidence format (LEGACY - zero-fills gaps)
 #' @param surv_data Data frame with observation_date and case_count columns
 #' @param aggregate_by How to aggregate data ("day", "week")
 #' @return Data frame with dates and I (incidence) columns
+#' @note Use prepare_incidence_data_with_fallback() for production - avoids zero-filling
 prepare_incidence_data <- function(surv_data, aggregate_by = "week") {
   if (nrow(surv_data) == 0) {
     return(NULL)
@@ -93,38 +94,40 @@ prepare_incidence_data <- function(surv_data, aggregate_by = "week") {
   surv_data <- surv_data |>
     mutate(observation_date = as.Date(observation_date))
 
-  # Determine case count column - check for actual data, not just column existence
-  has_case_count <- "case_count" %in% names(surv_data) &&
-    sum(!is.na(surv_data$case_count)) > 0
-  has_estimated_cases <- "estimated_cases" %in% names(surv_data) &&
-    sum(!is.na(surv_data$estimated_cases)) > 0
+  # Per-row COALESCE: case_count -> estimated_cases -> derived from positivity
 
-  case_col <- if (has_case_count) {
-    "case_count"
-  } else if (has_estimated_cases) {
-    "estimated_cases"
-  } else {
-    # If no case count, derive from positivity rate * test volume
-    surv_data <- surv_data |>
-      mutate(case_count = ifelse(
-        !is.na(positivity_rate) & !is.na(test_volume),
-        round(positivity_rate / 100 * test_volume),
-        NA_real_
-      ))
-    "case_count"
-  }
+  # This ensures each row uses the best available case data
+  # Defensive: check if columns exist before using them
+  has_positivity <- "positivity_rate" %in% names(surv_data)
+  has_test_volume <- "test_volume" %in% names(surv_data)
+  has_case_count <- "case_count" %in% names(surv_data)
+  has_estimated <- "estimated_cases" %in% names(surv_data)
 
-  # Aggregate by date
   incidence_df <- surv_data |>
+    mutate(
+      effective_cases = coalesce(
+        if (has_case_count) as.numeric(case_count) else NA_real_,
+        if (has_estimated) as.numeric(estimated_cases) else NA_real_,
+        if (has_positivity && has_test_volume) {
+          if_else(
+            !is.na(positivity_rate) & !is.na(test_volume),
+            round(positivity_rate / 100 * test_volume),
+            NA_real_
+          )
+        } else NA_real_
+      )
+    ) |>
     group_by(observation_date) |>
     summarize(
-      I = sum(.data[[case_col]], na.rm = TRUE),
+      I = sum(effective_cases, na.rm = TRUE),
       .groups = "drop"
     ) |>
     arrange(observation_date) |>
     filter(!is.na(I) & I >= 0)
 
   # Fill in missing dates with 0 cases
+  # WARNING: This zero-filling can artificially depress Rt estimates during gaps
+  # Use prepare_incidence_data_with_fallback() instead for production
   if (nrow(incidence_df) > 1) {
     date_range <- seq(
       min(incidence_df$observation_date),
@@ -140,6 +143,48 @@ prepare_incidence_data <- function(surv_data, aggregate_by = "week") {
   # Rename for EpiEstim compatibility
   incidence_df |>
     rename(dates = observation_date)
+}
+
+#' Prepare incidence data using intelligent fallback system (RECOMMENDED)
+#'
+#' Uses the data fallback system to fill gaps with alternate signals
+#' (wastewater, syndromic, forecasts, state data) instead of zero-filling.
+#' This is the KEY DIFFERENTIATOR for RespiWatch - gaps are filled with
+#' real alternate signals, not zeros that distort Rt estimates.
+#'
+#' @param pathogen_code Pathogen identifier (H3N2, RSV, COVID19)
+#' @param date_range Date range to fetch
+#' @param country ISO country code (default: "USA")
+#' @return Data frame with dates, I, source metadata, and fallback flags
+#' @export
+prepare_incidence_data_with_fallback <- function(pathogen_code,
+                                                  date_range,
+                                                  country = "USA") {
+  # Use the central fallback system
+  fallback_data <- get_incidence_with_fallback(
+    pathogen = pathogen_code,
+    date_range = date_range,
+    country = country
+  )
+
+  if (is.null(fallback_data) || nrow(fallback_data) == 0) {
+    return(NULL)
+  }
+
+  # Rename for EpiEstim compatibility and preserve source info
+  result <- fallback_data |>
+    mutate(
+      dates = as.Date(dates),
+      I = as.numeric(I)
+    ) |>
+    filter(!is.na(I) & I >= 0)
+
+  # Carry over fallback metadata as attributes
+  attr(result, "source_coverage") <- attr(fallback_data, "source_coverage")
+  attr(result, "has_fallback") <- attr(fallback_data, "has_fallback")
+  attr(result, "gap_periods") <- attr(fallback_data, "gap_periods")
+
+  result
 }
 
 # =============================================================================
@@ -330,7 +375,7 @@ get_rt_for_pathogen <- function(pathogen_code, country = NULL, conn = NULL) {
   query <- sprintf("
     SELECT
       sd.observation_date,
-      sd.case_count,
+      COALESCE(sd.case_count, sd.estimated_cases) as case_count,
       sd.estimated_cases,
       sd.positivity_rate,
       sd.test_volume,
@@ -395,6 +440,201 @@ get_rt_for_pathogen <- function(pathogen_code, country = NULL, conn = NULL) {
       c(min(incidence_data$dates), max(incidence_data$dates))
     } else NULL
   )
+}
+
+#' Get Rt estimates with intelligent fallback for data gaps (RECOMMENDED)
+#'
+#' This is the KEY DIFFERENTIATOR for RespiWatch. Uses the intelligent
+#' fallback system to fill gaps with alternate signals (wastewater, syndromic,
+#' forecasts, state data) instead of zero-filling which distorts Rt estimates.
+#'
+#' @param pathogen_code Pathogen identifier (H3N2, RSV, COVID19)
+#' @param country Country ISO code (default: "USA")
+#' @param weeks_back Number of weeks of historical data (default: 12)
+#' @return List with rt_estimates, current_rt, metadata, AND source info
+#' @export
+get_rt_for_pathogen_with_fallback <- function(pathogen_code,
+                                               country = "USA",
+                                               weeks_back = 12) {
+  # Validate input parameters
+  if (!is_valid_pathogen_code(pathogen_code)) {
+    warning(sprintf("Invalid pathogen code format: %s", pathogen_code))
+    return(list(
+      pathogen = pathogen_code,
+      country = country,
+      rt_estimates = NULL,
+      current_rt = get_current_rt(NULL),
+      has_fallback = FALSE,
+      source_coverage = list(),
+      error = "Invalid pathogen code format"
+    ))
+  }
+
+  if (!is_valid_iso_code(country)) {
+    warning(sprintf("Invalid country code format: %s", country))
+    return(list(
+      pathogen = pathogen_code,
+      country = country,
+      rt_estimates = NULL,
+      current_rt = get_current_rt(NULL),
+      has_fallback = FALSE,
+      source_coverage = list(),
+      error = "Invalid country code format"
+    ))
+  }
+
+  # Calculate date range
+  end_date <- Sys.Date()
+  start_date <- end_date - (weeks_back * 7)
+  date_range <- seq(start_date, end_date, by = "day")
+
+  # Use fallback-aware incidence data preparation
+  incidence_data <- prepare_incidence_data_with_fallback(
+    pathogen_code = pathogen_code,
+    date_range = date_range,
+    country = toupper(country)
+  )
+
+  if (is.null(incidence_data) || nrow(incidence_data) == 0) {
+    return(list(
+      pathogen = pathogen_code,
+      country = country,
+      rt_estimates = NULL,
+      current_rt = get_current_rt(NULL),
+      has_fallback = FALSE,
+      source_coverage = list(),
+      gap_periods = data.frame(),
+      error = "No surveillance data available (including fallback sources)"
+    ))
+  }
+
+  # Extract source metadata BEFORE estimation
+  has_fallback <- attr(incidence_data, "has_fallback") %||% FALSE
+  source_coverage <- attr(incidence_data, "source_coverage") %||% list()
+  gap_periods <- attr(incidence_data, "gap_periods") %||% data.frame()
+
+  # Get serial interval parameters
+  si_params <- get_serial_interval(pathogen_code)
+
+  # Estimate Rt (uses same estimate_rt function)
+  rt_estimates <- estimate_rt(
+    incidence_data,
+    si_mean = si_params$mean,
+    si_sd = si_params$sd
+  )
+
+  # If we have Rt estimates AND source info, annotate which Rt points used fallback
+  if (!is.null(rt_estimates) && nrow(rt_estimates) > 0 && has_fallback) {
+    # Mark Rt estimates that cover dates with fallback data
+    rt_estimates <- rt_estimates |>
+      mutate(
+        uses_fallback = sapply(date, function(d) {
+          # Check if any data in the window came from fallback sources
+          window_data <- incidence_data |>
+            filter(dates >= d - 7, dates <= d)  # Approx window
+          any(window_data$is_fallback, na.rm = TRUE)
+        }),
+        source_note = if_else(
+          uses_fallback,
+          "Includes alternate signal data",
+          "Primary surveillance data"
+        )
+      )
+  }
+
+  # Get current Rt
+  current_rt <- get_current_rt(rt_estimates)
+
+  # Build result with full source transparency
+  result <- list(
+    pathogen = pathogen_code,
+    country = country,
+    serial_interval = si_params,
+    rt_estimates = rt_estimates,
+    current_rt = current_rt,
+    data_points = nrow(incidence_data),
+    date_range = c(min(incidence_data$dates), max(incidence_data$dates)),
+
+    # KEY: Source transparency metadata
+    has_fallback = has_fallback,
+    source_coverage = source_coverage,
+    gap_periods = gap_periods,
+    fallback_pct = if (has_fallback) {
+      round(sum(incidence_data$is_fallback, na.rm = TRUE) / nrow(incidence_data) * 100, 1)
+    } else 0,
+
+    # Human-readable source description
+    source_description = describe_data_sources_for_rt(source_coverage)
+  )
+
+  result
+}
+
+#' Describe data sources used in Rt estimation
+#' @param coverage Source coverage list from get_surveillance_with_fallback
+#' @return Human-readable string
+describe_data_sources_for_rt <- function(coverage) {
+  if (is.null(coverage) || length(coverage) == 0) {
+    return("No data available")
+  }
+
+  source_labels <- list(
+    CDC_FLUVIEW = "CDC FluView",
+    CDC_NREVSS = "CDC NREVSS",
+    CDC_COVID = "CDC COVID",
+    RSV_NET = "RSV-NET",
+    WHO_FLUMART = "WHO FluNet",
+    ECDC = "ECDC",
+    NWSS_WASTEWATER = "Wastewater",
+    FLUSIGHT_FORECAST = "FluSight Forecast",
+    DELPHI = "Syndromic",
+    STATE_HEALTH = "State Health Depts",
+    INTERPOLATED = "Interpolated"
+  )
+
+  used_sources <- names(coverage)
+  primary <- used_sources[used_sources %in% c("CDC_FLUVIEW", "CDC_NREVSS", "CDC_COVID", "RSV_NET", "WHO_FLUMART", "ECDC")]
+  fallback <- setdiff(used_sources, primary)
+
+  if (length(fallback) == 0) {
+    return("Primary surveillance sources")
+  }
+
+  fallback_names <- sapply(fallback, function(s) source_labels[[s]] %||% s)
+  sprintf("Primary + %s", paste(fallback_names, collapse = ", "))
+}
+
+#' Get Rt for all pathogens using fallback system (RECOMMENDED)
+#' @param country Country ISO code
+#' @param weeks_back Number of weeks of historical data
+#' @return List of Rt results by pathogen with source metadata
+#' @export
+get_rt_all_pathogens_with_fallback <- function(country = "USA", weeks_back = 12) {
+  pathogens <- c("H3N2", "RSV", "COVID19")
+
+  results <- lapply(pathogens, function(p) {
+    tryCatch({
+      get_rt_for_pathogen_with_fallback(p, country = country, weeks_back = weeks_back)
+    }, error = function(e) {
+      list(
+        pathogen = p,
+        country = country,
+        rt_estimates = NULL,
+        current_rt = get_current_rt(NULL),
+        has_fallback = FALSE,
+        source_coverage = list(),
+        error = e$message
+      )
+    })
+  })
+
+  names(results) <- pathogens
+
+  # Add aggregate metadata across all pathogens
+  attr(results, "any_fallback") <- any(sapply(results, function(r) r$has_fallback %||% FALSE))
+  attr(results, "fetch_timestamp") <- Sys.time()
+
+  results
 }
 
 #' Get Rt for all pathogens (for dashboard overview)
