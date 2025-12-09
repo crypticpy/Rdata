@@ -4,7 +4,50 @@
 # Multi-Pathogen Tracking System for 2024-2025 Season
 # ============================================================================
 
-# Load packages ---------------------------------------------------------------
+# Startup error logging for debugging deployment issues -----------------------
+.startup_log <- function(msg, level = "INFO") {
+  timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+  entry <- sprintf("[%s] [%s] %s\n", timestamp, level, msg)
+  cat(entry)
+  # Also write to file for HF Spaces debugging
+
+  tryCatch({
+    log_dir <- if (dir.exists("/var/log/shiny-server")) "/var/log/shiny-server" else "logs"
+    if (!dir.exists(log_dir)) dir.create(log_dir, recursive = TRUE, showWarnings = FALSE)
+    cat(entry, file = file.path(log_dir, "startup.log"), append = TRUE)
+  }, error = function(e) NULL)
+}
+
+.startup_log("RespiWatch initialization starting...")
+
+# Load packages with error handling -------------------------------------------
+.load_package <- function(pkg) {
+  tryCatch({
+    library(pkg, character.only = TRUE)
+    .startup_log(sprintf("Loaded package: %s", pkg))
+    TRUE
+  }, error = function(e) {
+    .startup_log(sprintf("FAILED to load package %s: %s", pkg, e$message), "ERROR")
+    FALSE
+  })
+}
+
+required_packages <- c("shiny", "bslib", "jsonlite", "leaflet", "plotly", 
+                       "dplyr", "tidyr", "ggplot2", "shinyjs", "scales", 
+                       "DT", "sf", "rnaturalearth", "DBI", "RSQLite", "zoo")
+
+failed_packages <- c()
+for (pkg in required_packages) {
+  if (!.load_package(pkg)) {
+    failed_packages <- c(failed_packages, pkg)
+  }
+}
+
+if (length(failed_packages) > 0) {
+  stop(sprintf("Failed to load required packages: %s", paste(failed_packages, collapse = ", ")))
+}
+
+# Legacy compatibility: keep explicit library calls for reference
 library(shiny)
 library(bslib)
 library(jsonlite)
@@ -22,34 +65,60 @@ library(DBI)
 library(RSQLite)
 library(zoo)
 
-# Source data loading modules -------------------------------------------------
-source("R/logging.R")
-source("R/ui_helpers.R")
-source("R/schema_definitions.R")
-source("R/data_loader.R")
-source("R/rt_estimation.R")
-source("R/forecasting.R")
-source("R/bayesian_forecast.R")
-source("R/model_diagnostics.R")
-source("R/scenario_modeling.R")
-source("R/ensemble_forecast.R")
-source("R/healthcare_capacity.R")
-source("R/wave_propagation.R")
-source("R/vaccination_impact.R")
-source("R/ai_hooks.R")
-source("R/date_range_module.R")
-source("R/data_fallback.R")  # Intelligent fallback system for gap filling
+# Source data loading modules with error handling -----------------------------
+.safe_source <- function(file) {
+  tryCatch({
+    source(file)
+    .startup_log(sprintf("Sourced: %s", file))
+    TRUE
+  }, error = function(e) {
+    .startup_log(sprintf("FAILED to source %s: %s", file, e$message), "ERROR")
+    FALSE
+  })
+}
 
-# Source UI/Server modules (Shiny modules for each tab)
-source("R/modules/mod_about.R")
-source("R/modules/mod_surveillance_gaps.R")
-source("R/modules/mod_country_analysis.R")
-source("R/modules/mod_pathogen_analysis.R")
-source("R/modules/mod_rt_analysis.R")
-source("R/modules/mod_bayesian_forecast.R")
-source("R/modules/mod_scenario_analysis.R")
-source("R/modules/mod_healthcare_capacity.R")
-source("R/modules/mod_global_overview.R")
+source_files <- c(
+  "R/logging.R",
+  "R/ui_helpers.R",
+  "R/schema_definitions.R",
+  "R/data_loader.R",
+  "R/rt_estimation.R",
+  "R/forecasting.R",
+  "R/bayesian_forecast.R",
+  "R/model_diagnostics.R",
+  "R/scenario_modeling.R",
+  "R/ensemble_forecast.R",
+  "R/healthcare_capacity.R",
+  "R/wave_propagation.R",
+  "R/vaccination_impact.R",
+  "R/ai_hooks.R",
+  "R/date_range_module.R",
+  "R/data_fallback.R"
+)
+
+module_files <- c(
+  "R/modules/mod_about.R",
+  "R/modules/mod_surveillance_gaps.R",
+  "R/modules/mod_country_analysis.R",
+  "R/modules/mod_pathogen_analysis.R",
+  "R/modules/mod_rt_analysis.R",
+  "R/modules/mod_bayesian_forecast.R",
+  "R/modules/mod_scenario_analysis.R",
+  "R/modules/mod_healthcare_capacity.R",
+  "R/modules/mod_global_overview.R"
+)
+
+failed_sources <- c()
+for (f in c(source_files, module_files)) {
+  if (!.safe_source(f)) {
+    failed_sources <- c(failed_sources, f)
+  }
+}
+
+if (length(failed_sources) > 0) {
+  .startup_log(sprintf("WARNING: Failed to source %d files: %s", 
+                       length(failed_sources), paste(failed_sources, collapse = ", ")), "WARNING")
+}
 
 # =============================================================================
 # DATA LOADING
