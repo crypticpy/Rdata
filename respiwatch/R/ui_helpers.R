@@ -379,6 +379,15 @@ get_data_source_metadata <- function(source_codes, pathogen_code = NULL) {
 
   # Query actual date ranges from surveillance_data
   results <- lapply(source_codes, function(src) {
+    # Validate source code (alphanumeric and underscore only) to prevent SQL injection
+    if (!grepl("^[A-Za-z0-9_]+$", src)) {
+      warning(sprintf("Invalid source code format: %s", src))
+      return(NULL)
+    }
+
+    # Escape single quotes in source code for SQL safety
+    src_safe <- gsub("'", "''", src)
+
     query <- sprintf("
       SELECT
         MIN(sd.observation_date) as start_date,
@@ -387,9 +396,16 @@ get_data_source_metadata <- function(source_codes, pathogen_code = NULL) {
       FROM surveillance_data sd
       JOIN data_sources ds ON sd.source_id = ds.source_id
       WHERE ds.source_code = '%s'
-    ", src)
+    ", src_safe)
 
     if (!is.null(pathogen_code)) {
+      # Validate pathogen code as well
+      if (!grepl("^[A-Za-z0-9]+$", pathogen_code)) {
+        warning(sprintf("Invalid pathogen code format: %s", pathogen_code))
+        return(NULL)
+      }
+      pathogen_safe <- gsub("'", "''", pathogen_code)
+
       query <- sprintf("
         SELECT
           MIN(sd.observation_date) as start_date,
@@ -399,7 +415,7 @@ get_data_source_metadata <- function(source_codes, pathogen_code = NULL) {
         JOIN data_sources ds ON sd.source_id = ds.source_id
         JOIN pathogens p ON sd.pathogen_id = p.pathogen_id
         WHERE ds.source_code = '%s' AND p.pathogen_code = '%s'
-      ", src, pathogen_code)
+      ", src_safe, pathogen_safe)
     }
 
     row <- tryCatch(
@@ -775,11 +791,14 @@ safe_render <- function(expr, fallback_message = "Error loading content",
         log_error(sprintf("%s failed: %s", context, e$message), category = "ui")
       }
 
-      # Return error UI
+      # Extract and sanitize error message to prevent XSS
+      error_msg <- safe_error_message(e, "Unknown error")
+
+      # Return error UI with escaped message
       div(
         class = "alert alert-warning",
         icon("exclamation-triangle"),
-        sprintf(" %s: %s", fallback_message, e$message)
+        sprintf(" %s: %s", htmltools::htmlEscape(fallback_message), htmltools::htmlEscape(error_msg))
       )
     }
   )
@@ -801,7 +820,9 @@ safe_render_plotly <- function(expr, fallback_message = "Error loading chart",
       if (exists("log_error", mode = "function")) {
         log_error(sprintf("%s failed: %s", context, e$message), category = "ui")
       }
-      empty_plot_message(paste(fallback_message, "-", e$message))
+      # Extract and sanitize error message to prevent XSS in plot annotations
+      error_msg <- safe_error_message(e, "Unknown error")
+      empty_plot_message(paste(htmltools::htmlEscape(fallback_message), "-", htmltools::htmlEscape(error_msg)))
     }
   )
 }

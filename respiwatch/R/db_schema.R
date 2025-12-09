@@ -605,8 +605,13 @@ initialize_database <- function(db_path = DB_PATH, force = FALSE) {
     if (force) {
       # Drop all tables (in reverse order due to foreign keys)
       tables <- dbListTables(conn)
-      for (tbl in rev(tables)) {
-        dbExecute(conn, paste0("DROP TABLE IF EXISTS ", tbl, ";"))
+      # Validate table names - only allow alphanumeric and underscore
+      valid_tables <- tables[grepl("^[A-Za-z_][A-Za-z0-9_]*$", tables)]
+      if (length(valid_tables) < length(tables)) {
+        warning("Some table names were skipped due to invalid characters")
+      }
+      for (tbl in rev(valid_tables)) {
+        dbExecute(conn, paste0("DROP TABLE IF EXISTS \"", tbl, "\";"))
       }
       message("Dropped all existing tables")
     }
@@ -651,9 +656,11 @@ get_database_status <- function(db_path = DB_PATH) {
   conn <- get_db_connection(db_path)
   tables <- dbListTables(conn)
 
-  # Get row counts for each table
-  row_counts <- sapply(tables, function(tbl) {
-    result <- dbGetQuery(conn, paste0("SELECT COUNT(*) as n FROM ", tbl))
+  # Get row counts for each table (with validation)
+  # Only process tables with valid names (alphanumeric and underscore)
+  valid_tables <- tables[grepl("^[A-Za-z_][A-Za-z0-9_]*$", tables)]
+  row_counts <- sapply(valid_tables, function(tbl) {
+    result <- dbGetQuery(conn, paste0("SELECT COUNT(*) as n FROM \"", tbl, "\""))
     result$n
   })
 

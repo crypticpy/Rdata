@@ -1,9 +1,9 @@
-# Data files (too large for git)
+# Data files (large files - but keeping JSON for HF Spaces)
 data/*.sqlite
 data/*.db
 data/cache/
 data/raw/*.csv
-data/raw/*.json
+# Note: JSON files in data/raw/ are included for HF Spaces deployment
 
 # R artifacts
 .Rhistory
@@ -44,3 +44,7 @@ reseed_*.R
 
 # Playwright
 .playwright-mcp/
+prototype/respiwatch.zip
+
+# Prototype files (not needed for deployment)
+prototype/

@@ -199,6 +199,17 @@ get_forecast_for_pathogen <- function(pathogen_code, country = NULL, horizon = 4
   source("R/db_schema.R")
   source("R/db_operations.R")
 
+  # Validate pathogen code to prevent SQL injection
+  if (!is_valid_pathogen_code(pathogen_code)) {
+    warning(sprintf("Invalid pathogen code: %s", pathogen_code))
+    return(list(
+      pathogen = pathogen_code,
+      country = country,
+      forecast = NULL,
+      error = "Invalid pathogen code"
+    ))
+  }
+
   conn <- get_db_connection()
   query <- sprintf("
     SELECT
@@ -211,7 +222,7 @@ get_forecast_for_pathogen <- function(pathogen_code, country = NULL, horizon = 4
     JOIN pathogens p ON sd.pathogen_id = p.pathogen_id
     WHERE p.pathogen_code = '%s'
     ORDER BY sd.observation_date
-  ", pathogen_code)
+  ", escape_sql(pathogen_code))
 
   surv_data <- DBI::dbGetQuery(conn, query)
   close_db_connection(conn)

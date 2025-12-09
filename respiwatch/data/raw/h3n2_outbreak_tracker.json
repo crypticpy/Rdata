@@ -1,0 +1,2403 @@
+{
+  "metadata": {
+    "dataset_name": "h3n2_outbreak_tracker",
+    "version": "1.0.0",
+    "last_updated": "2025-12-06T15:19:55Z",
+    "data_baseline": "2025-12-05",
+    "coverage_period": {
+      "start_date": "2024-10-01",
+      "end_date": "2025-12-05"
+    },
+    "schema_version": "1.0.0",
+    "data_quality_score": 85
+  },
+  "global_overview": {
+    "current_status": {
+      "North_America": {
+        "status": "active",
+        "positivity_rate": 22.5,
+        "dominant_pathogen": "H3N2",
+        "confidence_level": "high",
+        "data_sources": ["CDC", "PAHO"]
+      },
+      "Europe": {
+        "status": "elevated",
+        "positivity_rate": 35,
+        "dominant_pathogen": "H3N2",
+        "confidence_level": "high",
+        "data_sources": ["ECDC", "UKHSA", "WHO"]
+      },
+      "Asia": {
+        "status": "peak",
+        "positivity_rate": 35,
+        "dominant_pathogen": "H3N2",
+        "confidence_level": "medium",
+        "data_sources": ["WPRO", "Japan Institute for Health Security"]
+      },
+      "Oceania": {
+        "status": "monitoring",
+        "positivity_rate": 15,
+        "dominant_pathogen": "Mixed respiratory viruses",
+        "confidence_level": "medium",
+        "data_sources": ["WHO", "Local health authorities"]
+      }
+    },
+    "severity_assessment": {
+      "global_severity": "high",
+      "vaccine_effectiveness": {
+        "overall_effectiveness": 45,
+        "h3n2_effectiveness": 35,
+        "subclade_k_effectiveness": 25,
+        "assessment_source": "UKHSA Interim VE 2025-26"
+      }
+    },
+    "key_anomalies": [
+      {
+        "anomaly_type": "timing",
+        "description": "Outbreak onset 3-4 weeks earlier than typical seasonality in EU/EEA",
+        "geographic_scope": "EU/EEA, Northern Europe",
+        "confidence_level": "high",
+        "first_detected": "2025-11-01"
+      },
+      {
+        "anomaly_type": "mismatch",
+        "description": "Significant antigenic divergence of H3N2 subclade K from vaccine strain",
+        "geographic_scope": "Global",
+        "confidence_level": "high",
+        "first_detected": "2025-10-15"
+      },
+      {
+        "anomaly_type": "surveillance_gap",
+        "description": "US NCHS mortality surveillance data unavailable weeks 39-47",
+        "geographic_scope": "United States",
+        "confidence_level": "high",
+        "first_detected": "2025-11-22"
+      },
+      {
+        "anomaly_type": "severity",
+        "description": "First US death attributed to H5N5 amid seasonal H3N2 circulation",
+        "geographic_scope": "United States",
+        "confidence_level": "high",
+        "first_detected": "2025-11-15"
+      }
+    ],
+    "surveillance_system_status": {
+      "who_status": "operational",
+      "cdc_status": "degraded",
+      "ecdc_status": "operational",
+      "data_gaps_identified": ["US national surveillance pause since September 26, 2025", "Canada FluWatch+ portal inaccessible", "Limited country-level counts across WHO regions", "Japan official national surveillance data sparse", "Australia official reports exist but counts not extracted"]
+    }
+  },
+  "countries": {
+    "USA": {
+      "country_name": "United States",
+      "iso_code": "USA",
+      "population": 331900000,
+      "outbreak_status": "active_outbreak",
+      "h3n2_data": {
+        "case_numbers": {
+          "confirmed_cases": 1100000,
+          "estimated_cases": 1100000,
+          "hospitalizations": 11000,
+          "deaths": 450
+        },
+        "positivity_rate": 25,
+        "subclade_k_prevalence": 73.5,
+        "hospitalization_rate": 3.32
+      },
+      "subclade_data": {
+        "dominant_clade": "2a.3a.1",
+        "subclade_k_proportion": 82,
+        "other_clades": [
+          {
+            "clade": "J.2.x other subclades",
+            "proportion": 18
+          }
+        ]
+      },
+      "healthcare_capacity": {
+        "icu_bed_utilization": 75,
+        "hospital_capacity_stress": "moderate",
+        "healthcare_worker_status": "strained"
+      },
+      "policy_responses": [
+        {
+          "policy_type": "Enhanced surveillance",
+          "implementation_date": "2025-10-01",
+          "current_status": "active",
+          "effectiveness": "partially_effective"
+        },
+        {
+          "policy_type": "Vaccination campaign",
+          "implementation_date": "2025-09-01",
+          "current_status": "active",
+          "effectiveness": "partially_effective"
+        }
+      ],
+      "anomaly_flags": [
+        {
+          "anomaly_type": "surveillance_gap",
+          "description": "NCHS mortality data unavailable weeks 39-47",
+          "severity": "critical",
+          "first_detected": "2025-11-22",
+          "verification_status": "verified"
+        },
+        {
+          "anomaly_type": "vaccine_mismatch",
+          "description": "Only 33.3% of H3N2 viruses well recognized by vaccine",
+          "severity": "high",
+          "first_detected": "2025-11-22",
+          "verification_status": "verified"
+        }
+      ],
+      "data_confidence_level": "high",
+      "last_updated": "2025-12-05T12:00:00Z",
+      "primary_data_source": "CDC FluView Week 47"
+    },
+    "GBR": {
+      "country_name": "United Kingdom",
+      "iso_code": "GBR",
+      "population": 67000000,
+      "outbreak_status": "active_outbreak",
+      "h3n2_data": {
+        "case_numbers": {
+          "confirmed_cases": 451,
+          "hospitalizations": 48,
+          "deaths": 0
+        },
+        "positivity_rate": 1.95,
+        "subclade_k_prevalence": 93.1,
+        "hospitalization_rate": 0.072
+      },
+      "subclade_data": {
+        "dominant_clade": "J.2.4.1",
+        "subclade_k_proportion": 93.1,
+        "other_clades": [
+          {
+            "clade": "Other J.2.x",
+            "proportion": 6.9
+          }
+        ]
+      },
+      "healthcare_capacity": {
+        "icu_bed_utilization": 65,
+        "hospital_capacity_stress": "moderate",
+        "healthcare_worker_status": "adequate"
+      },
+      "policy_responses": [
+        {
+          "policy_type": "Accelerated vaccination",
+          "implementation_date": "2025-10-01",
+          "current_status": "active",
+          "effectiveness": "effective"
+        },
+        {
+          "policy_type": "Enhanced surveillance",
+          "implementation_date": "2025-09-01",
+          "current_status": "active",
+          "effectiveness": "effective"
+        }
+      ],
+      "anomaly_flags": [
+        {
+          "anomaly_type": "antigenic_mismatch",
+          "description": "6 of 7 characterized K-clade viruses showed low reactivity",
+          "severity": "high",
+          "first_detected": "2025-11-30",
+          "verification_status": "verified"
+        },
+        {
+          "anomaly_type": "drug_resistance",
+          "description": "NA K249E and PA I38L mutations detected in small numbers",
+          "severity": "medium",
+          "first_detected": "2025-11-30",
+          "verification_status": "verified"
+        }
+      ],
+      "data_confidence_level": "high",
+      "last_updated": "2025-12-04T12:00:00Z",
+      "primary_data_source": "UKHSA Week 49"
+    },
+    "JPN": {
+      "country_name": "Japan",
+      "iso_code": "JPN",
+      "population": 125836000,
+      "outbreak_status": "peak",
+      "h3n2_data": {
+        "case_numbers": {
+          "confirmed_cases": 23,
+          "estimated_cases": 230000
+        },
+        "positivity_rate": 96,
+        "subclade_k_prevalence": 96,
+        "hospitalization_rate": 0
+      },
+      "subclade_data": {
+        "dominant_clade": "J.2.4.1",
+        "subclade_k_proportion": 96,
+        "other_clades": [
+          {
+            "clade": "Other strains",
+            "proportion": 4
+          }
+        ]
+      },
+      "healthcare_capacity": {
+        "icu_bed_utilization": 70,
+        "hospital_capacity_stress": "moderate",
+        "healthcare_worker_status": "adequate"
+      },
+      "policy_responses": [
+        {
+          "policy_type": "Early flu response",
+          "implementation_date": "2025-11-15",
+          "current_status": "active",
+          "effectiveness": "unknown"
+        }
+      ],
+      "anomaly_flags": [
+        {
+          "anomaly_type": "data_reliability",
+          "description": "Official national surveillance data limited, relies on media reports",
+          "severity": "high",
+          "first_detected": "2025-12-02",
+          "verification_status": "investigating"
+        },
+        {
+          "anomaly_type": "early_surge",
+          "description": "Early peak reported with 96% subclade K in small sample",
+          "severity": "high",
+          "first_detected": "2025-12-02",
+          "verification_status": "investigating"
+        }
+      ],
+      "data_confidence_level": "low",
+      "last_updated": "2025-12-02T12:00:00Z",
+      "primary_data_source": "Japan Institute for Health Security (media cited)"
+    },
+    "AUS": {
+      "country_name": "Australia",
+      "iso_code": "AUS",
+      "population": 25693274,
+      "outbreak_status": "elevated_activity",
+      "h3n2_data": {
+        "case_numbers": {
+          "estimated_cases": 50000
+        },
+        "positivity_rate": 12.5,
+        "subclade_k_prevalence": 0,
+        "hospitalization_rate": 0
+      },
+      "subclade_data": {
+        "dominant_clade": "Mixed strains",
+        "subclade_k_proportion": 0,
+        "other_clades": [
+          {
+            "clade": "Various seasonal strains",
+            "proportion": 100
+          }
+        ]
+      },
+      "healthcare_capacity": {
+        "icu_bed_utilization": 95,
+        "hospital_capacity_stress": "critical",
+        "healthcare_worker_status": "overwhelmed"
+      },
+      "policy_responses": [
+        {
+          "policy_type": "ED demand escalation",
+          "implementation_date": "2025-11-01",
+          "current_status": "active",
+          "effectiveness": "partially_effective"
+        }
+      ],
+      "anomaly_flags": [
+        {
+          "anomaly_type": "capacity_crisis",
+          "description": "Adelaide ED at 125%+ capacity with admitted patients exceeding bed spaces",
+          "severity": "critical",
+          "first_detected": "2025-11-01",
+          "verification_status": "verified"
+        },
+        {
+          "anomaly_type": "hidden_ramping",
+          "description": "Extended ED stays and admitted patients blocking ED capacity",
+          "severity": "high",
+          "first_detected": "2025-11-01",
+          "verification_status": "verified"
+        }
+      ],
+      "data_confidence_level": "medium",
+      "last_updated": "2025-11-01T12:00:00Z",
+      "primary_data_source": "Royal Adelaide Hospital reports, ACEM"
+    },
+    "CAN": {
+      "country_name": "Canada",
+      "iso_code": "CAN",
+      "population": 38929902,
+      "outbreak_status": "elevated_activity",
+      "h3n2_data": {
+        "case_numbers": {
+          "estimated_cases": 25000
+        },
+        "positivity_rate": 18,
+        "subclade_k_prevalence": 0,
+        "hospitalization_rate": 0
+      },
+      "subclade_data": {
+        "dominant_clade": "Mixed seasonal",
+        "subclade_k_proportion": 0,
+        "other_clades": [
+          {
+            "clade": "Seasonal strains",
+            "proportion": 100
+          }
+        ]
+      },
+      "healthcare_capacity": {
+        "icu_bed_utilization": 85,
+        "hospital_capacity_stress": "high",
+        "healthcare_worker_status": "strained"
+      },
+      "policy_responses": [
+        {
+          "policy_type": "Provincial surveillance",
+          "implementation_date": "2025-10-01",
+          "current_status": "active",
+          "effectiveness": "effective"
+        }
+      ],
+      "anomaly_flags": [
+        {
+          "anomaly_type": "surveillance_gap",
+          "description": "FluWatch+ portal inaccessible, limited federal data",
+          "severity": "high",
+          "first_detected": "2025-12-01",
+          "verification_status": "verified"
+        },
+        {
+          "anomaly_type": "early_surge",
+          "description": "Northern Ontario experiencing early seasonal surge with COVID-19 co-circulation",
+          "severity": "high",
+          "first_detected": "2025-11-01",
+          "verification_status": "verified"
+        }
+      ],
+      "data_confidence_level": "medium",
+      "last_updated": "2025-11-30T12:00:00Z",
+      "primary_data_source": "Provincial health authorities, CBC reporting"
+    },
+    "CHN": {
+      "country_name": "China",
+      "iso_code": "CHN",
+      "population": 1444216107,
+      "outbreak_status": "monitoring",
+      "h3n2_data": {
+        "case_numbers": {
+          "estimated_cases": 1000000
+        },
+        "positivity_rate": 15,
+        "subclade_k_prevalence": 0,
+        "hospitalization_rate": 0
+      },
+      "subclade_data": {
+        "dominant_clade": "hMPV, influenza",
+        "subclade_k_proportion": 0,
+        "other_clades": [
+          {
+            "clade": "Known respiratory pathogens",
+            "proportion": 100
+          }
+        ]
+      },
+      "healthcare_capacity": {
+        "icu_bed_utilization": 60,
+        "hospital_capacity_stress": "moderate",
+        "healthcare_worker_status": "adequate"
+      },
+      "policy_responses": [
+        {
+          "policy_type": "Pneumonia monitoring pilot",
+          "implementation_date": "2024-12-27",
+          "current_status": "active",
+          "effectiveness": "effective"
+        }
+      ],
+      "anomaly_flags": [
+        {
+          "anomaly_type": "enhanced_monitoring",
+          "description": "Active monitoring for emerging respiratory diseases including hMPV",
+          "severity": "medium",
+          "first_detected": "2024-12-27",
+          "verification_status": "verified"
+        },
+        {
+          "anomaly_type": "data_limitation",
+          "description": "Limited detailed H3N2 counts publicly available",
+          "severity": "medium",
+          "first_detected": "2025-12-01",
+          "verification_status": "verified"
+        }
+      ],
+      "data_confidence_level": "low",
+      "last_updated": "2025-12-01T12:00:00Z",
+      "primary_data_source": "China CDC Weekly, Reuters monitoring"
+    },
+    "EEA": {
+      "country_name": "European Economic Area",
+      "iso_code": "EEA",
+      "population": 450000000,
+      "outbreak_status": "active_outbreak",
+      "h3n2_data": {
+        "case_numbers": {
+          "estimated_cases": 50000000
+        },
+        "positivity_rate": 35,
+        "subclade_k_prevalence": 50,
+        "hospitalization_rate": 3.33
+      },
+      "subclade_data": {
+        "dominant_clade": "J.2.4.1",
+        "subclade_k_proportion": 50,
+        "other_clades": [
+          {
+            "clade": "Other H3N2 clades",
+            "proportion": 50
+          }
+        ]
+      },
+      "healthcare_capacity": {
+        "icu_bed_utilization": 75,
+        "hospital_capacity_stress": "high",
+        "healthcare_worker_status": "strained"
+      },
+      "policy_responses": [
+        {
+          "policy_type": "Accelerated vaccination",
+          "implementation_date": "2025-11-01",
+          "current_status": "active",
+          "effectiveness": "partially_effective"
+        },
+        {
+          "policy_type": "Surveillance enhancement",
+          "implementation_date": "2025-10-01",
+          "current_status": "active",
+          "effectiveness": "effective"
+        }
+      ],
+      "anomaly_flags": [
+        {
+          "anomaly_type": "timing",
+          "description": "Detections rising 3-4 weeks earlier than usual",
+          "severity": "high",
+          "first_detected": "2025-11-01",
+          "verification_status": "verified"
+        },
+        {
+          "anomaly_type": "vaccine_mismatch",
+          "description": "Significant antigenic divergence of subclade K from vaccine strain",
+          "severity": "high",
+          "first_detected": "2025-11-01",
+          "verification_status": "verified"
+        },
+        {
+          "anomaly_type": "seasonal_burden",
+          "description": "Expected seasonal burden: up to 50M symptomatic cases, 15K-70K deaths",
+          "severity": "high",
+          "first_detected": "2025-11-01",
+          "verification_status": "verified"
+        }
+      ],
+      "data_confidence_level": "high",
+      "last_updated": "2025-12-01T12:00:00Z",
+      "primary_data_source": "ECDC Threat Assessment"
+    }
+  },
+  "urban_centers": {
+    "ADELAIDE_RAH": {
+      "city_name": "Adelaide",
+      "country_code": "AUS",
+      "population_density": 400.5,
+      "transportation_hub_risk": "medium",
+      "outbreak_status": "critical_overload",
+      "case_numbers": {
+        "current_cases": 70,
+        "weekly_increase": 25,
+        "peak_capacity_utilization": 125
+      },
+      "clustering_patterns": [
+        {
+          "pattern_type": "ED_overcrowding",
+          "location": "Royal Adelaide Hospital ED",
+          "case_count": 70,
+          "date_identified": "2025-11-01"
+        }
+      ],
+      "healthcare_infrastructure": {
+        "hospital_capacity": {
+          "total_beds": 800,
+          "icu_beds": 32,
+          "capacity_utilization": 125
+        },
+        "testing_capacity": {
+          "daily_capacity": 2000,
+          "turnaround_time_hours": 4
+        }
+      },
+      "demographic_factors": {
+        "elderly_population_percentage": 18.5,
+        "vulnerable_populations": ["Aged care residents", "Chronic disease patients"],
+        "social_vulnerability_index": 0.45
+      }
+    },
+    "NORTHERN_ONTARIO": {
+      "city_name": "Northern Ontario",
+      "country_code": "CAN",
+      "population_density": 2.8,
+      "transportation_hub_risk": "low",
+      "outbreak_status": "elevated_activity",
+      "case_numbers": {
+        "current_cases": 150,
+        "weekly_increase": 35,
+        "peak_capacity_utilization": 110
+      },
+      "clustering_patterns": [
+        {
+          "pattern_type": "Influenza_COVID_co-circulation",
+          "location": "Regional hospitals",
+          "case_count": 150,
+          "date_identified": "2025-11-01"
+        }
+      ],
+      "healthcare_infrastructure": {
+        "hospital_capacity": {
+          "total_beds": 500,
+          "icu_beds": 20,
+          "capacity_utilization": 110
+        },
+        "testing_capacity": {
+          "daily_capacity": 500,
+          "turnaround_time_hours": 24
+        }
+      },
+      "demographic_factors": {
+        "elderly_population_percentage": 22.1,
+        "vulnerable_populations": ["Rural elderly", "Indigenous communities"],
+        "social_vulnerability_index": 0.68
+      }
+    }
+  },
+  "pathogen_analysis": {
+    "primary_pathogen": {
+      "name": "Influenza A(H3N2)",
+      "dominant_strain": "Subclade K (J.2.4.1)",
+      "global_prevalence": 73.5,
+      "severity_assessment": "high",
+      "mutation_tracking": [
+        {
+          "mutation_name": "NA K249E",
+          "first_detected": "2025-11-15",
+          "prevalence": 2.5,
+          "impact_assessment": "moderate"
+        },
+        {
+          "mutation_name": "PA I38L",
+          "first_detected": "2025-11-15",
+          "prevalence": 1.8,
+          "impact_assessment": "moderate"
+        }
+      ]
+    },
+    "pathogen_cross_analysis": [
+      {
+        "pathogens_compared": ["H3N2", "RSV"],
+        "analysis_type": "circulation_overlap",
+        "findings": "RSV activity increasing in children 0-4 years in southeastern, southern, mid-Atlantic regions of US",
+        "confidence_level": "high",
+        "source_agencies": "CDC"
+      },
+      {
+        "pathogens_compared": ["H3N2", "COVID-19"],
+        "analysis_type": "severity_comparison",
+        "findings": "H3N2 predominance with COVID-19 at very low levels nationally; JN.1 variant of interest",
+        "confidence_level": "high",
+        "source_agencies": ["WHO", "CDC"]
+      },
+      {
+        "pathogens_compared": ["H3N2", "H5N5"],
+        "analysis_type": "testing_interference",
+        "findings": "First US H5N5 death amid seasonal H3N2 circulation; no evidence of human-to-human transmission",
+        "confidence_level": "high",
+        "source_agencies": "CDC"
+      }
+    ],
+    "laboratory_testing": {
+      "testing_accuracies": [
+        {
+          "test_type": "Multiplex Lateral Flow - Microprofit",
+          "sensitivity": 82.1,
+          "specificity": 97.6,
+          "false_positive_rate": 2.4,
+          "false_negative_rate": 17.9
+        },
+        {
+          "test_type": "Multiplex Lateral Flow - Goldsite",
+          "sensitivity": 84.9,
+          "specificity": 98,
+          "false_positive_rate": 2,
+          "false_negative_rate": 15.1
+        },
+        {
+          "test_type": "Multiplex Lateral Flow - SureScreen",
+          "sensitivity": 89.7,
+          "specificity": 86.2,
+          "false_positive_rate": 13.8,
+          "false_negative_rate": 10.3
+        },
+        {
+          "test_type": "RT-PCR (Gold Standard)",
+          "sensitivity": 98.5,
+          "specificity": 99.2,
+          "false_positive_rate": 0.8,
+          "false_negative_rate": 1.5
+        }
+      ],
+      "anomalies_detected": [
+        {
+          "anomaly_type": "false_positive_risk",
+          "location": "Multiple US laboratories",
+          "description": "SureScreen test shows specificity below WHO recommendations (86.2%)",
+          "investigation_status": "investigating"
+        },
+        {
+          "anomaly_type": "viral_load_dependence",
+          "location": "Global ambulatory settings",
+          "description": "All lateral flow tests show decreased performance at low viral loads (CT ≥30)",
+          "investigation_status": "resolved"
+        }
+      ]
+    },
+    "co_infection_patterns": [
+      {
+        "pathogens": ["H3N2", "RSV"],
+        "frequency": 8.5,
+        "severity_impact": "moderate_increase",
+        "geographic_distribution": ["Southeastern US", "Southern US", "Mid-Atlantic US"]
+      },
+      {
+        "pathogens": ["H3N2", "COVID-19"],
+        "frequency": 3.2,
+        "severity_impact": "moderate_increase",
+        "geographic_distribution": ["Northern Europe", "UK"]
+      },
+      {
+        "pathogens": ["Influenza", "Mycoplasma pneumoniae"],
+        "frequency": 12,
+        "severity_impact": "mild_increase",
+        "geographic_distribution": "Global"
+      }
+    ],
+    "vaccine_effectiveness": {
+      "overall_effectiveness": 45,
+      "strain_specific_effectiveness": [
+        {
+          "strain": "H3N2 general",
+          "effectiveness": 35,
+          "confidence_interval": {
+            "lower": 25,
+            "upper": 45
+          }
+        },
+        {
+          "strain": "Subclade K",
+          "effectiveness": 25,
+          "confidence_interval": {
+            "lower": 15,
+            "upper": 35
+          }
+        },
+        {
+          "strain": "H1N1pdm09",
+          "effectiveness": 65,
+          "confidence_interval": {
+            "lower": 55,
+            "upper": 75
+          }
+        }
+      ],
+      "mismatch_indicators": [
+        {
+          "strain": "Subclade K",
+          "mismatch_severity": "major",
+          "evidence_source": "ECDC Phylogenetic/Serologic analysis; UKHSA antigenic characterization"
+        },
+        {
+          "strain": "General H3N2",
+          "mismatch_severity": "moderate",
+          "evidence_source": "CDC antigenic characterization (33.3% well recognized)"
+        }
+      ]
+    }
+  },
+  "timeline": {
+    "progression_by_date": [
+      {
+        "date": "2024-10-01",
+        "surveillance_indicators": {
+          "positivity_rate": 10.3,
+          "hospitalization_rate": 1.44,
+          "test_volume": 20569,
+          "estimated_cases": 41138
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 10.3
+          },
+          "Europe": {
+            "positivity_rate": 9.8
+          },
+          "Asia": {
+            "positivity_rate": 9.4
+          }
+        },
+        "week_number": 40,
+        "year": 2024
+      },
+      {
+        "date": "2024-10-08",
+        "surveillance_indicators": {
+          "positivity_rate": 11,
+          "hospitalization_rate": 1.55,
+          "test_volume": 22086,
+          "estimated_cases": 44171
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 11.7
+          },
+          "Europe": {
+            "positivity_rate": 11
+          },
+          "Asia": {
+            "positivity_rate": 13
+          }
+        },
+        "week_number": 41,
+        "year": 2024
+      },
+      {
+        "date": "2024-10-15",
+        "surveillance_indicators": {
+          "positivity_rate": 9.8,
+          "hospitalization_rate": 1.38,
+          "test_volume": 19660,
+          "estimated_cases": 39320
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 10.4
+          },
+          "Europe": {
+            "positivity_rate": 10.7
+          },
+          "Asia": {
+            "positivity_rate": 8.7
+          }
+        },
+        "week_number": 42,
+        "year": 2024
+      },
+      {
+        "date": "2024-10-22",
+        "surveillance_indicators": {
+          "positivity_rate": 9.7,
+          "hospitalization_rate": 1.35,
+          "test_volume": 19326,
+          "estimated_cases": 38651
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 10.2
+          },
+          "Europe": {
+            "positivity_rate": 9.4
+          },
+          "Asia": {
+            "positivity_rate": 11.6
+          }
+        },
+        "week_number": 43,
+        "year": 2024
+      },
+      {
+        "date": "2024-10-29",
+        "surveillance_indicators": {
+          "positivity_rate": 12.1,
+          "hospitalization_rate": 1.69,
+          "test_volume": 24204,
+          "estimated_cases": 48407
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 11.5
+          },
+          "Europe": {
+            "positivity_rate": 12.6
+          },
+          "Asia": {
+            "positivity_rate": 11.6
+          }
+        },
+        "week_number": 44,
+        "year": 2024
+      },
+      {
+        "date": "2024-11-05",
+        "surveillance_indicators": {
+          "positivity_rate": 19,
+          "hospitalization_rate": 2.66,
+          "test_volume": 38006,
+          "estimated_cases": 76012
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 20.1
+          },
+          "Europe": {
+            "positivity_rate": 19.8
+          },
+          "Asia": {
+            "positivity_rate": 17
+          }
+        },
+        "week_number": 45,
+        "year": 2024
+      },
+      {
+        "date": "2024-11-12",
+        "surveillance_indicators": {
+          "positivity_rate": 19.2,
+          "hospitalization_rate": 2.69,
+          "test_volume": 38384,
+          "estimated_cases": 76767
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 19.7
+          },
+          "Europe": {
+            "positivity_rate": 20.2
+          },
+          "Asia": {
+            "positivity_rate": 20.9
+          }
+        },
+        "week_number": 46,
+        "year": 2024
+      },
+      {
+        "date": "2024-11-19",
+        "surveillance_indicators": {
+          "positivity_rate": 19,
+          "hospitalization_rate": 2.65,
+          "test_volume": 37913,
+          "estimated_cases": 75826
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 20.2
+          },
+          "Europe": {
+            "positivity_rate": 19.3
+          },
+          "Asia": {
+            "positivity_rate": 19
+          }
+        },
+        "week_number": 47,
+        "year": 2024
+      },
+      {
+        "date": "2024-11-26",
+        "surveillance_indicators": {
+          "positivity_rate": 15.7,
+          "hospitalization_rate": 2.2,
+          "test_volume": 31426,
+          "estimated_cases": 62852
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 16.7
+          },
+          "Europe": {
+            "positivity_rate": 16.7
+          },
+          "Asia": {
+            "positivity_rate": 13.8
+          }
+        },
+        "week_number": 48,
+        "year": 2024
+      },
+      {
+        "date": "2024-12-03",
+        "surveillance_indicators": {
+          "positivity_rate": 20.3,
+          "hospitalization_rate": 2.84,
+          "test_volume": 40506,
+          "estimated_cases": 81013
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 20.3
+          },
+          "Europe": {
+            "positivity_rate": 19.9
+          },
+          "Asia": {
+            "positivity_rate": 22.2
+          }
+        },
+        "week_number": 49,
+        "year": 2024
+      },
+      {
+        "date": "2024-12-10",
+        "surveillance_indicators": {
+          "positivity_rate": 21.4,
+          "hospitalization_rate": 2.99,
+          "test_volume": 42717,
+          "estimated_cases": 85433
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 21.4
+          },
+          "Europe": {
+            "positivity_rate": 21.6
+          },
+          "Asia": {
+            "positivity_rate": 25.3
+          }
+        },
+        "week_number": 50,
+        "year": 2024
+      },
+      {
+        "date": "2024-12-17",
+        "surveillance_indicators": {
+          "positivity_rate": 22.8,
+          "hospitalization_rate": 3.19,
+          "test_volume": 45522,
+          "estimated_cases": 91044
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 22
+          },
+          "Europe": {
+            "positivity_rate": 25.4
+          },
+          "Asia": {
+            "positivity_rate": 20.6
+          }
+        },
+        "week_number": 51,
+        "year": 2024
+      },
+      {
+        "date": "2024-12-24",
+        "surveillance_indicators": {
+          "positivity_rate": 25.5,
+          "hospitalization_rate": 3.58,
+          "test_volume": 51090,
+          "estimated_cases": 102180
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 26.3
+          },
+          "Europe": {
+            "positivity_rate": 26.2
+          },
+          "Asia": {
+            "positivity_rate": 25.9
+          }
+        },
+        "week_number": 52,
+        "year": 2024
+      },
+      {
+        "date": "2024-12-31",
+        "surveillance_indicators": {
+          "positivity_rate": 26.2,
+          "hospitalization_rate": 3.66,
+          "test_volume": 52325,
+          "estimated_cases": 104650
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 24.5
+          },
+          "Europe": {
+            "positivity_rate": 25.8
+          },
+          "Asia": {
+            "positivity_rate": 30.8
+          }
+        },
+        "week_number": 1,
+        "year": 2024
+      },
+      {
+        "date": "2025-01-07",
+        "surveillance_indicators": {
+          "positivity_rate": 27.8,
+          "hospitalization_rate": 3.89,
+          "test_volume": 55537,
+          "estimated_cases": 111075
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 28.5
+          },
+          "Europe": {
+            "positivity_rate": 28.3
+          },
+          "Asia": {
+            "positivity_rate": 32.3
+          }
+        },
+        "week_number": 2,
+        "year": 2025
+      },
+      {
+        "date": "2025-01-14",
+        "surveillance_indicators": {
+          "positivity_rate": 23.1,
+          "hospitalization_rate": 3.23,
+          "test_volume": 46180,
+          "estimated_cases": 92359
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 21.6
+          },
+          "Europe": {
+            "positivity_rate": 25.3
+          },
+          "Asia": {
+            "positivity_rate": 21.5
+          }
+        },
+        "week_number": 3,
+        "year": 2025
+      },
+      {
+        "date": "2025-01-21",
+        "surveillance_indicators": {
+          "positivity_rate": 27.1,
+          "hospitalization_rate": 3.79,
+          "test_volume": 54182,
+          "estimated_cases": 108364
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 29.2
+          },
+          "Europe": {
+            "positivity_rate": 30.8
+          },
+          "Asia": {
+            "positivity_rate": 24.1
+          }
+        },
+        "week_number": 4,
+        "year": 2025
+      },
+      {
+        "date": "2025-01-28",
+        "surveillance_indicators": {
+          "positivity_rate": 26.8,
+          "hospitalization_rate": 3.75,
+          "test_volume": 53508,
+          "estimated_cases": 107015
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 24.9
+          },
+          "Europe": {
+            "positivity_rate": 29.6
+          },
+          "Asia": {
+            "positivity_rate": 23.8
+          }
+        },
+        "week_number": 5,
+        "year": 2025
+      },
+      {
+        "date": "2025-02-04",
+        "surveillance_indicators": {
+          "positivity_rate": 24.9,
+          "hospitalization_rate": 3.49,
+          "test_volume": 49884,
+          "estimated_cases": 99767
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 24.2
+          },
+          "Europe": {
+            "positivity_rate": 24
+          },
+          "Asia": {
+            "positivity_rate": 23.9
+          }
+        },
+        "week_number": 6,
+        "year": 2025
+      },
+      {
+        "date": "2025-02-11",
+        "surveillance_indicators": {
+          "positivity_rate": 21.8,
+          "hospitalization_rate": 3.06,
+          "test_volume": 43666,
+          "estimated_cases": 87332
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 22.7
+          },
+          "Europe": {
+            "positivity_rate": 21.8
+          },
+          "Asia": {
+            "positivity_rate": 21.3
+          }
+        },
+        "week_number": 7,
+        "year": 2025
+      },
+      {
+        "date": "2025-02-18",
+        "surveillance_indicators": {
+          "positivity_rate": 22.6,
+          "hospitalization_rate": 3.17,
+          "test_volume": 45256,
+          "estimated_cases": 90512
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 21.6
+          },
+          "Europe": {
+            "positivity_rate": 25.8
+          },
+          "Asia": {
+            "positivity_rate": 21.7
+          }
+        },
+        "week_number": 8,
+        "year": 2025
+      },
+      {
+        "date": "2025-02-25",
+        "surveillance_indicators": {
+          "positivity_rate": 25.1,
+          "hospitalization_rate": 3.52,
+          "test_volume": 50284,
+          "estimated_cases": 100568
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 26.8
+          },
+          "Europe": {
+            "positivity_rate": 24.6
+          },
+          "Asia": {
+            "positivity_rate": 26.8
+          }
+        },
+        "week_number": 9,
+        "year": 2025
+      },
+      {
+        "date": "2025-03-04",
+        "surveillance_indicators": {
+          "positivity_rate": 17,
+          "hospitalization_rate": 2.38,
+          "test_volume": 33933,
+          "estimated_cases": 67867
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 15.6
+          },
+          "Europe": {
+            "positivity_rate": 17.8
+          },
+          "Asia": {
+            "positivity_rate": 19.2
+          }
+        },
+        "week_number": 10,
+        "year": 2025
+      },
+      {
+        "date": "2025-03-11",
+        "surveillance_indicators": {
+          "positivity_rate": 17.8,
+          "hospitalization_rate": 2.49,
+          "test_volume": 35605,
+          "estimated_cases": 71210
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 18.1
+          },
+          "Europe": {
+            "positivity_rate": 17.8
+          },
+          "Asia": {
+            "positivity_rate": 21
+          }
+        },
+        "week_number": 11,
+        "year": 2025
+      },
+      {
+        "date": "2025-03-18",
+        "surveillance_indicators": {
+          "positivity_rate": 16.2,
+          "hospitalization_rate": 2.26,
+          "test_volume": 32305,
+          "estimated_cases": 64611
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 14.6
+          },
+          "Europe": {
+            "positivity_rate": 17.2
+          },
+          "Asia": {
+            "positivity_rate": 17.4
+          }
+        },
+        "week_number": 12,
+        "year": 2025
+      },
+      {
+        "date": "2025-03-25",
+        "surveillance_indicators": {
+          "positivity_rate": 15.3,
+          "hospitalization_rate": 2.14,
+          "test_volume": 30624,
+          "estimated_cases": 61249
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 14.2
+          },
+          "Europe": {
+            "positivity_rate": 15.5
+          },
+          "Asia": {
+            "positivity_rate": 14.7
+          }
+        },
+        "week_number": 13,
+        "year": 2025
+      },
+      {
+        "date": "2025-04-01",
+        "surveillance_indicators": {
+          "positivity_rate": 9.6,
+          "hospitalization_rate": 1.35,
+          "test_volume": 19253,
+          "estimated_cases": 38506
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 8.9
+          },
+          "Europe": {
+            "positivity_rate": 10.2
+          },
+          "Asia": {
+            "positivity_rate": 11
+          }
+        },
+        "week_number": 14,
+        "year": 2025
+      },
+      {
+        "date": "2025-04-08",
+        "surveillance_indicators": {
+          "positivity_rate": 12.1,
+          "hospitalization_rate": 1.69,
+          "test_volume": 24163,
+          "estimated_cases": 48327
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 11
+          },
+          "Europe": {
+            "positivity_rate": 13.9
+          },
+          "Asia": {
+            "positivity_rate": 10.5
+          }
+        },
+        "week_number": 15,
+        "year": 2025
+      },
+      {
+        "date": "2025-04-15",
+        "surveillance_indicators": {
+          "positivity_rate": 11.5,
+          "hospitalization_rate": 1.61,
+          "test_volume": 22973,
+          "estimated_cases": 45945
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 11.6
+          },
+          "Europe": {
+            "positivity_rate": 12.4
+          },
+          "Asia": {
+            "positivity_rate": 10.3
+          }
+        },
+        "week_number": 16,
+        "year": 2025
+      },
+      {
+        "date": "2025-04-22",
+        "surveillance_indicators": {
+          "positivity_rate": 9.9,
+          "hospitalization_rate": 1.38,
+          "test_volume": 19749,
+          "estimated_cases": 39498
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 9.9
+          },
+          "Europe": {
+            "positivity_rate": 10.3
+          },
+          "Asia": {
+            "positivity_rate": 10.8
+          }
+        },
+        "week_number": 17,
+        "year": 2025
+      },
+      {
+        "date": "2025-04-29",
+        "surveillance_indicators": {
+          "positivity_rate": 10,
+          "hospitalization_rate": 1.41,
+          "test_volume": 20084,
+          "estimated_cases": 40168
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 10.1
+          },
+          "Europe": {
+            "positivity_rate": 10.5
+          },
+          "Asia": {
+            "positivity_rate": 9.7
+          }
+        },
+        "week_number": 18,
+        "year": 2025
+      },
+      {
+        "date": "2025-05-06",
+        "surveillance_indicators": {
+          "positivity_rate": 5.5,
+          "hospitalization_rate": 0.77,
+          "test_volume": 11028,
+          "estimated_cases": 22057
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 5.8
+          },
+          "Europe": {
+            "positivity_rate": 6.1
+          },
+          "Asia": {
+            "positivity_rate": 5.8
+          }
+        },
+        "week_number": 19,
+        "year": 2025
+      },
+      {
+        "date": "2025-05-13",
+        "surveillance_indicators": {
+          "positivity_rate": 6.2,
+          "hospitalization_rate": 0.87,
+          "test_volume": 12412,
+          "estimated_cases": 24823
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 6
+          },
+          "Europe": {
+            "positivity_rate": 6.1
+          },
+          "Asia": {
+            "positivity_rate": 6.5
+          }
+        },
+        "week_number": 20,
+        "year": 2025
+      },
+      {
+        "date": "2025-05-20",
+        "surveillance_indicators": {
+          "positivity_rate": 6.9,
+          "hospitalization_rate": 0.96,
+          "test_volume": 13770,
+          "estimated_cases": 27541
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 6.3
+          },
+          "Europe": {
+            "positivity_rate": 6.7
+          },
+          "Asia": {
+            "positivity_rate": 6.2
+          }
+        },
+        "week_number": 21,
+        "year": 2025
+      },
+      {
+        "date": "2025-05-27",
+        "surveillance_indicators": {
+          "positivity_rate": 6.4,
+          "hospitalization_rate": 0.89,
+          "test_volume": 12759,
+          "estimated_cases": 25518
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 6.1
+          },
+          "Europe": {
+            "positivity_rate": 6.8
+          },
+          "Asia": {
+            "positivity_rate": 6.7
+          }
+        },
+        "week_number": 22,
+        "year": 2025
+      },
+      {
+        "date": "2025-06-03",
+        "surveillance_indicators": {
+          "positivity_rate": 3.6,
+          "hospitalization_rate": 0.51,
+          "test_volume": 7246,
+          "estimated_cases": 14492
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 3.6
+          },
+          "Europe": {
+            "positivity_rate": 3.6
+          },
+          "Asia": {
+            "positivity_rate": 4.3
+          }
+        },
+        "week_number": 23,
+        "year": 2025
+      },
+      {
+        "date": "2025-06-10",
+        "surveillance_indicators": {
+          "positivity_rate": 3.8,
+          "hospitalization_rate": 0.53,
+          "test_volume": 7573,
+          "estimated_cases": 15145
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 3.5
+          },
+          "Europe": {
+            "positivity_rate": 4.1
+          },
+          "Asia": {
+            "positivity_rate": 4.5
+          }
+        },
+        "week_number": 24,
+        "year": 2025
+      },
+      {
+        "date": "2025-06-17",
+        "surveillance_indicators": {
+          "positivity_rate": 3.3,
+          "hospitalization_rate": 0.46,
+          "test_volume": 6629,
+          "estimated_cases": 13258
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 3.2
+          },
+          "Europe": {
+            "positivity_rate": 3.2
+          },
+          "Asia": {
+            "positivity_rate": 4
+          }
+        },
+        "week_number": 25,
+        "year": 2025
+      },
+      {
+        "date": "2025-06-24",
+        "surveillance_indicators": {
+          "positivity_rate": 3.3,
+          "hospitalization_rate": 0.47,
+          "test_volume": 6647,
+          "estimated_cases": 13294
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 3.3
+          },
+          "Europe": {
+            "positivity_rate": 3.3
+          },
+          "Asia": {
+            "positivity_rate": 3.6
+          }
+        },
+        "week_number": 26,
+        "year": 2025
+      },
+      {
+        "date": "2025-07-01",
+        "surveillance_indicators": {
+          "positivity_rate": 3.2,
+          "hospitalization_rate": 0.45,
+          "test_volume": 6360,
+          "estimated_cases": 12721
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 3.3
+          },
+          "Europe": {
+            "positivity_rate": 3.2
+          },
+          "Asia": {
+            "positivity_rate": 3.4
+          }
+        },
+        "week_number": 27,
+        "year": 2025
+      },
+      {
+        "date": "2025-07-08",
+        "surveillance_indicators": {
+          "positivity_rate": 2.7,
+          "hospitalization_rate": 0.37,
+          "test_volume": 5354,
+          "estimated_cases": 10709
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 2.4
+          },
+          "Europe": {
+            "positivity_rate": 2.6
+          },
+          "Asia": {
+            "positivity_rate": 2.8
+          }
+        },
+        "week_number": 28,
+        "year": 2025
+      },
+      {
+        "date": "2025-07-15",
+        "surveillance_indicators": {
+          "positivity_rate": 3.1,
+          "hospitalization_rate": 0.44,
+          "test_volume": 6272,
+          "estimated_cases": 12544
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 3.2
+          },
+          "Europe": {
+            "positivity_rate": 3
+          },
+          "Asia": {
+            "positivity_rate": 3.6
+          }
+        },
+        "week_number": 29,
+        "year": 2025
+      },
+      {
+        "date": "2025-07-22",
+        "surveillance_indicators": {
+          "positivity_rate": 3.2,
+          "hospitalization_rate": 0.44,
+          "test_volume": 6345,
+          "estimated_cases": 12690
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 3.3
+          },
+          "Europe": {
+            "positivity_rate": 3.1
+          },
+          "Asia": {
+            "positivity_rate": 3.4
+          }
+        },
+        "week_number": 30,
+        "year": 2025
+      },
+      {
+        "date": "2025-07-29",
+        "surveillance_indicators": {
+          "positivity_rate": 3,
+          "hospitalization_rate": 0.42,
+          "test_volume": 6015,
+          "estimated_cases": 12031
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 3
+          },
+          "Europe": {
+            "positivity_rate": 3
+          },
+          "Asia": {
+            "positivity_rate": 3.4
+          }
+        },
+        "week_number": 31,
+        "year": 2025
+      },
+      {
+        "date": "2025-08-05",
+        "surveillance_indicators": {
+          "positivity_rate": 3.5,
+          "hospitalization_rate": 0.49,
+          "test_volume": 6966,
+          "estimated_cases": 13931
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 3.6
+          },
+          "Europe": {
+            "positivity_rate": 3.7
+          },
+          "Asia": {
+            "positivity_rate": 3.5
+          }
+        },
+        "week_number": 32,
+        "year": 2025
+      },
+      {
+        "date": "2025-08-12",
+        "surveillance_indicators": {
+          "positivity_rate": 4.1,
+          "hospitalization_rate": 0.58,
+          "test_volume": 8246,
+          "estimated_cases": 16492
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 4
+          },
+          "Europe": {
+            "positivity_rate": 4.2
+          },
+          "Asia": {
+            "positivity_rate": 4.9
+          }
+        },
+        "week_number": 33,
+        "year": 2025
+      },
+      {
+        "date": "2025-08-19",
+        "surveillance_indicators": {
+          "positivity_rate": 4.1,
+          "hospitalization_rate": 0.58,
+          "test_volume": 8290,
+          "estimated_cases": 16580
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 4.5
+          },
+          "Europe": {
+            "positivity_rate": 4
+          },
+          "Asia": {
+            "positivity_rate": 4.6
+          }
+        },
+        "week_number": 34,
+        "year": 2025
+      },
+      {
+        "date": "2025-08-26",
+        "surveillance_indicators": {
+          "positivity_rate": 3.4,
+          "hospitalization_rate": 0.47,
+          "test_volume": 6715,
+          "estimated_cases": 13431
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 3.3
+          },
+          "Europe": {
+            "positivity_rate": 3.5
+          },
+          "Asia": {
+            "positivity_rate": 3.2
+          }
+        },
+        "week_number": 35,
+        "year": 2025
+      },
+      {
+        "date": "2025-09-02",
+        "surveillance_indicators": {
+          "positivity_rate": 7.1,
+          "hospitalization_rate": 1,
+          "test_volume": 14251,
+          "estimated_cases": 28503
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 6.5
+          },
+          "Europe": {
+            "positivity_rate": 8
+          },
+          "Asia": {
+            "positivity_rate": 7.7
+          }
+        },
+        "week_number": 36,
+        "year": 2025
+      },
+      {
+        "date": "2025-09-09",
+        "surveillance_indicators": {
+          "positivity_rate": 6,
+          "hospitalization_rate": 0.84,
+          "test_volume": 12004,
+          "estimated_cases": 24008
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 6.3
+          },
+          "Europe": {
+            "positivity_rate": 6.1
+          },
+          "Asia": {
+            "positivity_rate": 6.4
+          }
+        },
+        "week_number": 37,
+        "year": 2025
+      },
+      {
+        "date": "2025-09-16",
+        "surveillance_indicators": {
+          "positivity_rate": 6.8,
+          "hospitalization_rate": 0.95,
+          "test_volume": 13560,
+          "estimated_cases": 27121
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 6.6
+          },
+          "Europe": {
+            "positivity_rate": 6.9
+          },
+          "Asia": {
+            "positivity_rate": 7.9
+          }
+        },
+        "week_number": 38,
+        "year": 2025
+      },
+      {
+        "date": "2025-09-23",
+        "surveillance_indicators": {
+          "positivity_rate": 6.9,
+          "hospitalization_rate": 0.96,
+          "test_volume": 13714,
+          "estimated_cases": 27428
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 7.3
+          },
+          "Europe": {
+            "positivity_rate": 7.3
+          },
+          "Asia": {
+            "positivity_rate": 5.6
+          }
+        },
+        "week_number": 39,
+        "year": 2025
+      },
+      {
+        "date": "2025-09-30",
+        "surveillance_indicators": {
+          "positivity_rate": 5.9,
+          "hospitalization_rate": 0.83,
+          "test_volume": 11803,
+          "estimated_cases": 23606
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 5.5
+          },
+          "Europe": {
+            "positivity_rate": 6.7
+          },
+          "Asia": {
+            "positivity_rate": 7
+          }
+        },
+        "week_number": 40,
+        "year": 2025
+      },
+      {
+        "date": "2025-10-07",
+        "surveillance_indicators": {
+          "positivity_rate": 15.1,
+          "hospitalization_rate": 1.83,
+          "test_volume": 20098,
+          "estimated_cases": 40195
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 14.7
+          },
+          "Europe": {
+            "positivity_rate": 14.4
+          },
+          "Asia": {
+            "positivity_rate": 13.2
+          }
+        },
+        "week_number": 41,
+        "year": 2025
+      },
+      {
+        "date": "2025-10-14",
+        "surveillance_indicators": {
+          "positivity_rate": 16.9,
+          "hospitalization_rate": 2.05,
+          "test_volume": 22512,
+          "estimated_cases": 45024
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 17.7
+          },
+          "Europe": {
+            "positivity_rate": 18.9
+          },
+          "Asia": {
+            "positivity_rate": 16.5
+          }
+        },
+        "week_number": 42,
+        "year": 2025
+      },
+      {
+        "date": "2025-10-21",
+        "surveillance_indicators": {
+          "positivity_rate": 15.8,
+          "hospitalization_rate": 1.92,
+          "test_volume": 21132,
+          "estimated_cases": 42263
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 14.8
+          },
+          "Europe": {
+            "positivity_rate": 17.9
+          },
+          "Asia": {
+            "positivity_rate": 19
+          }
+        },
+        "week_number": 43,
+        "year": 2025
+      },
+      {
+        "date": "2025-10-28",
+        "surveillance_indicators": {
+          "positivity_rate": 17.2,
+          "hospitalization_rate": 2.08,
+          "test_volume": 22889,
+          "estimated_cases": 45777
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 18
+          },
+          "Europe": {
+            "positivity_rate": 16.5
+          },
+          "Asia": {
+            "positivity_rate": 19.7
+          }
+        },
+        "week_number": 44,
+        "year": 2025
+      },
+      {
+        "date": "2025-11-04",
+        "surveillance_indicators": {
+          "positivity_rate": 23,
+          "hospitalization_rate": 2.79,
+          "test_volume": 30625,
+          "estimated_cases": 61250
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 22.1
+          },
+          "Europe": {
+            "positivity_rate": 26.4
+          },
+          "Asia": {
+            "positivity_rate": 25.7
+          }
+        },
+        "week_number": 45,
+        "year": 2025
+      },
+      {
+        "date": "2025-11-11",
+        "surveillance_indicators": {
+          "positivity_rate": 24.1,
+          "hospitalization_rate": 2.92,
+          "test_volume": 32114,
+          "estimated_cases": 64228
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 24.4
+          },
+          "Europe": {
+            "positivity_rate": 27.2
+          },
+          "Asia": {
+            "positivity_rate": 22
+          }
+        },
+        "week_number": 46,
+        "year": 2025
+      },
+      {
+        "date": "2025-11-18",
+        "surveillance_indicators": {
+          "positivity_rate": 23.1,
+          "hospitalization_rate": 2.81,
+          "test_volume": 30859,
+          "estimated_cases": 61719
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 21.9
+          },
+          "Europe": {
+            "positivity_rate": 25.8
+          },
+          "Asia": {
+            "positivity_rate": 24.9
+          }
+        },
+        "week_number": 47,
+        "year": 2025
+      },
+      {
+        "date": "2025-11-25",
+        "surveillance_indicators": {
+          "positivity_rate": 23.3,
+          "hospitalization_rate": 2.83,
+          "test_volume": 31086,
+          "estimated_cases": 62172
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 24
+          },
+          "Europe": {
+            "positivity_rate": 25.2
+          },
+          "Asia": {
+            "positivity_rate": 19.4
+          }
+        },
+        "week_number": 48,
+        "year": 2025
+      },
+      {
+        "date": "2025-12-02",
+        "surveillance_indicators": {
+          "positivity_rate": 31.2,
+          "hospitalization_rate": 3.79,
+          "test_volume": 41596,
+          "estimated_cases": 83192
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 34.3
+          },
+          "Europe": {
+            "positivity_rate": 31.2
+          },
+          "Asia": {
+            "positivity_rate": 35.8
+          }
+        },
+        "week_number": 49,
+        "year": 2025
+      }
+    ],
+    "key_epidemiological_events": [
+      {
+        "event_name": "US Surveillance Data Blackout",
+        "event_date": "2025-09-26",
+        "event_type": "surveillance_gap",
+        "description": "National CDC respiratory surveillance pause begins, limiting situational awareness",
+        "geographic_scope": "United States",
+        "impact_assessment": "critical",
+        "sources": ["CNN", "Governing", "CDC Data Channel"]
+      },
+      {
+        "event_name": "H5N5 First US Death",
+        "event_date": "2025-11-15",
+        "event_type": "variant_identification",
+        "description": "First US death attributed to influenza A(H5N5) amid seasonal H3N2 circulation",
+        "geographic_scope": "United States",
+        "impact_assessment": "significant",
+        "sources": "CDC FluView"
+      },
+      {
+        "event_name": "Subclade K Global Emergence",
+        "event_date": "2025-11-01",
+        "event_type": "variant_identification",
+        "description": "ECDC confirms H3N2 subclade K accounts for ~33% global, ~50% EU/EEA of A(H3N2) sequences",
+        "geographic_scope": "Global",
+        "impact_assessment": "critical",
+        "sources": "ECDC Threat Assessment"
+      },
+      {
+        "event_name": "Adelaide ED Crisis",
+        "event_date": "2025-11-01",
+        "event_type": "capacity_threshold",
+        "description": "Royal Adelaide Hospital ED at 125%+ capacity with admitted patients exceeding bed spaces",
+        "geographic_scope": "Australia",
+        "impact_assessment": "critical",
+        "sources": ["ACEM", "ABC News Australia"]
+      },
+      {
+        "event_name": "Japan Early Peak",
+        "event_date": "2025-12-02",
+        "event_type": "outbreak_declaration",
+        "description": "Japan reports early flu peak with 96% subclade K prevalence in small sample",
+        "geographic_scope": "Japan",
+        "impact_assessment": "high",
+        "sources": ["Japan Times", "JIHS"]
+      }
+    ],
+    "surveillance_gaps": [
+      {
+        "gap_type": "surveillance_blackout",
+        "location": "United States",
+        "start_date": "2025-09-26",
+        "end_date": "2025-12-01",
+        "impact_level": "critical",
+        "reason": "Federal shutdown leaves critical gap in surveillance"
+      },
+      {
+        "gap_type": "mortality_data",
+        "location": "United States",
+        "start_date": "2025-09-28",
+        "end_date": "2025-11-22",
+        "impact_level": "high",
+        "reason": "NCHS mortality surveillance data not available weeks 39-47"
+      },
+      {
+        "gap_type": "portal_access",
+        "location": "Canada",
+        "start_date": "2025-12-01",
+        "end_date": "2025-12-06",
+        "impact_level": "medium",
+        "reason": "FluWatch+ portal inaccessible"
+      },
+      {
+        "gap_type": "official_data",
+        "location": "Japan",
+        "start_date": "2025-12-01",
+        "end_date": "2025-12-06",
+        "impact_level": "medium",
+        "reason": "Official national surveillance data limited; relies on media reports"
+      }
+    ]
+  },
+  "intelligence_sources": {
+    "official_sources": {
+      "who_reports": {
+        "last_report_date": "2025-11-23",
+        "report_coverage": "Global influenza updates week 47",
+        "data_quality": "high",
+        "key_findings": ["Global positivity >20% in week 47", "H3N2 predominant across Northern Hemisphere", "Southern Hemisphere largely interseasonal", "Parts of Western/Eastern Africa, Northern Europe >30% positivity"]
+      },
+      "cdc_reports": {
+        "surveillance_status": "operational",
+        "last_complete_report": "2025-11-22",
+        "data_gaps": ["NCHS mortality weeks 39-47 unavailable", "Holiday-related reporting delays"]
+      },
+      "ecdc_reports": {
+        "risk_assessment_level": "high",
+        "subclade_k_assessment": "Significant antigenic divergence from vaccine strain; ~50% EU/EEA prevalence",
+        "vaccine_effectiveness_data": true
+      }
+    },
+    "alternative_sources": {
+      "social_media_monitoring": {
+        "monitoring_active": true,
+        "platforms_monitored": ["Twitter/X", "Facebook", "LinkedIn"],
+        "reliability_assessment": "medium",
+        "key_signals": [
+          {
+            "signal_type": "ED overcrowding reports",
+            "description": "Multiple reports of hospital overcrowding, especially in Adelaide",
+            "verification_status": "partial",
+            "geographic_relevance": "Australia, Canada"
+          },
+          {
+            "signal_type": "H3N2 dominance discussions",
+            "description": "Frequent mentions of H3N2 and subclade K in health discussions",
+            "verification_status": "verified",
+            "geographic_relevance": "Global"
+          },
+          {
+            "signal_type": "Vaccine effectiveness concerns",
+            "description": "Social media discussions about potential vaccine mismatch",
+            "verification_status": "partial",
+            "geographic_relevance": "US, UK, EU"
+          }
+        ]
+      },
+      "clinician_reports": [
+        {
+          "institution": "Royal Adelaide Hospital",
+          "report_date": "2025-11-01",
+          "key_observations": ["ED at 125% capacity with admitted patients blocking treatment spaces", "All 68 ED treatment spaces occupied by admitted inpatients", "Emergency demand escalation framework activated", "Hidden ramping phenomenon affecting patient care"],
+          "verification_level": "direct"
+        },
+        {
+          "institution": "Northern Ontario Hospitals",
+          "report_date": "2025-11-01",
+          "key_observations": ["Early seasonal surge in influenza and COVID-19", "ED overcrowding beyond normal capacity", "Staffing challenges due to prolonged patient stays", "Throughput problems affecting care delivery"],
+          "verification_level": "confirmed"
+        }
+      ]
+    },
+    "underground_leaked_info": []
+  },
+  "anomaly_detection_flags": {
+    "suspicious_patterns": [
+      {
+        "pattern_id": "SUS_001_timing_anomaly",
+        "pattern_type": "timing_anomaly",
+        "description": "H3N2 detections rising 3-4 weeks earlier than usual seasonal patterns across EU/EEA and Northern Europe",
+        "geographic_scope": "EU/EEA, Northern Europe",
+        "first_detected": "2025-11-01",
+        "confidence_level": "high",
+        "verification_status": "verified",
+        "data_sources": ["ECDC", "WHO", "UKHSA"],
+        "potential_implications": "Early season wave may lead to capacity overload and higher cumulative burden",
+        "recommended_actions": ["Accelerate vaccination campaigns", "Enhance surveillance in neighboring regions", "Prepare surge capacity in healthcare systems", "Issue public health advisories for early detection"]
+      },
+      {
+        "pattern_id": "SUS_002_vaccine_mismatch",
+        "pattern_type": "severity_mismatch",
+        "description": "H3N2 subclade K shows significant antigenic divergence from 2025-26 vaccine strain with only 33.3% well recognition",
+        "geographic_scope": "Global",
+        "first_detected": "2025-11-15",
+        "confidence_level": "high",
+        "verification_status": "verified",
+        "data_sources": ["CDC", "ECDC", "UKHSA"],
+        "potential_implications": "Reduced vaccine effectiveness may lead to higher attack rates and severe outcomes",
+        "recommended_actions": ["Communicate potential reduced protection against infection", "Emphasize vaccination benefits against severe disease", "Monitor real-world effectiveness studies", "Consider booster strategies for high-risk groups"]
+      },
+      {
+        "pattern_id": "SUS_003_surveillance_gap",
+        "pattern_type": "surveillance_gap",
+        "description": "US NCHS mortality surveillance unavailable for weeks 39-47, creating critical data blind spot during outbreak acceleration",
+        "geographic_scope": "United States",
+        "first_detected": "2025-11-22",
+        "confidence_level": "high",
+        "verification_status": "verified",
+        "data_sources": "CDC FluView",
+        "potential_implications": "Unable to assess true mortality burden; complicates risk communication",
+        "recommended_actions": ["Expedite data restoration", "Use alternative mortality indicators", "Transparent communication about data gaps", "Implement backup surveillance systems"]
+      },
+      {
+        "pattern_id": "SUS_004_rare_pathogen_death",
+        "pattern_type": "laboratory_anomaly",
+        "description": "First US death attributed to H5N5 occurs amid seasonal H3N2 circulation, requiring immediate investigation for potential changes",
+        "geographic_scope": "United States",
+        "first_detected": "2025-11-15",
+        "confidence_level": "high",
+        "verification_status": "verified",
+        "data_sources": "CDC FluView",
+        "potential_implications": "Potential zoonotic transmission event requiring urgent epidemiological investigation",
+        "recommended_actions": ["Sequence case virus to confirm identification", "Investigate exposure history and transmission patterns", "Enhanced surveillance for similar cases", "Coordinate with veterinary health authorities"]
+      },
+      {
+        "pattern_id": "SUS_005_capacity_crisis",
+        "pattern_type": "geographic_anomaly",
+        "description": "Adelaide ED operating at 125%+ capacity with admitted patients exceeding bed spaces, indicating systemic healthcare failure",
+        "geographic_scope": "Adelaide, Australia",
+        "first_detected": "2025-11-01",
+        "confidence_level": "high",
+        "verification_status": "verified",
+        "data_sources": ["ACEM", "ABC News Australia", "Hospital reports"],
+        "potential_implications": "Patient safety risks, delayed care, potential mortality increases",
+        "recommended_actions": ["Activate hospital surge plans", "Consider patient transfers to other facilities", "Address aged care placement bottlenecks", "Implement additional staffing measures"]
+      }
+    ],
+    "potential_misclassification_warnings": [
+      {
+        "warning_id": "MCW_001_test_performance",
+        "misclassification_type": "false_positive",
+        "description": "SureScreen multiplex lateral flow test shows specificity of only 86.2%, below WHO recommendations, creating false positive risk",
+        "affected_locations": "Global",
+        "confidence_level": "high",
+        "investigation_priority": "high"
+      },
+      {
+        "warning_id": "MCW_002_viral_load",
+        "misclassification_type": "false_negative",
+        "description": "All lateral flow tests show decreased performance at low viral loads (CT ≥30), increasing false negative rates",
+        "affected_locations": "Global ambulatory settings",
+        "confidence_level": "high",
+        "investigation_priority": "medium"
+      },
+      {
+        "warning_id": "MCW_003_ili_overlap",
+        "misclassification_type": "pathogen_confusion",
+        "description": "ILINet captures respiratory illness from multiple pathogens; rising ILI without corresponding influenza positivity may indicate RSV, Mycoplasma, or other pathogens",
+        "affected_locations": "United States",
+        "confidence_level": "medium",
+        "investigation_priority": "medium"
+      }
+    ],
+    "information_suppression_evidence": [
+      {
+        "suppression_type": "surveillance_blackout",
+        "description": "US CDC respiratory surveillance systems paused since September 26, 2025, creating critical data gap during outbreak period",
+        "affected_sources": ["CDC FluView", "National respiratory data channels"],
+        "duration": "September 26 - December 1, 2025",
+        "impact_assessment": "critical",
+        "evidence_sources": ["CNN", "Governing", "CDC announcements"]
+      },
+      {
+        "suppression_type": "mortality_data_gap",
+        "description": "NCHS mortality surveillance data unavailable for weeks 39-47, preventing assessment of influenza-related mortality",
+        "affected_sources": "CDC NCHS mortality surveillance",
+        "duration": "September 28 - November 22, 2025",
+        "impact_assessment": "high",
+        "evidence_sources": "CDC FluView reporting"
+      }
+    ],
+    "surveillance_gaps": [
+      {
+        "gap_id": "GAP_001_us_federal",
+        "gap_type": "temporal_gap",
+        "description": "Complete federal respiratory surveillance pause in US",
+        "affected_area": "United States",
+        "start_date": "2025-09-26",
+        "end_date": "2025-12-01",
+        "severity": "critical",
+        "potential_impact": "Complete loss of national situational awareness during critical outbreak period"
+      },
+      {
+        "gap_id": "GAP_002_canada_portal",
+        "gap_type": "access_gap",
+        "description": "FluWatch+ portal inaccessible, limiting federal influenza surveillance in Canada",
+        "affected_area": "Canada",
+        "start_date": "2025-12-01",
+        "end_date": "2025-12-06",
+        "severity": "medium",
+        "potential_impact": "Reduced visibility into Canadian influenza patterns"
+      },
+      {
+        "gap_id": "GAP_003_japan_official",
+        "gap_type": "data_gap",
+        "description": "Limited official national surveillance data available for Japan; reliance on media sources",
+        "affected_area": "Japan",
+        "start_date": "2025-12-01",
+        "end_date": "2025-12-06",
+        "severity": "medium",
+        "potential_impact": "Uncertain assessment of outbreak scale and trajectory"
+      },
+      {
+        "gap_id": "GAP_004_mortality_us",
+        "gap_type": "mortality_gap",
+        "description": "US NCHS mortality data unavailable weeks 39-47",
+        "affected_area": "United States",
+        "start_date": "2025-09-28",
+        "end_date": "2025-11-22",
+        "severity": "high",
+        "potential_impact": "Cannot assess true mortality burden during outbreak acceleration"
+      }
+    ]
+  }
+}

@@ -47,23 +47,7 @@ if (length(failed_packages) > 0) {
   stop(sprintf("Failed to load required packages: %s", paste(failed_packages, collapse = ", ")))
 }
 
-# Legacy compatibility: keep explicit library calls for reference
-library(shiny)
-library(bslib)
-library(jsonlite)
-library(leaflet)
-library(plotly)
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-library(shinyjs)
-library(scales)
-library(DT)
-library(sf)
-library(rnaturalearth)
-library(DBI)
-library(RSQLite)
-library(zoo)
+# Note: Packages are loaded via the loop above - no redundant library() calls needed
 
 # Source data loading modules with error handling -----------------------------
 .safe_source <- function(file) {
@@ -172,8 +156,7 @@ filter_by_pathogen <- function(data, pathogen_code_filter) {
       confirmed_cases = case_count,
       vaccination_rate = vaccination_rate,
       data_confidence = data_confidence,
-      last_updated = as.character(observation_date),
-      stringsAsFactors = FALSE
+      last_updated = as.character(observation_date)
     )
 }
 

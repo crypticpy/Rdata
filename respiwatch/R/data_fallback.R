@@ -14,6 +14,7 @@ library(lubridate)
 
 # Source database functions
 source("R/db_schema.R")
+source("R/db_operations.R")  # For validation helpers: escape_sql, is_valid_pathogen_code, is_valid_iso_code
 
 # =============================================================================
 # DATA SOURCE PRIORITY CONFIGURATION
@@ -110,13 +111,24 @@ get_surveillance_with_fallback <- function(pathogen,
     date_range <- as.Date(date_range)
   }
 
+  # Validate inputs to prevent SQL injection
+  if (!is_valid_pathogen_code(pathogen)) {
+    warning(sprintf("Invalid pathogen code: %s", pathogen))
+    return(empty_fallback_result(date_range))
+  }
+
+  if (!is_valid_iso_code(country)) {
+    warning(sprintf("Invalid country code: %s", country))
+    return(empty_fallback_result(date_range))
+  }
+
   conn <- get_db_connection()
 
   result <- tryCatch({
-    # Get pathogen_id
+    # Get pathogen_id (escaped for safety)
     pathogen_id <- dbGetQuery(
       conn,
-      sprintf("SELECT pathogen_id FROM pathogens WHERE pathogen_code = '%s'", pathogen)
+      sprintf("SELECT pathogen_id FROM pathogens WHERE pathogen_code = '%s'", escape_sql(pathogen))
     )$pathogen_id
 
     if (length(pathogen_id) == 0) {
@@ -125,10 +137,10 @@ get_surveillance_with_fallback <- function(pathogen,
       return(empty_fallback_result(date_range))
     }
 
-    # Get country_id
+    # Get country_id (escaped for safety)
     country_id <- dbGetQuery(
       conn,
-      sprintf("SELECT country_id FROM countries WHERE iso_code = '%s'", country)
+      sprintf("SELECT country_id FROM countries WHERE iso_code = '%s'", escape_sql(country))
     )$country_id
 
     if (length(country_id) == 0) {

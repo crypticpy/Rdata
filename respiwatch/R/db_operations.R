@@ -28,11 +28,11 @@ escape_sql <- function(x) {
   gsub("'", "''", as.character(x))
 }
 
-#' Validate ISO country code format (2-letter)
+#' Validate ISO country code format (2 or 3 letter: ISO 3166-1 alpha-2 or alpha-3)
 #' @param code Country code to validate
 #' @return TRUE if valid
 is_valid_iso_code <- function(code) {
-  !is.null(code) && grepl("^[A-Z]{2}$", toupper(code))
+  !is.null(code) && grepl("^[A-Z]{2,3}$", toupper(code))
 }
 
 #' Validate pathogen code format (alphanumeric)

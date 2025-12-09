@@ -1,0 +1,1586 @@
+{
+  "metadata": {
+    "pathogen": "RSV",
+    "pathogen_full_name": "Respiratory Syncytial Virus",
+    "data_version": "1.0.0",
+    "last_updated": "2025-12-06T15:19:55Z",
+    "data_baseline": "2024-12-01",
+    "season": "2024-2025",
+    "data_quality_score": 85,
+    "primary_sources": ["RSV-NET", "CDC", "WHO"],
+    "coverage_period": {
+      "start_date": "2024-10-01"
+    }
+  },
+  "global_overview": {
+    "current_status": {
+      "north_america": {
+        "status": "elevated",
+        "positivity_rate": 12.5,
+        "dominant_subtype": "RSV-A",
+        "trend": "increasing",
+        "week_over_week_change": 2.3
+      },
+      "europe": {
+        "status": "active",
+        "positivity_rate": 8.7,
+        "dominant_subtype": "RSV-A",
+        "trend": "stable",
+        "week_over_week_change": 0.5
+      },
+      "asia_pacific": {
+        "status": "monitoring",
+        "positivity_rate": 4.2,
+        "dominant_subtype": "RSV-B",
+        "trend": "decreasing",
+        "week_over_week_change": -1.1
+      },
+      "southern_hemisphere": {
+        "status": "low",
+        "positivity_rate": 1.8,
+        "dominant_subtype": "RSV-B",
+        "trend": "stable",
+        "week_over_week_change": 0.2
+      }
+    },
+    "severity_assessment": {
+      "global_severity": "moderate",
+      "hospitalization_impact": "significant",
+      "icu_burden": "moderate",
+      "primary_risk_groups": ["infants_under_6_months", "adults_65_plus", "immunocompromised"]
+    },
+    "vaccine_status": {
+      "infant_mab": {
+        "name": "Nirsevimab (Beyfortus)",
+        "coverage_estimate": 42,
+        "effectiveness": 79,
+        "availability": "widespread"
+      },
+      "maternal_vaccine": {
+        "name": "RSVpreF (Abrysvo)",
+        "uptake_estimate": 18,
+        "effectiveness": 82,
+        "availability": "available"
+      },
+      "older_adult_vaccine": {
+        "name": "RSVpreF/RSVpostF",
+        "coverage_estimate": 28,
+        "effectiveness": 75,
+        "availability": "available"
+      }
+    }
+  },
+  "countries": {
+    "USA": {
+      "country_name": "United States",
+      "iso_code": "USA",
+      "population": 331900000,
+      "outbreak_status": "elevated",
+      "data_confidence_level": "high",
+      "primary_data_source": "RSV-NET",
+      "last_updated": "2024-12-05",
+      "rsv_data": {
+        "positivity_rate": 14.2,
+        "subtype_distribution": {
+          "rsv_a": 68,
+          "rsv_b": 32
+        },
+        "hospitalization_rate": 2.8,
+        "icu_admission_rate": 0.4,
+        "pediatric_hospitalizations": 4250,
+        "adult_hospitalizations": 8900
+      },
+      "high_risk_groups": {
+        "infants_0_6_months": {
+          "hospitalization_rate": 28.5,
+          "trend": "increasing"
+        },
+        "adults_65_plus": {
+          "hospitalization_rate": 5.2,
+          "trend": "stable"
+        }
+      }
+    },
+    "GBR": {
+      "country_name": "United Kingdom",
+      "iso_code": "GBR",
+      "population": 67330000,
+      "outbreak_status": "active",
+      "data_confidence_level": "high",
+      "primary_data_source": "UKHSA",
+      "last_updated": "2024-12-04",
+      "rsv_data": {
+        "positivity_rate": 9.8,
+        "subtype_distribution": {
+          "rsv_a": 72,
+          "rsv_b": 28
+        },
+        "hospitalization_rate": 2.1,
+        "icu_admission_rate": 0.3,
+        "pediatric_hospitalizations": 890,
+        "adult_hospitalizations": 2100
+      }
+    },
+    "AUS": {
+      "country_name": "Australia",
+      "iso_code": "AUS",
+      "population": 26000000,
+      "outbreak_status": "low",
+      "data_confidence_level": "high",
+      "primary_data_source": "NNDSS",
+      "last_updated": "2024-12-03",
+      "rsv_data": {
+        "positivity_rate": 2.1,
+        "subtype_distribution": {
+          "rsv_a": 45,
+          "rsv_b": 55
+        },
+        "hospitalization_rate": 0.5,
+        "icu_admission_rate": 0.05,
+        "pediatric_hospitalizations": 120,
+        "adult_hospitalizations": 340
+      }
+    },
+    "CAN": {
+      "country_name": "Canada",
+      "iso_code": "CAN",
+      "population": 38250000,
+      "outbreak_status": "elevated",
+      "data_confidence_level": "high",
+      "primary_data_source": "PHAC",
+      "last_updated": "2024-12-04",
+      "rsv_data": {
+        "positivity_rate": 11.5,
+        "subtype_distribution": {
+          "rsv_a": 65,
+          "rsv_b": 35
+        },
+        "hospitalization_rate": 2.4,
+        "icu_admission_rate": 0.35,
+        "pediatric_hospitalizations": 650,
+        "adult_hospitalizations": 1200
+      }
+    },
+    "JPN": {
+      "country_name": "Japan",
+      "iso_code": "JPN",
+      "population": 125800000,
+      "outbreak_status": "monitoring",
+      "data_confidence_level": "high",
+      "primary_data_source": "NIID",
+      "last_updated": "2024-12-03",
+      "rsv_data": {
+        "positivity_rate": 5.8,
+        "subtype_distribution": {
+          "rsv_a": 58,
+          "rsv_b": 42
+        },
+        "hospitalization_rate": 1.2,
+        "icu_admission_rate": 0.15,
+        "pediatric_hospitalizations": 980,
+        "adult_hospitalizations": 1850
+      }
+    }
+  },
+  "timeline": {
+    "season_start": "2024-09-01",
+    "current_week": 49,
+    "peak_expected_week": 52,
+    "progression_by_date": [
+      {
+        "date": "2024-10-01",
+        "surveillance_indicators": {
+          "positivity_rate": 10,
+          "hospitalization_rate": 2.01,
+          "test_volume": 25113,
+          "estimated_cases": 50225
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 9.4
+          },
+          "Europe": {
+            "positivity_rate": 11.1
+          },
+          "Asia": {
+            "positivity_rate": 10
+          }
+        },
+        "week_number": 40,
+        "year": 2024
+      },
+      {
+        "date": "2024-10-08",
+        "surveillance_indicators": {
+          "positivity_rate": 9.2,
+          "hospitalization_rate": 1.85,
+          "test_volume": 23081,
+          "estimated_cases": 46162
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 8.9
+          },
+          "Europe": {
+            "positivity_rate": 10.6
+          },
+          "Asia": {
+            "positivity_rate": 10.8
+          }
+        },
+        "week_number": 41,
+        "year": 2024
+      },
+      {
+        "date": "2024-10-15",
+        "surveillance_indicators": {
+          "positivity_rate": 8.2,
+          "hospitalization_rate": 1.64,
+          "test_volume": 20439,
+          "estimated_cases": 40878
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 8
+          },
+          "Europe": {
+            "positivity_rate": 8.7
+          },
+          "Asia": {
+            "positivity_rate": 7.1
+          }
+        },
+        "week_number": 42,
+        "year": 2024
+      },
+      {
+        "date": "2024-10-22",
+        "surveillance_indicators": {
+          "positivity_rate": 8.2,
+          "hospitalization_rate": 1.63,
+          "test_volume": 20435,
+          "estimated_cases": 40870
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 8.1
+          },
+          "Europe": {
+            "positivity_rate": 8.4
+          },
+          "Asia": {
+            "positivity_rate": 6.7
+          }
+        },
+        "week_number": 43,
+        "year": 2024
+      },
+      {
+        "date": "2024-10-29",
+        "surveillance_indicators": {
+          "positivity_rate": 9.6,
+          "hospitalization_rate": 1.92,
+          "test_volume": 23989,
+          "estimated_cases": 47978
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 9.6
+          },
+          "Europe": {
+            "positivity_rate": 11
+          },
+          "Asia": {
+            "positivity_rate": 11.3
+          }
+        },
+        "week_number": 44,
+        "year": 2024
+      },
+      {
+        "date": "2024-11-05",
+        "surveillance_indicators": {
+          "positivity_rate": 12.7,
+          "hospitalization_rate": 2.54,
+          "test_volume": 31702,
+          "estimated_cases": 63404
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 13.6
+          },
+          "Europe": {
+            "positivity_rate": 14.2
+          },
+          "Asia": {
+            "positivity_rate": 14.1
+          }
+        },
+        "week_number": 45,
+        "year": 2024
+      },
+      {
+        "date": "2024-11-12",
+        "surveillance_indicators": {
+          "positivity_rate": 15.8,
+          "hospitalization_rate": 3.15,
+          "test_volume": 39414,
+          "estimated_cases": 78828
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 16.9
+          },
+          "Europe": {
+            "positivity_rate": 15.3
+          },
+          "Asia": {
+            "positivity_rate": 16.8
+          }
+        },
+        "week_number": 46,
+        "year": 2024
+      },
+      {
+        "date": "2024-11-19",
+        "surveillance_indicators": {
+          "positivity_rate": 13.6,
+          "hospitalization_rate": 2.72,
+          "test_volume": 34037,
+          "estimated_cases": 68074
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 14.5
+          },
+          "Europe": {
+            "positivity_rate": 13.3
+          },
+          "Asia": {
+            "positivity_rate": 15.5
+          }
+        },
+        "week_number": 47,
+        "year": 2024
+      },
+      {
+        "date": "2024-11-26",
+        "surveillance_indicators": {
+          "positivity_rate": 13.7,
+          "hospitalization_rate": 2.73,
+          "test_volume": 34155,
+          "estimated_cases": 68310
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 13.6
+          },
+          "Europe": {
+            "positivity_rate": 13.6
+          },
+          "Asia": {
+            "positivity_rate": 16
+          }
+        },
+        "week_number": 48,
+        "year": 2024
+      },
+      {
+        "date": "2024-12-03",
+        "surveillance_indicators": {
+          "positivity_rate": 17.7,
+          "hospitalization_rate": 3.54,
+          "test_volume": 44256,
+          "estimated_cases": 88511
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 17.7
+          },
+          "Europe": {
+            "positivity_rate": 19.5
+          },
+          "Asia": {
+            "positivity_rate": 14.2
+          }
+        },
+        "week_number": 49,
+        "year": 2024
+      },
+      {
+        "date": "2024-12-10",
+        "surveillance_indicators": {
+          "positivity_rate": 20.1,
+          "hospitalization_rate": 4.03,
+          "test_volume": 50326,
+          "estimated_cases": 100651
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 18.6
+          },
+          "Europe": {
+            "positivity_rate": 19.8
+          },
+          "Asia": {
+            "positivity_rate": 17
+          }
+        },
+        "week_number": 50,
+        "year": 2024
+      },
+      {
+        "date": "2024-12-17",
+        "surveillance_indicators": {
+          "positivity_rate": 19,
+          "hospitalization_rate": 3.8,
+          "test_volume": 47494,
+          "estimated_cases": 94987
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 19.5
+          },
+          "Europe": {
+            "positivity_rate": 20.1
+          },
+          "Asia": {
+            "positivity_rate": 20.2
+          }
+        },
+        "week_number": 51,
+        "year": 2024
+      },
+      {
+        "date": "2024-12-24",
+        "surveillance_indicators": {
+          "positivity_rate": 16.3,
+          "hospitalization_rate": 3.26,
+          "test_volume": 40692,
+          "estimated_cases": 81383
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 15.9
+          },
+          "Europe": {
+            "positivity_rate": 17.2
+          },
+          "Asia": {
+            "positivity_rate": 14.3
+          }
+        },
+        "week_number": 52,
+        "year": 2024
+      },
+      {
+        "date": "2024-12-31",
+        "surveillance_indicators": {
+          "positivity_rate": 16.7,
+          "hospitalization_rate": 3.33,
+          "test_volume": 41668,
+          "estimated_cases": 83336
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 18.2
+          },
+          "Europe": {
+            "positivity_rate": 18.8
+          },
+          "Asia": {
+            "positivity_rate": 14.6
+          }
+        },
+        "week_number": 1,
+        "year": 2024
+      },
+      {
+        "date": "2025-01-07",
+        "surveillance_indicators": {
+          "positivity_rate": 21,
+          "hospitalization_rate": 4.2,
+          "test_volume": 52529,
+          "estimated_cases": 105057
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 21.2
+          },
+          "Europe": {
+            "positivity_rate": 22.5
+          },
+          "Asia": {
+            "positivity_rate": 23.5
+          }
+        },
+        "week_number": 2,
+        "year": 2025
+      },
+      {
+        "date": "2025-01-14",
+        "surveillance_indicators": {
+          "positivity_rate": 22.5,
+          "hospitalization_rate": 4.49,
+          "test_volume": 56178,
+          "estimated_cases": 112356
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 21.4
+          },
+          "Europe": {
+            "positivity_rate": 22.2
+          },
+          "Asia": {
+            "positivity_rate": 25.5
+          }
+        },
+        "week_number": 3,
+        "year": 2025
+      },
+      {
+        "date": "2025-01-21",
+        "surveillance_indicators": {
+          "positivity_rate": 21.7,
+          "hospitalization_rate": 4.35,
+          "test_volume": 54354,
+          "estimated_cases": 108709
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 19.7
+          },
+          "Europe": {
+            "positivity_rate": 21.7
+          },
+          "Asia": {
+            "positivity_rate": 19.6
+          }
+        },
+        "week_number": 4,
+        "year": 2025
+      },
+      {
+        "date": "2025-01-28",
+        "surveillance_indicators": {
+          "positivity_rate": 19.7,
+          "hospitalization_rate": 3.93,
+          "test_volume": 49170,
+          "estimated_cases": 98340
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 19.7
+          },
+          "Europe": {
+            "positivity_rate": 20.4
+          },
+          "Asia": {
+            "positivity_rate": 20.3
+          }
+        },
+        "week_number": 5,
+        "year": 2025
+      },
+      {
+        "date": "2025-02-04",
+        "surveillance_indicators": {
+          "positivity_rate": 20.6,
+          "hospitalization_rate": 4.11,
+          "test_volume": 51379,
+          "estimated_cases": 102759
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 19
+          },
+          "Europe": {
+            "positivity_rate": 21
+          },
+          "Asia": {
+            "positivity_rate": 22.3
+          }
+        },
+        "week_number": 6,
+        "year": 2025
+      },
+      {
+        "date": "2025-02-11",
+        "surveillance_indicators": {
+          "positivity_rate": 18.5,
+          "hospitalization_rate": 3.7,
+          "test_volume": 46190,
+          "estimated_cases": 92379
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 20.3
+          },
+          "Europe": {
+            "positivity_rate": 20.7
+          },
+          "Asia": {
+            "positivity_rate": 15.7
+          }
+        },
+        "week_number": 7,
+        "year": 2025
+      },
+      {
+        "date": "2025-02-18",
+        "surveillance_indicators": {
+          "positivity_rate": 20.6,
+          "hospitalization_rate": 4.12,
+          "test_volume": 51555,
+          "estimated_cases": 103110
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 19.2
+          },
+          "Europe": {
+            "positivity_rate": 22.2
+          },
+          "Asia": {
+            "positivity_rate": 21.8
+          }
+        },
+        "week_number": 8,
+        "year": 2025
+      },
+      {
+        "date": "2025-02-25",
+        "surveillance_indicators": {
+          "positivity_rate": 20.8,
+          "hospitalization_rate": 4.17,
+          "test_volume": 52079,
+          "estimated_cases": 104159
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 21.3
+          },
+          "Europe": {
+            "positivity_rate": 23.7
+          },
+          "Asia": {
+            "positivity_rate": 22
+          }
+        },
+        "week_number": 9,
+        "year": 2025
+      },
+      {
+        "date": "2025-03-04",
+        "surveillance_indicators": {
+          "positivity_rate": 13.1,
+          "hospitalization_rate": 2.61,
+          "test_volume": 32629,
+          "estimated_cases": 65257
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 12.8
+          },
+          "Europe": {
+            "positivity_rate": 13
+          },
+          "Asia": {
+            "positivity_rate": 14.6
+          }
+        },
+        "week_number": 10,
+        "year": 2025
+      },
+      {
+        "date": "2025-03-11",
+        "surveillance_indicators": {
+          "positivity_rate": 14.8,
+          "hospitalization_rate": 2.96,
+          "test_volume": 37008,
+          "estimated_cases": 74015
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 13.5
+          },
+          "Europe": {
+            "positivity_rate": 15.4
+          },
+          "Asia": {
+            "positivity_rate": 15.9
+          }
+        },
+        "week_number": 11,
+        "year": 2025
+      },
+      {
+        "date": "2025-03-18",
+        "surveillance_indicators": {
+          "positivity_rate": 12.3,
+          "hospitalization_rate": 2.45,
+          "test_volume": 30646,
+          "estimated_cases": 61291
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 11.9
+          },
+          "Europe": {
+            "positivity_rate": 12.7
+          },
+          "Asia": {
+            "positivity_rate": 10.6
+          }
+        },
+        "week_number": 12,
+        "year": 2025
+      },
+      {
+        "date": "2025-03-25",
+        "surveillance_indicators": {
+          "positivity_rate": 14.9,
+          "hospitalization_rate": 2.99,
+          "test_volume": 37331,
+          "estimated_cases": 74662
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 14.6
+          },
+          "Europe": {
+            "positivity_rate": 16.3
+          },
+          "Asia": {
+            "positivity_rate": 12.1
+          }
+        },
+        "week_number": 13,
+        "year": 2025
+      },
+      {
+        "date": "2025-04-01",
+        "surveillance_indicators": {
+          "positivity_rate": 10.1,
+          "hospitalization_rate": 2.01,
+          "test_volume": 25148,
+          "estimated_cases": 50297
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 9.6
+          },
+          "Europe": {
+            "positivity_rate": 10.8
+          },
+          "Asia": {
+            "positivity_rate": 10.1
+          }
+        },
+        "week_number": 14,
+        "year": 2025
+      },
+      {
+        "date": "2025-04-08",
+        "surveillance_indicators": {
+          "positivity_rate": 9.9,
+          "hospitalization_rate": 1.97,
+          "test_volume": 24675,
+          "estimated_cases": 49351
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 9.5
+          },
+          "Europe": {
+            "positivity_rate": 9.5
+          },
+          "Asia": {
+            "positivity_rate": 9.8
+          }
+        },
+        "week_number": 15,
+        "year": 2025
+      },
+      {
+        "date": "2025-04-15",
+        "surveillance_indicators": {
+          "positivity_rate": 9.6,
+          "hospitalization_rate": 1.93,
+          "test_volume": 24108,
+          "estimated_cases": 48216
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 9
+          },
+          "Europe": {
+            "positivity_rate": 9.7
+          },
+          "Asia": {
+            "positivity_rate": 11.3
+          }
+        },
+        "week_number": 16,
+        "year": 2025
+      },
+      {
+        "date": "2025-04-22",
+        "surveillance_indicators": {
+          "positivity_rate": 10.3,
+          "hospitalization_rate": 2.06,
+          "test_volume": 25779,
+          "estimated_cases": 51558
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 9.9
+          },
+          "Europe": {
+            "positivity_rate": 10.3
+          },
+          "Asia": {
+            "positivity_rate": 11.1
+          }
+        },
+        "week_number": 17,
+        "year": 2025
+      },
+      {
+        "date": "2025-04-29",
+        "surveillance_indicators": {
+          "positivity_rate": 9,
+          "hospitalization_rate": 1.8,
+          "test_volume": 22481,
+          "estimated_cases": 44961
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 9
+          },
+          "Europe": {
+            "positivity_rate": 8.7
+          },
+          "Asia": {
+            "positivity_rate": 7.6
+          }
+        },
+        "week_number": 18,
+        "year": 2025
+      },
+      {
+        "date": "2025-05-06",
+        "surveillance_indicators": {
+          "positivity_rate": 5.5,
+          "hospitalization_rate": 1.1,
+          "test_volume": 13781,
+          "estimated_cases": 27561
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 5.2
+          },
+          "Europe": {
+            "positivity_rate": 6.1
+          },
+          "Asia": {
+            "positivity_rate": 5.1
+          }
+        },
+        "week_number": 19,
+        "year": 2025
+      },
+      {
+        "date": "2025-05-13",
+        "surveillance_indicators": {
+          "positivity_rate": 5,
+          "hospitalization_rate": 0.99,
+          "test_volume": 12437,
+          "estimated_cases": 24874
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 5.2
+          },
+          "Europe": {
+            "positivity_rate": 5.4
+          },
+          "Asia": {
+            "positivity_rate": 4.5
+          }
+        },
+        "week_number": 20,
+        "year": 2025
+      },
+      {
+        "date": "2025-05-20",
+        "surveillance_indicators": {
+          "positivity_rate": 5.2,
+          "hospitalization_rate": 1.03,
+          "test_volume": 12914,
+          "estimated_cases": 25828
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 5.3
+          },
+          "Europe": {
+            "positivity_rate": 5.9
+          },
+          "Asia": {
+            "positivity_rate": 5.9
+          }
+        },
+        "week_number": 21,
+        "year": 2025
+      },
+      {
+        "date": "2025-05-27",
+        "surveillance_indicators": {
+          "positivity_rate": 4.9,
+          "hospitalization_rate": 0.98,
+          "test_volume": 12273,
+          "estimated_cases": 24545
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 4.9
+          },
+          "Europe": {
+            "positivity_rate": 5.1
+          },
+          "Asia": {
+            "positivity_rate": 5.1
+          }
+        },
+        "week_number": 22,
+        "year": 2025
+      },
+      {
+        "date": "2025-06-03",
+        "surveillance_indicators": {
+          "positivity_rate": 3,
+          "hospitalization_rate": 0.6,
+          "test_volume": 7561,
+          "estimated_cases": 15123
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 3.2
+          },
+          "Europe": {
+            "positivity_rate": 3
+          },
+          "Asia": {
+            "positivity_rate": 3.3
+          }
+        },
+        "week_number": 23,
+        "year": 2025
+      },
+      {
+        "date": "2025-06-10",
+        "surveillance_indicators": {
+          "positivity_rate": 3.3,
+          "hospitalization_rate": 0.66,
+          "test_volume": 8276,
+          "estimated_cases": 16552
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 3.2
+          },
+          "Europe": {
+            "positivity_rate": 3.4
+          },
+          "Asia": {
+            "positivity_rate": 2.9
+          }
+        },
+        "week_number": 24,
+        "year": 2025
+      },
+      {
+        "date": "2025-06-17",
+        "surveillance_indicators": {
+          "positivity_rate": 2.7,
+          "hospitalization_rate": 0.54,
+          "test_volume": 6715,
+          "estimated_cases": 13430
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 2.6
+          },
+          "Europe": {
+            "positivity_rate": 2.7
+          },
+          "Asia": {
+            "positivity_rate": 2.8
+          }
+        },
+        "week_number": 25,
+        "year": 2025
+      },
+      {
+        "date": "2025-06-24",
+        "surveillance_indicators": {
+          "positivity_rate": 3.4,
+          "hospitalization_rate": 0.67,
+          "test_volume": 8393,
+          "estimated_cases": 16786
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 3.2
+          },
+          "Europe": {
+            "positivity_rate": 3.6
+          },
+          "Asia": {
+            "positivity_rate": 3.7
+          }
+        },
+        "week_number": 26,
+        "year": 2025
+      },
+      {
+        "date": "2025-07-01",
+        "surveillance_indicators": {
+          "positivity_rate": 2.6,
+          "hospitalization_rate": 0.52,
+          "test_volume": 6464,
+          "estimated_cases": 12928
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 2.3
+          },
+          "Europe": {
+            "positivity_rate": 2.6
+          },
+          "Asia": {
+            "positivity_rate": 2.6
+          }
+        },
+        "week_number": 27,
+        "year": 2025
+      },
+      {
+        "date": "2025-07-08",
+        "surveillance_indicators": {
+          "positivity_rate": 2.1,
+          "hospitalization_rate": 0.42,
+          "test_volume": 5193,
+          "estimated_cases": 10387
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 2.1
+          },
+          "Europe": {
+            "positivity_rate": 2
+          },
+          "Asia": {
+            "positivity_rate": 2.3
+          }
+        },
+        "week_number": 28,
+        "year": 2025
+      },
+      {
+        "date": "2025-07-15",
+        "surveillance_indicators": {
+          "positivity_rate": 2.7,
+          "hospitalization_rate": 0.55,
+          "test_volume": 6832,
+          "estimated_cases": 13664
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 2.7
+          },
+          "Europe": {
+            "positivity_rate": 2.6
+          },
+          "Asia": {
+            "positivity_rate": 2.8
+          }
+        },
+        "week_number": 29,
+        "year": 2025
+      },
+      {
+        "date": "2025-07-22",
+        "surveillance_indicators": {
+          "positivity_rate": 2.7,
+          "hospitalization_rate": 0.54,
+          "test_volume": 6780,
+          "estimated_cases": 13560
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 2.8
+          },
+          "Europe": {
+            "positivity_rate": 2.8
+          },
+          "Asia": {
+            "positivity_rate": 2.5
+          }
+        },
+        "week_number": 30,
+        "year": 2025
+      },
+      {
+        "date": "2025-07-29",
+        "surveillance_indicators": {
+          "positivity_rate": 2.1,
+          "hospitalization_rate": 0.42,
+          "test_volume": 5261,
+          "estimated_cases": 10521
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 2
+          },
+          "Europe": {
+            "positivity_rate": 2.4
+          },
+          "Asia": {
+            "positivity_rate": 2.2
+          }
+        },
+        "week_number": 31,
+        "year": 2025
+      },
+      {
+        "date": "2025-08-05",
+        "surveillance_indicators": {
+          "positivity_rate": 3.3,
+          "hospitalization_rate": 0.66,
+          "test_volume": 8201,
+          "estimated_cases": 16402
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 3.4
+          },
+          "Europe": {
+            "positivity_rate": 3.3
+          },
+          "Asia": {
+            "positivity_rate": 3.9
+          }
+        },
+        "week_number": 32,
+        "year": 2025
+      },
+      {
+        "date": "2025-08-12",
+        "surveillance_indicators": {
+          "positivity_rate": 3.1,
+          "hospitalization_rate": 0.62,
+          "test_volume": 7733,
+          "estimated_cases": 15466
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 3.3
+          },
+          "Europe": {
+            "positivity_rate": 3.5
+          },
+          "Asia": {
+            "positivity_rate": 3.6
+          }
+        },
+        "week_number": 33,
+        "year": 2025
+      },
+      {
+        "date": "2025-08-19",
+        "surveillance_indicators": {
+          "positivity_rate": 2.7,
+          "hospitalization_rate": 0.53,
+          "test_volume": 6650,
+          "estimated_cases": 13299
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 2.9
+          },
+          "Europe": {
+            "positivity_rate": 2.9
+          },
+          "Asia": {
+            "positivity_rate": 3
+          }
+        },
+        "week_number": 34,
+        "year": 2025
+      },
+      {
+        "date": "2025-08-26",
+        "surveillance_indicators": {
+          "positivity_rate": 2.7,
+          "hospitalization_rate": 0.54,
+          "test_volume": 6748,
+          "estimated_cases": 13497
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 2.9
+          },
+          "Europe": {
+            "positivity_rate": 2.7
+          },
+          "Asia": {
+            "positivity_rate": 2.6
+          }
+        },
+        "week_number": 35,
+        "year": 2025
+      },
+      {
+        "date": "2025-09-02",
+        "surveillance_indicators": {
+          "positivity_rate": 4.4,
+          "hospitalization_rate": 0.88,
+          "test_volume": 11026,
+          "estimated_cases": 22052
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 4.8
+          },
+          "Europe": {
+            "positivity_rate": 4.9
+          },
+          "Asia": {
+            "positivity_rate": 4.1
+          }
+        },
+        "week_number": 36,
+        "year": 2025
+      },
+      {
+        "date": "2025-09-09",
+        "surveillance_indicators": {
+          "positivity_rate": 4.8,
+          "hospitalization_rate": 0.96,
+          "test_volume": 12045,
+          "estimated_cases": 24091
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 4.6
+          },
+          "Europe": {
+            "positivity_rate": 5
+          },
+          "Asia": {
+            "positivity_rate": 5.6
+          }
+        },
+        "week_number": 37,
+        "year": 2025
+      },
+      {
+        "date": "2025-09-16",
+        "surveillance_indicators": {
+          "positivity_rate": 4.8,
+          "hospitalization_rate": 0.96,
+          "test_volume": 11968,
+          "estimated_cases": 23937
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 4.3
+          },
+          "Europe": {
+            "positivity_rate": 5.5
+          },
+          "Asia": {
+            "positivity_rate": 5.6
+          }
+        },
+        "week_number": 38,
+        "year": 2025
+      },
+      {
+        "date": "2025-09-23",
+        "surveillance_indicators": {
+          "positivity_rate": 5.1,
+          "hospitalization_rate": 1.01,
+          "test_volume": 12626,
+          "estimated_cases": 25253
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 4.7
+          },
+          "Europe": {
+            "positivity_rate": 5.6
+          },
+          "Asia": {
+            "positivity_rate": 6
+          }
+        },
+        "week_number": 39,
+        "year": 2025
+      },
+      {
+        "date": "2025-09-30",
+        "surveillance_indicators": {
+          "positivity_rate": 5.1,
+          "hospitalization_rate": 1.02,
+          "test_volume": 12794,
+          "estimated_cases": 25588
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 5
+          },
+          "Europe": {
+            "positivity_rate": 5.6
+          },
+          "Asia": {
+            "positivity_rate": 5.7
+          }
+        },
+        "week_number": 40,
+        "year": 2025
+      },
+      {
+        "date": "2025-10-07",
+        "surveillance_indicators": {
+          "positivity_rate": 13.6,
+          "hospitalization_rate": 2.36,
+          "test_volume": 22691,
+          "estimated_cases": 45382
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 14.9
+          },
+          "Europe": {
+            "positivity_rate": 13.7
+          },
+          "Asia": {
+            "positivity_rate": 11.6
+          }
+        },
+        "week_number": 41,
+        "year": 2025
+      },
+      {
+        "date": "2025-10-14",
+        "surveillance_indicators": {
+          "positivity_rate": 13.6,
+          "hospitalization_rate": 2.36,
+          "test_volume": 22648,
+          "estimated_cases": 45296
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 13.8
+          },
+          "Europe": {
+            "positivity_rate": 13.1
+          },
+          "Asia": {
+            "positivity_rate": 16.1
+          }
+        },
+        "week_number": 42,
+        "year": 2025
+      },
+      {
+        "date": "2025-10-21",
+        "surveillance_indicators": {
+          "positivity_rate": 13.9,
+          "hospitalization_rate": 2.41,
+          "test_volume": 23175,
+          "estimated_cases": 46351
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 13.3
+          },
+          "Europe": {
+            "positivity_rate": 15.2
+          },
+          "Asia": {
+            "positivity_rate": 15
+          }
+        },
+        "week_number": 43,
+        "year": 2025
+      },
+      {
+        "date": "2025-10-28",
+        "surveillance_indicators": {
+          "positivity_rate": 13.6,
+          "hospitalization_rate": 2.36,
+          "test_volume": 22670,
+          "estimated_cases": 45341
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 14
+          },
+          "Europe": {
+            "positivity_rate": 14
+          },
+          "Asia": {
+            "positivity_rate": 15.7
+          }
+        },
+        "week_number": 44,
+        "year": 2025
+      },
+      {
+        "date": "2025-11-04",
+        "surveillance_indicators": {
+          "positivity_rate": 19,
+          "hospitalization_rate": 3.29,
+          "test_volume": 31649,
+          "estimated_cases": 63298
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 17.1
+          },
+          "Europe": {
+            "positivity_rate": 21.8
+          },
+          "Asia": {
+            "positivity_rate": 21.5
+          }
+        },
+        "week_number": 45,
+        "year": 2025
+      },
+      {
+        "date": "2025-11-11",
+        "surveillance_indicators": {
+          "positivity_rate": 23.1,
+          "hospitalization_rate": 4,
+          "test_volume": 38498,
+          "estimated_cases": 76996
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 23
+          },
+          "Europe": {
+            "positivity_rate": 24.9
+          },
+          "Asia": {
+            "positivity_rate": 27.5
+          }
+        },
+        "week_number": 46,
+        "year": 2025
+      },
+      {
+        "date": "2025-11-18",
+        "surveillance_indicators": {
+          "positivity_rate": 23.1,
+          "hospitalization_rate": 4,
+          "test_volume": 38482,
+          "estimated_cases": 76964
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 22.8
+          },
+          "Europe": {
+            "positivity_rate": 22.5
+          },
+          "Asia": {
+            "positivity_rate": 19.8
+          }
+        },
+        "week_number": 47,
+        "year": 2025
+      },
+      {
+        "date": "2025-11-25",
+        "surveillance_indicators": {
+          "positivity_rate": 21.1,
+          "hospitalization_rate": 3.67,
+          "test_volume": 35244,
+          "estimated_cases": 70488
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 21.4
+          },
+          "Europe": {
+            "positivity_rate": 21.1
+          },
+          "Asia": {
+            "positivity_rate": 17.4
+          }
+        },
+        "week_number": 48,
+        "year": 2025
+      },
+      {
+        "date": "2025-12-02",
+        "surveillance_indicators": {
+          "positivity_rate": 29.7,
+          "hospitalization_rate": 5.16,
+          "test_volume": 49581,
+          "estimated_cases": 99163
+        },
+        "regional_breakdown": {
+          "North_America": {
+            "positivity_rate": 30
+          },
+          "Europe": {
+            "positivity_rate": 33.5
+          },
+          "Asia": {
+            "positivity_rate": 26.6
+          }
+        },
+        "week_number": 49,
+        "year": 2025
+      }
+    ]
+  },
+  "co_circulation_analysis": {
+    "rsv_flu_overlap": {
+      "correlation": 0.72,
+      "timing_offset_days": -14,
+      "notes": "RSV typically peaks 2 weeks before influenza"
+    },
+    "rsv_covid_interaction": {
+      "competition_observed": true,
+      "notes": "Reduced RSV during COVID surges, possible viral interference"
+    }
+  },
+  "clinical_guidance": {
+    "prophylaxis_recommendations": [
+      {
+        "group": "Infants under 8 months entering first RSV season",
+        "intervention": "Nirsevimab (single dose)",
+        "priority": "high"
+      },
+      {
+        "group": "Pregnant persons 32-36 weeks gestation",
+        "intervention": "RSVpreF maternal vaccine",
+        "priority": "recommended"
+      },
+      {
+        "group": "Adults 60+ years",
+        "intervention": "RSV vaccine (single dose)",
+        "priority": "recommended"
+      }
+    ]
+  }
+}

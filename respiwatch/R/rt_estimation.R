@@ -13,23 +13,10 @@ library(lubridate)
 
 # =============================================================================
 # INPUT VALIDATION HELPERS
+# Note: escape_sql, is_valid_pathogen_code, is_valid_iso_code are defined in
+# db_operations.R which is sourced via global.R. We don't re-define them here
+# to avoid duplication and ensure consistency.
 # =============================================================================
-
-#' Escape string for SQL query (prevent SQL injection)
-escape_sql <- function(x) {
-  if (is.null(x) || is.na(x)) return(NA)
-  gsub("'", "''", as.character(x))
-}
-
-#' Validate pathogen code format (alphanumeric)
-is_valid_pathogen_code <- function(code) {
-  !is.null(code) && grepl("^[A-Za-z0-9_]+$", code)
-}
-
-#' Validate ISO country code format (2 or 3 letter)
-is_valid_iso_code <- function(code) {
-  !is.null(code) && grepl("^[A-Z]{2,3}$", toupper(code))
-}
 
 # =============================================================================
 # SERIAL INTERVAL PARAMETERS
@@ -77,11 +64,21 @@ get_serial_interval <- function(pathogen_code) {
 # =============================================================================
 
 #' Prepare surveillance data for EpiEstim incidence format (LEGACY - zero-fills gaps)
+#'
+#' @description
+#' \lifecycle{deprecated}
+#' This function zero-fills gaps in surveillance data which can artificially
+#' depress Rt estimates during periods of missing data. Use
+#' \code{\link{prepare_incidence_data_with_fallback}} instead for production
+#' which fills gaps with alternate signals (wastewater, syndromic, forecasts).
+#'
 #' @param surv_data Data frame with observation_date and case_count columns
 #' @param aggregate_by How to aggregate data ("day", "week")
 #' @return Data frame with dates and I (incidence) columns
 #' @note Use prepare_incidence_data_with_fallback() for production - avoids zero-filling
 prepare_incidence_data <- function(surv_data, aggregate_by = "week") {
+  .Deprecated("prepare_incidence_data_with_fallback",
+              msg = "prepare_incidence_data() zero-fills gaps which distorts Rt. Use prepare_incidence_data_with_fallback() instead.")
   if (nrow(surv_data) == 0) {
     return(NULL)
   }

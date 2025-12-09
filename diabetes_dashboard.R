@@ -123,20 +123,31 @@ spinner_color <- "#E85D4C"
 # Load and preprocess data at startup -----------------------------------------
 cat("Loading data...\n")
 
-diabetes_data <- readRDS("data/processed/diabetes_clean.rds")
-features_data <- readRDS("data/processed/diabetes_features.rds")
-eval_results <- readRDS("output/model_evaluation_results.rds")
-lr_model <- readRDS("output/models/logistic_model.rds")
-rf_model <- readRDS("output/models/random_forest_model.rds")
+# Helper function to safely load RDS files with error handling
+safe_load_rds <- function(path, description = path) {
+  tryCatch({
+    data <- readRDS(path)
+    cat(sprintf("  Loaded: %s\n", description))
+    data
+  }, error = function(e) {
+    stop(sprintf("Failed to load %s: %s\nEnsure the data pipeline has been run first.",
+                 description, e$message))
+  })
+}
+
+diabetes_data <- safe_load_rds("data/processed/diabetes_clean.rds", "diabetes_clean")
+eval_results <- safe_load_rds("output/model_evaluation_results.rds", "model evaluation")
+lr_model <- safe_load_rds("output/models/logistic_model.rds", "logistic model")
+rf_model <- safe_load_rds("output/models/random_forest_model.rds", "random forest model")
 
 # Load advanced analysis results (lazy loading for performance) ----------------
 cat("Loading advanced analysis results...\n")
 
-causal_results <- readRDS("output/causal_inference_results.rds")
-fairness_results <- readRDS("output/fairness_audit_results.rds")
-anomaly_results <- readRDS("output/anomaly_discovery_results.rds")
+causal_results <- safe_load_rds("output/causal_inference_results.rds", "causal inference")
+fairness_results <- safe_load_rds("output/fairness_audit_results.rds", "fairness audit")
+anomaly_results <- safe_load_rds("output/anomaly_discovery_results.rds", "anomaly discovery")
 
-cat("Advanced analysis data loaded!\n")
+cat("All data loaded successfully!\n")
 
 # Pre-aggregate data for performance ------------------------------------------
 cat("Pre-aggregating data for performance...\n")
@@ -3643,8 +3654,7 @@ server <- function(input, output, session) {
   # Wrapper function for backwards compatibility - always returns FALSE (light mode)
   theme_is_dark <- reactive({ FALSE })
 
-  # Set the Clinical Premium light theme at startup
-  theme_set(theme_worldclass())
+  # Note: theme_set() is called at global scope (line 65) - not duplicated here
 
   # Reactive filtered data with caching -----------------------------------------
   filtered_data <- reactive({
@@ -4043,9 +4053,15 @@ server <- function(input, output, session) {
     sens <- roc_data$sensitivity[closest_idx]
     spec <- roc_data$specificity[closest_idx]
 
-    # Calculate F1 (approximation)
-    precision <- sens * 0.158 / (sens * 0.158 + (1 - spec) * 0.842)
-    f1 <- if(!is.na(precision) && precision > 0) 2 * precision * sens / (precision + sens) else 0
+    # Calculate F1 (approximation using base rates)
+    # BASE_DIABETES_RATE = 0.158, BASE_HEALTHY_RATE = 0.842
+    denom <- sens * 0.158 + (1 - spec) * 0.842
+    precision <- if (denom > 0) sens * 0.158 / denom else 0
+    f1 <- if (!is.na(precision) && precision > 0 && (precision + sens) > 0) {
+      2 * precision * sens / (precision + sens)
+    } else {
+      0
+    }
 
     list(sensitivity = sens, specificity = spec, f1 = f1)
   })
@@ -4250,10 +4266,17 @@ server <- function(input, output, session) {
     tryCatch({
       prob <- predict(lr_model, newdata = new_data, type = "response")
 
-      # Calculate 80% confidence interval using standard error approximation
-      # Based on the variance of logistic prediction
-      se_logit <- 0.15  # Approximate SE from model
-      logit_prob <- log(prob / (1 - prob))
+      # Calculate 80% confidence interval using model's standard error
+      # Use predict with se.fit to get proper standard errors from the model
+      pred_link <- tryCatch({
+        predict(lr_model, newdata = new_data, type = "link", se.fit = TRUE)
+      }, error = function(e) {
+        # Fallback: estimate SE from model's residual deviance
+        list(fit = log(prob / (1 - prob)), se.fit = 0.15)
+      })
+
+      logit_prob <- pred_link$fit
+      se_logit <- pred_link$se.fit
       ci_lower_logit <- logit_prob - 1.28 * se_logit  # 80% CI z-score
       ci_upper_logit <- logit_prob + 1.28 * se_logit
       ci_lower <- 1 / (1 + exp(-ci_lower_logit))

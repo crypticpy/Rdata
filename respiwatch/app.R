@@ -54,6 +54,24 @@ ui <- page_navbar(
 server <- function(input, output, session) {
 
   # ==========================================================================
+  # SESSION CLEANUP
+  # ==========================================================================
+
+  # Clean up database connections when session ends
+  session$onSessionEnded(function() {
+    # Close any open database connections to prevent resource leaks
+    tryCatch({
+      if (exists("db_surveillance") && !is.null(db_surveillance)) {
+        if (DBI::dbIsValid(db_surveillance)) {
+          DBI::dbDisconnect(db_surveillance)
+        }
+      }
+    }, error = function(e) {
+      # Silent cleanup - don't error on session end
+    })
+  })
+
+  # ==========================================================================
   # DATE RANGE FILTERING (Per-Tab Controls)
   # ==========================================================================
 

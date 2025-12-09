@@ -317,8 +317,10 @@ estimate_prevented_cases <- function(country,
   ve_hosp <- get_vaccine_effectiveness(pathogen, outcome = "hospitalization")
   ve_death <- get_vaccine_effectiveness(pathogen, outcome = "death")
 
-  hospitalizations_prevented <- round(cases_prevented * hospitalization_rate * ve_hosp / ve)
-  deaths_prevented <- round(cases_prevented * mortality_rate * ve_death / ve)
+  # Guard against division by zero - ve should never be 0 in practice but add safety
+  ve_safe <- max(ve, 0.01)
+  hospitalizations_prevented <- round(cases_prevented * hospitalization_rate * ve_hosp / ve_safe)
+  deaths_prevented <- round(cases_prevented * mortality_rate * ve_death / ve_safe)
 
   list(
     country = country,
@@ -332,7 +334,7 @@ estimate_prevented_cases <- function(country,
     ve_used = ve,
     attack_rate_observed = attack_rate_observed,
     attack_rate_unvax = attack_rate_unvax,
-    effectiveness_ratio = cases_prevented / cases_if_no_vaccine
+    effectiveness_ratio = if (cases_if_no_vaccine > 0) cases_prevented / cases_if_no_vaccine else 0
   )
 }
 

@@ -22,7 +22,7 @@ API_CONFIG <- list(
   retry_delay_seconds = 2,
   request_timeout_seconds = 30,
   rate_limit_requests_per_minute = 30,
-  user_agent = "RespiWatch/1.0 (Respiratory Surveillance Dashboard; contact@example.com)"
+  user_agent = "RespiWatch/1.0 (Respiratory Surveillance Dashboard; https://github.com/crypticpy/Rdata)"
 )
 
 # Create cache directory if it doesn't exist
