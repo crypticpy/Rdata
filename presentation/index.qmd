@@ -468,8 +468,8 @@ with ML model comparison
 <p>A complete Quarto document with executive summary, methodology, findings, and visualizations.</p>
 <p style="margin-top: 1.5rem;">This led to a new thought:</p>
 <blockquote>"What if we built a risk prediction tool?"</blockquote>
-<a href="https://crypticpy.github.io/Rdata/" class="dashboard-link" target="_blank" style="margin-top: 1rem;">
-View Quarto Report →
+<a href="https://crypticpy.github.io/Rdata/diabetes/" class="dashboard-link" target="_blank" style="margin-top: 1rem;">
+View Diabetes Analysis Report →
 </a>
 </div>
 </div>
@@ -737,8 +737,8 @@ forecast <- prophet(
 <div class="report-icon">📑</div>
 <h2>Quarto Report</h2>
 <p>Comprehensive analysis documentation</p>
-<a href="https://crypticpy.github.io/Rdata/" class="report-link" target="_blank">
-crypticpy.github.io/Rdata
+<a href="https://crypticpy.github.io/Rdata/diabetes/" class="report-link" target="_blank">
+Diabetes Analysis Report
 </a>
 </div>
 <div class="workflow-summary">
@@ -778,9 +778,9 @@ crypticpy.github.io/Rdata
 <h2>Links</h2>
 <ul>
 <li><a href="https://github.com/CrypticPy/Rdata" target="_blank">GitHub: Rdata Repository</a></li>
-<li><a href="https://crypticpy.github.io/Rdata/" target="_blank">Quarto Report</a></li>
-<li><a href="https://huggingface.co/spaces/BeyondEarth/diabetes-dashboard" target="_blank">Diabetes Dashboard</a></li>
-<li>RespiWatch: HF Space</li>
+<li><a href="https://crypticpy.github.io/Rdata/diabetes/" target="_blank">Diabetes Analysis Report</a></li>
+<li><a href="https://huggingface.co/spaces/BeyondEarth/diabetes-dashboard" target="_blank">Diabetes Dashboard (HF)</a></li>
+<li><a href="https://huggingface.co/spaces/BeyondEarth/respiwatch" target="_blank">RespiWatch (HF)</a></li>
 </ul>
 </div>
 </div>
