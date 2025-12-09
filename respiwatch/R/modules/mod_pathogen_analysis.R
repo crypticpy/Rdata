@@ -27,6 +27,12 @@ pathogenAnalysisUI <- function(id, outbreak_data) {
         )
       ),
 
+      # Data Source Callout
+      div(
+        class = "row mb-3",
+        div(class = "col-12", uiOutput(ns("data_source_callout")))
+      ),
+
       # Fallback Banner (shows when using interpolated data)
       div(
         class = "row mb-2",
@@ -71,7 +77,12 @@ pathogenAnalysisUI <- function(id, outbreak_data) {
           class = "col-md-6",
           div(
             class = "chart-container",
-            h4(class = "section-header", "Vaccine Effectiveness by Strain"),
+            chart_header_with_code(
+              title = "Vaccine Effectiveness by Strain",
+              ns = ns,
+              chart_id = "vaccine_effectiveness",
+              subtitle = "Estimated VE with confidence intervals"
+            ),
             plotlyOutput(ns("vaccine_effectiveness_chart"), height = "250px")
           )
         )
@@ -84,7 +95,12 @@ pathogenAnalysisUI <- function(id, outbreak_data) {
           class = "col-md-6",
           div(
             class = "chart-container",
-            h4(class = "section-header", "Comparative Positivity Rates"),
+            chart_header_with_code(
+              title = "Comparative Positivity Rates",
+              ns = ns,
+              chart_id = "comparative_positivity",
+              subtitle = "Multi-pathogen positivity comparison"
+            ),
             plotlyOutput(ns("comparative_positivity_chart"), height = "300px")
           )
         ),
@@ -92,7 +108,12 @@ pathogenAnalysisUI <- function(id, outbreak_data) {
           class = "col-md-6",
           div(
             class = "chart-container",
-            h4(class = "section-header", "Hospitalization Rates by Pathogen"),
+            chart_header_with_code(
+              title = "Hospitalization Rates by Pathogen",
+              ns = ns,
+              chart_id = "comparative_hospitalization",
+              subtitle = "Weekly hospitalization rates"
+            ),
             plotlyOutput(ns("comparative_hospitalization_chart"), height = "300px")
           )
         )
@@ -105,7 +126,12 @@ pathogenAnalysisUI <- function(id, outbreak_data) {
           class = "col-12",
           div(
             class = "chart-container",
-            h4(class = "section-header", "Multi-Pathogen Surveillance Timeline"),
+            chart_header_with_code(
+              title = "Multi-Pathogen Surveillance Timeline",
+              ns = ns,
+              chart_id = "multi_pathogen_timeline",
+              subtitle = "Stacked area chart of case volumes"
+            ),
             plotlyOutput(ns("multi_pathogen_timeline"), height = "350px")
           )
         )
@@ -118,7 +144,12 @@ pathogenAnalysisUI <- function(id, outbreak_data) {
           class = "col-12",
           div(
             class = "chart-container",
-            h4(class = "section-header", "Cross-Pathogen Analysis"),
+            chart_header_with_code(
+              title = "Cross-Pathogen Analysis",
+              ns = ns,
+              chart_id = "pathogen_comparison_table",
+              subtitle = "Comparative analysis findings"
+            ),
             DT::DTOutput(ns("pathogen_comparison_table"))
           )
         )
@@ -245,6 +276,24 @@ pathogenAnalysisServer <- function(id, outbreak_data, timeline_data, pathogen_co
 
     # Date range filter
     date_filter <- dateRangeControlServer("date_range", timeline_data)
+
+    # Data Source Callout
+    output$data_source_callout <- renderUI({
+      tryCatch({
+        sources <- get_data_source_metadata()
+        data_source_callout(sources)
+      }, error = function(e) {
+        div(
+          class = "data-source-callout",
+          tags$div(
+            class = "callout-header",
+            icon("database"),
+            tags$span("Data Sources", class = "ms-2 fw-semibold")
+          ),
+          tags$small(class = "text-muted", "Multi-pathogen surveillance data from CDC, ECDC, and WHO")
+        )
+      })
+    })
 
     # Vaccination impact results
     vaccination_impact_result <- reactiveVal(NULL)
@@ -547,6 +596,75 @@ pathogenAnalysisServer <- function(id, outbreak_data, timeline_data, pathogen_co
       }
       HTML(format_vaccination_impact_html(result))
     })
+
+    # =========================================================================
+    # CODE TRANSPARENCY MODAL HANDLERS
+    # =========================================================================
+
+    # Vaccine Effectiveness Code Modal
+    observeEvent(input$show_code_vaccine_effectiveness, {
+      snippet <- get_code_snippet("vaccine_effectiveness")
+      show_code_modal(
+        session = session,
+        title = "Vaccine Effectiveness Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Comparative Positivity Code Modal
+    observeEvent(input$show_code_comparative_positivity, {
+      snippet <- get_code_snippet("comparative_positivity")
+      show_code_modal(
+        session = session,
+        title = "Comparative Positivity Rates Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Comparative Hospitalization Code Modal
+    observeEvent(input$show_code_comparative_hospitalization, {
+      snippet <- get_code_snippet("comparative_hospitalization")
+      show_code_modal(
+        session = session,
+        title = "Hospitalization Rates Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Multi-Pathogen Timeline Code Modal
+    observeEvent(input$show_code_multi_pathogen_timeline, {
+      snippet <- get_code_snippet("multi_pathogen_timeline")
+      show_code_modal(
+        session = session,
+        title = "Multi-Pathogen Timeline Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Cross-Pathogen Analysis Code Modal
+    observeEvent(input$show_code_pathogen_comparison_table, {
+      snippet <- get_code_snippet("pathogen_comparison_table")
+      show_code_modal(
+        session = session,
+        title = "Cross-Pathogen Analysis Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
 
     return(date_filter)
   })

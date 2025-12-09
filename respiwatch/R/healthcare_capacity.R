@@ -428,6 +428,97 @@ get_capacity_timeline <- function(hosp_forecast, icu_forecast,
 }
 
 # =============================================================================
+# DATABASE FUNCTIONS - Get Real Capacity Data
+# =============================================================================
+
+#' Get current healthcare capacity from database
+#' @param country_code ISO country code (default: "USA")
+#' @return List with current capacity data or NULL if not available
+get_current_capacity_from_db <- function(country_code = "USA") {
+  conn <- tryCatch({
+    get_db_connection()
+  }, error = function(e) NULL)
+
+  if (is.null(conn)) return(NULL)
+
+ result <- tryCatch({
+    # Get the most recent record with complete data (hospital + ICU)
+    query <- sprintf("
+      SELECT
+        hc.observation_date,
+        hc.total_hospital_beds,
+        hc.occupied_hospital_beds,
+        hc.hospital_occupancy_pct,
+        hc.total_icu_beds,
+        hc.occupied_icu_beds,
+        hc.icu_occupancy_pct,
+        hc.capacity_stress
+      FROM healthcare_capacity hc
+      JOIN countries c ON hc.country_id = c.country_id
+      WHERE c.iso_code = '%s'
+        AND hc.total_hospital_beds IS NOT NULL
+      ORDER BY hc.observation_date DESC
+      LIMIT 1
+    ", country_code)
+
+    data <- dbGetQuery(conn, query)
+
+    if (nrow(data) == 0) {
+      # Fallback: try to get at least ICU data
+      query_icu <- sprintf("
+        SELECT
+          hc.observation_date,
+          hc.total_hospital_beds,
+          hc.occupied_hospital_beds,
+          hc.hospital_occupancy_pct,
+          hc.total_icu_beds,
+          hc.occupied_icu_beds,
+          hc.icu_occupancy_pct,
+          hc.capacity_stress
+        FROM healthcare_capacity hc
+        JOIN countries c ON hc.country_id = c.country_id
+        WHERE c.iso_code = '%s'
+          AND hc.total_icu_beds IS NOT NULL
+        ORDER BY hc.observation_date DESC
+        LIMIT 1
+      ", country_code)
+
+      data <- dbGetQuery(conn, query_icu)
+    }
+
+    data
+  }, error = function(e) {
+    warning(sprintf("Error querying healthcare capacity: %s", e$message))
+    data.frame()
+  })
+
+  close_db_connection(conn)
+
+  if (nrow(result) == 0) return(NULL)
+
+  # Return structured data
+  list(
+    observation_date = as.Date(result$observation_date),
+    hospital = list(
+      total_beds = result$total_hospital_beds,
+      occupied_beds = result$occupied_hospital_beds,
+      occupancy_pct = result$hospital_occupancy_pct,
+      available_beds = if (!is.na(result$total_hospital_beds))
+        result$total_hospital_beds - result$occupied_hospital_beds else NA
+    ),
+    icu = list(
+      total_beds = result$total_icu_beds,
+      occupied_beds = result$occupied_icu_beds,
+      occupancy_pct = result$icu_occupancy_pct,
+      available_beds = if (!is.na(result$total_icu_beds))
+        result$total_icu_beds - result$occupied_icu_beds else NA
+    ),
+    capacity_stress = result$capacity_stress,
+    data_age_days = as.numeric(Sys.Date() - as.Date(result$observation_date))
+  )
+}
+
+# =============================================================================
 # MAIN API FUNCTIONS
 # =============================================================================
 
@@ -515,12 +606,40 @@ get_capacity_forecast <- function(pathogen_code = "all", horizon = 4,
       .groups = "drop"
     )
 
-  # Calculate current capacity status (using latest projection as proxy)
-  current_hosp_occ <- tail(combined_hosp$total_occupancy, 1)[1]
-  current_icu_occ <- tail(combined_icu$total_icu_occupancy, 1)[1]
+  # Get REAL current capacity from database (not forecasted values)
+  db_capacity <- get_current_capacity_from_db("USA")
 
-  hospital_status <- calculate_capacity_headroom(current_hosp_occ, hospital_capacity)
-  icu_status <- calculate_capacity_headroom(current_icu_occ, icu_capacity)
+  if (!is.null(db_capacity) && !is.na(db_capacity$hospital$total_beds)) {
+    # Use real database values for current status
+    hospital_capacity <- db_capacity$hospital$total_beds
+    icu_capacity <- db_capacity$icu$total_beds
+
+    hospital_status <- calculate_capacity_headroom(
+      db_capacity$hospital$occupied_beds,
+      db_capacity$hospital$total_beds
+    )
+    icu_status <- calculate_capacity_headroom(
+      db_capacity$icu$occupied_beds,
+      db_capacity$icu$total_beds
+    )
+
+    # Add data freshness info
+    hospital_status$data_date <- db_capacity$observation_date
+    hospital_status$data_age_days <- db_capacity$data_age_days
+    icu_status$data_date <- db_capacity$observation_date
+    icu_status$data_age_days <- db_capacity$data_age_days
+  } else {
+    # Fallback to forecast-based estimates if no database data
+    current_hosp_occ <- tail(combined_hosp$total_occupancy, 1)[1]
+    current_icu_occ <- tail(combined_icu$total_icu_occupancy, 1)[1]
+
+    hospital_status <- calculate_capacity_headroom(current_hosp_occ, hospital_capacity)
+    icu_status <- calculate_capacity_headroom(current_icu_occ, icu_capacity)
+
+    # Mark as estimated
+    hospital_status$data_source <- "forecast_estimate"
+    icu_status$data_source <- "forecast_estimate"
+  }
 
   # Project breaches
   hospital_breach <- project_capacity_breach(
@@ -535,20 +654,71 @@ get_capacity_forecast <- function(pathogen_code = "all", horizon = 4,
     icu_capacity
   )
 
-  # Get timeline
+  # Get timeline - blend actual database values with forecast projections
   timeline <- combined_hosp |>
-    left_join(combined_icu, by = "date") |>
-    mutate(
-      hospital_utilization = total_occupancy / hospital_capacity * 100,
-      icu_utilization = total_icu_occupancy / icu_capacity * 100
+    left_join(combined_icu, by = "date")
+
+  # If we have actual database values, create a proper timeline
+  if (!is.null(db_capacity) && !is.na(db_capacity$hospital$occupancy_pct)) {
+    # Start with actual current utilization from database
+    actual_hosp_util <- db_capacity$hospital$occupancy_pct
+    actual_icu_util <- db_capacity$icu$occupancy_pct
+    actual_date <- db_capacity$observation_date
+
+    # Calculate the trend from forecast (change per day)
+    if (nrow(timeline) >= 2) {
+      forecast_hosp_util <- timeline$total_occupancy / hospital_capacity * 100
+      forecast_icu_util <- timeline$total_icu_occupancy / icu_capacity * 100
+      hosp_trend <- (tail(forecast_hosp_util, 1) - head(forecast_hosp_util, 1)) / nrow(timeline)
+      icu_trend <- (tail(forecast_icu_util, 1) - head(forecast_icu_util, 1)) / nrow(timeline)
+    } else {
+      hosp_trend <- 0
+      icu_trend <- 0
+    }
+
+    # Apply trend to actual baseline
+    days_ahead <- as.numeric(timeline$date - actual_date)
+    timeline <- timeline |>
+      mutate(
+        hospital_utilization = pmin(100, pmax(0, actual_hosp_util + hosp_trend * row_number())),
+        icu_utilization = pmin(100, pmax(0, actual_icu_util + icu_trend * row_number())),
+        is_forecast = TRUE
+      )
+
+    # Add current actual point as first row
+    current_row <- data.frame(
+      date = actual_date,
+      total_admissions = NA_integer_,
+      total_occupancy = db_capacity$hospital$occupied_beds,
+      pathogens_included = "Actual",
+      total_icu_admissions = NA_integer_,
+      total_icu_occupancy = db_capacity$icu$occupied_beds,
+      hospital_utilization = actual_hosp_util,
+      icu_utilization = actual_icu_util,
+      is_forecast = FALSE
     )
+    timeline <- bind_rows(current_row, timeline) |>
+      arrange(date)
+  } else {
+    # Fallback: just use forecast-derived utilization
+    timeline <- timeline |>
+      mutate(
+        hospital_utilization = total_occupancy / hospital_capacity * 100,
+        icu_utilization = total_icu_occupancy / icu_capacity * 100,
+        is_forecast = TRUE
+      )
+  }
 
   result <- list(
     status = "success",
     pathogen = pathogen_code,
     horizon = horizon,
+    # Capacity status (LIST with utilization, status, available_beds, etc)
     hospital_capacity = hospital_status,
     icu_capacity = icu_status,
+    # Raw numeric capacity values for calculations
+    hospital_beds = hospital_capacity,
+    icu_beds = icu_capacity,
     hospital_breach = hospital_breach,
     icu_breach = icu_breach,
     hospitalization_forecast = combined_hosp,

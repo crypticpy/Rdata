@@ -33,7 +33,7 @@ FETCH_CONFIG <- list(
   fetch_vaccine_effectiveness = TRUE,
 
   # Use synthetic data fallback if APIs fail
-  use_synthetic_fallback = TRUE,
+  use_synthetic_fallback = FALSE,  # Disabled - prefer real data only
 
   # Historical data depth in weeks
   weeks_back = 52,

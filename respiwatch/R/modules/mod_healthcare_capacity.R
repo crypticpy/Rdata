@@ -23,7 +23,13 @@ healthcareCapacityUI <- function(id) {
             "Alerts trigger when capacity approaches critical thresholds.")
         )
       ),
-      
+
+      # Data Source Callout - CRITICAL for healthcare data transparency
+      div(
+        class = "row mb-3",
+        div(class = "col-12", uiOutput(ns("data_source_callout")))
+      ),
+
       # Controls Row
       div(
         class = "row mb-4",
@@ -64,7 +70,12 @@ healthcareCapacityUI <- function(id) {
           class = "col-md-6",
           div(
             class = "chart-container text-center",
-            h4(class = "section-header", icon("bed"), " Hospital Capacity"),
+            chart_header_with_code(
+              title = "Hospital Capacity",
+              ns = ns,
+              chart_id = "hospital_gauge",
+              subtitle = "Current bed utilization"
+            ),
             uiOutput(ns("hospital_gauge")),
             p(class = "text-muted mt-2", uiOutput(ns("hospital_status_text")))
           )
@@ -74,7 +85,12 @@ healthcareCapacityUI <- function(id) {
           class = "col-md-6",
           div(
             class = "chart-container text-center",
-            h4(class = "section-header", icon("procedures"), " ICU Capacity"),
+            chart_header_with_code(
+              title = "ICU Capacity",
+              ns = ns,
+              chart_id = "icu_gauge",
+              subtitle = "Critical care bed utilization"
+            ),
             uiOutput(ns("icu_gauge")),
             p(class = "text-muted mt-2", uiOutput(ns("icu_status_text")))
           )
@@ -88,7 +104,12 @@ healthcareCapacityUI <- function(id) {
           class = "col-12",
           div(
             class = "chart-container",
-            h4(class = "section-header", icon("chart-line"), " Capacity Utilization Forecast"),
+            chart_header_with_code(
+              title = "Capacity Utilization Forecast",
+              ns = ns,
+              chart_id = "capacity_timeline",
+              subtitle = "Hospital and ICU utilization trends"
+            ),
             plotlyOutput(ns("timeline_plot"), height = "350px")
           )
         )
@@ -102,7 +123,12 @@ healthcareCapacityUI <- function(id) {
           class = "col-md-8",
           div(
             class = "chart-container",
-            h4(class = "section-header", icon("chart-area"), " Projected Hospitalizations"),
+            chart_header_with_code(
+              title = "Projected Hospitalizations",
+              ns = ns,
+              chart_id = "hospitalization_forecast",
+              subtitle = "Daily admissions and occupancy forecast"
+            ),
             plotlyOutput(ns("hospitalization_plot"), height = "300px")
           )
         ),
@@ -136,12 +162,74 @@ healthcareCapacityUI <- function(id) {
 healthcareCapacityServer <- function(id, timeline_data) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    
+
     # Date range filter
     date_filter <- dateRangeControlServer("date_range", timeline_data)
-    
+
     # Reactive value to store capacity forecast results
     capacity_result <- reactiveVal(NULL)
+
+    # Data Source Callout - Shows HHS data is historical
+    output$data_source_callout <- renderUI({
+      # Get healthcare capacity metadata from database
+      sources <- get_healthcare_source_metadata()
+
+      # Use amber/warning variant for historical data
+      div(
+        class = "data-source-callout historical-warning",
+        div(
+          class = "callout-header d-flex align-items-center mb-2",
+          icon("database", class = "me-2 text-teal"),
+          tags$h6(class = "mb-0 fw-bold", "Data Sources")
+        ),
+        tags$ul(
+          class = "source-list list-unstyled mb-0",
+          lapply(sources, function(src) {
+            start_fmt <- if (!is.null(src$start_date) && !is.na(src$start_date)) {
+              format(as.Date(src$start_date), "%b %Y")
+            } else "N/A"
+
+            end_fmt <- if (!is.null(src$end_date) && !is.na(src$end_date)) {
+              format(as.Date(src$end_date), "%b %Y")
+            } else "N/A"
+
+            tags$li(
+              class = "source-item status-historical",
+              tags$span(class = "source-name fw-medium", src$name),
+              tags$span(class = "source-dates text-muted ms-2",
+                sprintf("(%s - %s)", start_fmt, end_fmt)
+              ),
+              tags$span(class = "badge bg-warning text-dark ms-2", "Historical")
+            )
+          })
+        ),
+        tags$div(
+          class = "source-note mt-2 pt-2 border-top",
+          icon("info-circle", class = "me-1 text-info"),
+          tags$small(class = "text-muted fst-italic",
+            "Federal hospital reporting requirements ended May 2024. ",
+            "This data represents the last available reporting period."
+          )
+        ),
+        tags$div(
+          class = "last-updated mt-2 pt-2 border-top",
+          icon("clock", class = "me-1 text-muted"),
+          tags$small(class = "text-muted",
+            sprintf("Data fetched: %s", format(Sys.time(), "%b %d, %Y"))
+          )
+        ),
+        div(
+          class = "learn-more mt-2",
+          tags$a(
+            href = "#",
+            class = "text-decoration-none small",
+            onclick = "Shiny.setInputValue('nav_to_about_data', Math.random())",
+            icon("arrow-right", class = "me-1"),
+            "Learn more about our data"
+          )
+        )
+      )
+    })
     
     # Generate capacity forecast when button clicked
     observeEvent(input$generate, {
@@ -480,18 +568,18 @@ healthcareCapacityServer <- function(id, timeline_data) {
       
       summary <- get_capacity_summary(result)
       
-      # Calculate projected breach dates
+      # Calculate projected breach dates using raw numeric capacity values
       hospital_breach <- project_capacity_breach(
         result$hospitalization_forecast$total_occupancy,
         result$hospitalization_forecast$date,
-        result$hospital_capacity,
+        result$hospital_beds,  # Use numeric value, not the status list
         0.90
       )
 
       icu_breach <- project_capacity_breach(
         result$icu_forecast$total_icu_occupancy,
         result$icu_forecast$date,
-        result$icu_capacity,
+        result$icu_beds,  # Use numeric value, not the status list
         0.90
       )
       
@@ -519,5 +607,61 @@ healthcareCapacityServer <- function(id, timeline_data) {
         check.names = FALSE
       )
     }, striped = TRUE, bordered = TRUE, hover = TRUE)
+
+    # =========================================================================
+    # CODE TRANSPARENCY MODAL HANDLERS
+    # =========================================================================
+
+    # Hospital Gauge Code Modal
+    observeEvent(input$show_code_hospital_gauge, {
+      snippet <- get_code_snippet("healthcare_gauge")
+      show_code_modal(
+        session = session,
+        title = "Hospital Capacity Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # ICU Gauge Code Modal
+    observeEvent(input$show_code_icu_gauge, {
+      snippet <- get_code_snippet("icu_gauge")
+      show_code_modal(
+        session = session,
+        title = "ICU Capacity Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Capacity Timeline Code Modal
+    observeEvent(input$show_code_capacity_timeline, {
+      snippet <- get_code_snippet("capacity_timeline")
+      show_code_modal(
+        session = session,
+        title = "Capacity Utilization Forecast Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Hospitalization Forecast Code Modal
+    observeEvent(input$show_code_hospitalization_forecast, {
+      snippet <- get_code_snippet("hospitalization_forecast")
+      show_code_modal(
+        session = session,
+        title = "Projected Hospitalizations Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
   })
 }

@@ -420,6 +420,350 @@ aboutUI <- function(id) {
           ),
 
           # ================================================================
+          # SECTION 5A: ABOUT THE DATA (Understanding Data Pipeline)
+          # ================================================================
+          div(
+            id = "about-the-data",
+            class = "chart-container mb-4 about-the-data-section",
+
+            h4(class = "about-section-header", icon("info-circle"), "Understanding Our Data"),
+
+            tags$p(
+              style = "color: var(--slate); margin-bottom: 1rem;",
+              "RespiWatch maintains an automated data pipeline connecting to multiple public health APIs. ",
+              "Understanding data currency and availability is essential for proper interpretation."
+            ),
+
+            # Data Acquisition Architecture Diagram - Enhanced Visual
+            h5(
+              style = "color: var(--charcoal); margin-top: 1.5rem; margin-bottom: 1rem;",
+              icon("project-diagram"), " Data Acquisition Architecture"
+            ),
+            div(
+              class = "data-pipeline-diagram",
+              div(
+                class = "pipeline-flow",
+                # Stage 1: Data Sources
+                div(
+                  class = "pipeline-stage stage-sources",
+                  div(
+                    class = "stage-box",
+                    div(class = "stage-icon", icon("cloud-download-alt")),
+                    div(class = "stage-label", "Data Sources"),
+                    div(class = "stage-desc", "Public Health APIs"),
+                    div(
+                      class = "stage-apis",
+                      tags$span(class = "api-tag", "CDC"),
+                      tags$span(class = "api-tag", "WHO"),
+                      tags$span(class = "api-tag", "ECDC"),
+                      tags$span(class = "api-tag", "NWSS"),
+                      tags$span(class = "api-tag", "HHS")
+                    )
+                  )
+                ),
+                div(class = "pipeline-arrow", icon("chevron-right")),
+                # Stage 2: Fetch & Transform
+                div(
+                  class = "pipeline-stage stage-fetch",
+                  div(
+                    class = "stage-box",
+                    div(class = "stage-icon", icon("cogs")),
+                    div(class = "stage-label", "Fetch Scripts"),
+                    div(class = "stage-desc", "Scheduled R scripts pull data daily/weekly"),
+                    div(
+                      class = "stage-apis",
+                      tags$span(class = "api-tag", "httr2"),
+                      tags$span(class = "api-tag", "jsonlite")
+                    )
+                  )
+                ),
+                div(class = "pipeline-arrow", icon("chevron-right")),
+                # Stage 3: Validation
+                div(
+                  class = "pipeline-stage stage-validate",
+                  div(
+                    class = "stage-box",
+                    div(class = "stage-icon", icon("check-double")),
+                    div(class = "stage-label", "Validation"),
+                    div(class = "stage-desc", "Schema checks, date parsing, deduplication"),
+                    div(
+                      class = "stage-apis",
+                      tags$span(class = "api-tag", "ISO codes"),
+                      tags$span(class = "api-tag", "Ranges")
+                    )
+                  )
+                ),
+                div(class = "pipeline-arrow", icon("chevron-right")),
+                # Stage 4: Storage
+                div(
+                  class = "pipeline-stage stage-store",
+                  div(
+                    class = "stage-box",
+                    div(class = "stage-icon", icon("database")),
+                    div(class = "stage-label", "SQLite DB"),
+                    div(class = "stage-desc", "Normalized tables with indexes"),
+                    div(
+                      class = "stage-apis",
+                      tags$span(class = "api-tag", "DBI"),
+                      tags$span(class = "api-tag", "RSQLite")
+                    )
+                  )
+                ),
+                div(class = "pipeline-arrow", icon("chevron-right")),
+                # Stage 5: Dashboard
+                div(
+                  class = "pipeline-stage stage-display",
+                  div(
+                    class = "stage-box",
+                    div(class = "stage-icon", icon("chart-line")),
+                    div(class = "stage-label", "Dashboard"),
+                    div(class = "stage-desc", "Interactive Shiny visualizations"),
+                    div(
+                      class = "stage-apis",
+                      tags$span(class = "api-tag", "Plotly"),
+                      tags$span(class = "api-tag", "Leaflet")
+                    )
+                  )
+                )
+              )
+            ),
+
+            # Data Availability Table
+            h5(
+              style = "color: var(--charcoal); margin-top: 1.5rem; margin-bottom: 1rem;",
+              icon("table"), " Data Currency & Availability"
+            ),
+            div(
+              class = "data-availability-table",
+              tags$table(
+                class = "table table-bordered table-hover",
+                tags$thead(
+                  tags$tr(
+                    tags$th("Data Type"),
+                    tags$th("Source"),
+                    tags$th("Update Frequency"),
+                    tags$th("Current Status")
+                  )
+                ),
+                tags$tbody(
+                  tags$tr(
+                    tags$td("Influenza (H3N2)"),
+                    tags$td("CDC FluView, ECDC"),
+                    tags$td("Weekly"),
+                    tags$td(tags$span(class = "badge bg-success", "Current"))
+                  ),
+                  tags$tr(
+                    tags$td("RSV"),
+                    tags$td("RSV-NET, ECDC"),
+                    tags$td("Weekly"),
+                    tags$td(tags$span(class = "badge bg-success", "Current"))
+                  ),
+                  tags$tr(
+                    tags$td("COVID-19"),
+                    tags$td("CDC, NWSS Wastewater"),
+                    tags$td("Weekly"),
+                    tags$td(tags$span(class = "badge bg-success", "Current"))
+                  ),
+                  tags$tr(
+                    class = "table-warning",
+                    tags$td("Hospital Capacity"),
+                    tags$td("HHS HealthData.gov"),
+                    tags$td("--"),
+                    tags$td(tags$span(class = "badge bg-warning text-dark", "Historical"))
+                  )
+                )
+              )
+            ),
+
+            # Why Some Data Isn't Current
+            h5(
+              style = "color: var(--charcoal); margin-top: 1.5rem; margin-bottom: 1rem;",
+              icon("question-circle"), " Why Some Data Isn't Current"
+            ),
+            div(
+              class = "alert alert-info data-availability-note",
+              tags$p(
+                tags$strong("Public health data availability reflects current reporting requirements."),
+                " Following the end of the COVID-19 public health emergency declaration in May 2023, ",
+                "federal hospital capacity reporting requirements were phased out by May 2024."
+              ),
+              tags$p(
+                class = "mb-0",
+                "Our system maintains the architecture to capture hospital capacity data immediately if ",
+                "reporting resumes. The Healthcare Capacity tab displays the last available reporting period ",
+                "(April 2023 - April 2024) to demonstrate the platform's analytical capabilities with real data."
+              )
+            ),
+            tags$p(
+              style = "color: var(--slate); margin-top: 1rem;",
+              tags$em(
+                "This demonstrates both the capabilities of automated surveillance systems and their ",
+                "dependency on active public health data collection programs."
+              )
+            ),
+
+            # Data Quality & Fallback Cascade - Visual Decision Tree
+            h5(
+              style = "color: var(--charcoal); margin-top: 1.5rem; margin-bottom: 1rem;",
+              icon("shield-alt"), " Data Quality & Fallback Cascade"
+            ),
+            tags$p(
+              style = "color: var(--slate); margin-bottom: 1rem;",
+              "When primary data sources are temporarily unavailable, the platform automatically cascades ",
+              "through alternative signal sources. Each tier provides decreasing certainty but maintains ",
+              "analytical continuity."
+            ),
+            div(
+              class = "fallback-cascade-diagram",
+              div(class = "cascade-title", "Signal Priority Cascade"),
+              div(
+                class = "cascade-flow",
+                # Tier 1: Primary
+                div(
+                  class = "cascade-tier tier-primary",
+                  div(class = "tier-number", "1"),
+                  div(
+                    class = "tier-box",
+                    div(class = "tier-icon", icon("check-circle")),
+                    div(
+                      class = "tier-content",
+                      div(class = "tier-label", "Primary Surveillance"),
+                      div(class = "tier-desc", "Official CDC/WHO/ECDC confirmed case data")
+                    ),
+                    div(class = "tier-confidence", "HIGH")
+                  )
+                ),
+                # Connector
+                div(
+                  class = "cascade-connector",
+                  div(class = "connector-line"),
+                  div(class = "connector-label", "if unavailable"),
+                  div(class = "connector-line")
+                ),
+                # Tier 2: Wastewater
+                div(
+                  class = "cascade-tier tier-wastewater",
+                  div(class = "tier-number", "2"),
+                  div(
+                    class = "tier-box",
+                    div(class = "tier-icon", icon("tint")),
+                    div(
+                      class = "tier-content",
+                      div(class = "tier-label", "Wastewater Surveillance"),
+                      div(class = "tier-desc", "NWSS viral concentrations (leading indicator)")
+                    ),
+                    div(class = "tier-confidence", "HIGH")
+                  )
+                ),
+                # Connector
+                div(
+                  class = "cascade-connector",
+                  div(class = "connector-line"),
+                  div(class = "connector-label", "if unavailable"),
+                  div(class = "connector-line")
+                ),
+                # Tier 3: Syndromic
+                div(
+                  class = "cascade-tier tier-syndromic",
+                  div(class = "tier-number", "3"),
+                  div(
+                    class = "tier-box",
+                    div(class = "tier-icon", icon("stethoscope")),
+                    div(
+                      class = "tier-content",
+                      div(class = "tier-label", "Syndromic Proxy"),
+                      div(class = "tier-desc", "ILI rates, ED visits (correlated signals)")
+                    ),
+                    div(class = "tier-confidence", "MEDIUM")
+                  )
+                ),
+                # Connector
+                div(
+                  class = "cascade-connector",
+                  div(class = "connector-line"),
+                  div(class = "connector-label", "if unavailable"),
+                  div(class = "connector-line")
+                ),
+                # Tier 4: Forecast
+                div(
+                  class = "cascade-tier tier-forecast",
+                  div(class = "tier-number", "4"),
+                  div(
+                    class = "tier-box",
+                    div(class = "tier-icon", icon("chart-line")),
+                    div(
+                      class = "tier-content",
+                      div(class = "tier-label", "Model Projections"),
+                      div(class = "tier-desc", "Bayesian forecasts from recent trends")
+                    ),
+                    div(class = "tier-confidence", "MEDIUM")
+                  )
+                ),
+                # Connector
+                div(
+                  class = "cascade-connector",
+                  div(class = "connector-line"),
+                  div(class = "connector-label", "last resort"),
+                  div(class = "connector-line")
+                ),
+                # Tier 5: Interpolation
+                div(
+                  class = "cascade-tier tier-interpolation",
+                  div(class = "tier-number", "5"),
+                  div(
+                    class = "tier-box",
+                    div(class = "tier-icon", icon("wave-square")),
+                    div(
+                      class = "tier-content",
+                      div(class = "tier-label", "Gap Interpolation"),
+                      div(class = "tier-desc", "Statistical gap-filling for short periods")
+                    ),
+                    div(class = "tier-confidence", "LOW")
+                  )
+                )
+              ),
+              # Legend
+              div(
+                class = "cascade-legend",
+                div(
+                  class = "legend-item",
+                  div(class = "legend-dot high"),
+                  tags$span("HIGH confidence")
+                ),
+                div(
+                  class = "legend-item",
+                  div(class = "legend-dot medium"),
+                  tags$span("MEDIUM confidence")
+                ),
+                div(
+                  class = "legend-item",
+                  div(class = "legend-dot low"),
+                  tags$span("LOW confidence")
+                )
+              )
+            ),
+            tags$p(
+              style = "color: var(--slate); margin-top: 1rem; font-size: 0.9rem;",
+              icon("info-circle", class = "me-1"),
+              tags$em(
+                "When fallback data is displayed, you'll see an information banner indicating the ",
+                "data source and confidence level. This ensures full transparency in all analyses."
+              )
+            ),
+
+            # Link to Learn More
+            div(
+              class = "text-center mt-4",
+              tags$p(
+                class = "text-muted",
+                icon("code-branch"),
+                " For implementation details, see the fetch scripts in ",
+                tags$code("scripts/"), " and data operations in ", tags$code("R/db_operations.R")
+              )
+            )
+          ),
+
+          # ================================================================
           # SECTION 5B: OPEN SOURCE ASSETS (For Developers)
           # ================================================================
           div(

@@ -30,6 +30,12 @@ bayesianForecastUI <- function(id) {
         )
       ),
 
+      # Data Source Callout
+      div(
+        class = "row mb-3",
+        div(class = "col-12", uiOutput(ns("data_source_callout")))
+      ),
+
       # Fallback Banner (shows when using interpolated data)
       div(
         class = "row mb-2",
@@ -77,7 +83,12 @@ bayesianForecastUI <- function(id) {
           class = "col-12",
           div(
             class = "chart-container",
-            h4(class = "section-header", "Bayesian Forecast with Credible Intervals"),
+            chart_header_with_code(
+              title = "Bayesian Forecast with Credible Intervals",
+              ns = ns,
+              chart_id = "bayesian_forecast",
+              subtitle = "Probabilistic predictions from brms/Stan model"
+            ),
             plotlyOutput(ns("bayes_forecast_plot"), height = "450px")
           )
         )
@@ -114,8 +125,12 @@ bayesianForecastUI <- function(id) {
             div(
               class = "d-flex justify-content-between align-items-center mb-3",
               h4(class = "section-header mb-0", icon("microscope"), " Advanced Diagnostics"),
-              actionButton(ns("toggle_diagnostics"), "Show Diagnostic Plots",
-                          class = "btn btn-sm btn-outline-secondary", icon = icon("chart-line"))
+              div(
+                class = "d-flex gap-2 align-items-center",
+                code_transparency_buttons(ns, "bayes_diagnostics"),
+                actionButton(ns("toggle_diagnostics"), "Show Diagnostic Plots",
+                            class = "btn btn-sm btn-outline-secondary", icon = icon("chart-line"))
+              )
             ),
             shinyjs::hidden(
               div(
@@ -144,7 +159,11 @@ bayesianForecastUI <- function(id) {
             div(
               class = "d-flex justify-content-between align-items-center mb-3",
               h4(class = "section-header mb-0", icon("layer-group"), " Ensemble Forecast Comparison"),
-              actionButton(ns("generate_ensemble"), "Generate Ensemble Forecast", class = "btn btn-primary", icon = icon("sync"))
+              div(
+                class = "d-flex gap-2 align-items-center",
+                code_transparency_buttons(ns, "ensemble_comparison"),
+                actionButton(ns("generate_ensemble"), "Generate Ensemble Forecast", class = "btn btn-primary", icon = icon("sync"))
+              )
             ),
             p(class = "text-muted small mb-3", "Compare Rt-renewal, Bayesian, and weighted ensemble forecasts."),
             plotlyOutput(ns("ensemble_comparison_plot"), height = "400px"),
@@ -160,7 +179,12 @@ bayesianForecastUI <- function(id) {
           class = "col-12",
           div(
             class = "chart-container",
-            h4(class = "section-header", "Multi-Pathogen Bayesian Forecast Comparison"),
+            chart_header_with_code(
+              title = "Multi-Pathogen Bayesian Forecast Comparison",
+              ns = ns,
+              chart_id = "bayes_all_pathogens",
+              subtitle = "Compare forecasts across respiratory pathogens"
+            ),
             tableOutput(ns("bayes_all_pathogens_table"))
           )
         )
@@ -191,6 +215,25 @@ bayesianForecastServer <- function(id, timeline_data) {
 
     # Date range filter
     date_filter <- dateRangeControlServer("date_range", timeline_data, default_days = 120)
+
+    # Data Source Callout
+    output$data_source_callout <- renderUI({
+      tryCatch({
+        sources <- get_data_source_metadata()
+        note <- "Forecasts generated using brms/Stan Bayesian models"
+        data_source_callout(sources, note = note)
+      }, error = function(e) {
+        div(
+          class = "data-source-callout",
+          tags$div(
+            class = "callout-header",
+            icon("database"),
+            tags$span("Data Sources", class = "ms-2 fw-semibold")
+          ),
+          tags$small(class = "text-muted", "Surveillance data + brms/Stan Bayesian forecasting")
+        )
+      })
+    })
 
     # Reactive values
     bayes_result <- reactiveVal(NULL)
@@ -580,6 +623,62 @@ bayesianForecastServer <- function(id, timeline_data) {
         else write.csv(data.frame(message = "No forecast available"), file, row.names = FALSE)
       }
     )
+
+    # =========================================================================
+    # CODE TRANSPARENCY MODAL HANDLERS
+    # =========================================================================
+
+    # Bayesian Forecast Code Modal
+    observeEvent(input$show_code_bayesian_forecast, {
+      snippet <- get_code_snippet("bayesian_forecast")
+      show_code_modal(
+        session = session,
+        title = "Bayesian Forecast Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Advanced Diagnostics Code Modal
+    observeEvent(input$show_code_bayes_diagnostics, {
+      snippet <- get_code_snippet("bayes_diagnostics")
+      show_code_modal(
+        session = session,
+        title = "Bayesian Diagnostics Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Ensemble Comparison Code Modal
+    observeEvent(input$show_code_ensemble_comparison, {
+      snippet <- get_code_snippet("ensemble_comparison")
+      show_code_modal(
+        session = session,
+        title = "Ensemble Forecast Comparison Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Multi-Pathogen Comparison Code Modal
+    observeEvent(input$show_code_bayes_all_pathogens, {
+      snippet <- get_code_snippet("bayes_all_pathogens")
+      show_code_modal(
+        session = session,
+        title = "Multi-Pathogen Forecast Comparison Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
 
     return(date_filter)
   })

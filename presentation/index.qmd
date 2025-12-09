@@ -1,0 +1,793 @@
+---
+title: "Voice-to-Code with Claude"
+subtitle: "Building R Projects Through Conversation"
+author: "R Data Community"
+date: "December 2024"
+format:
+  html:
+    page-layout: full
+    toc: false
+    css: custom-theme.css
+    include-after-body: scroll-animations.html
+    theme: none
+    minimal: true
+    embed-resources: false
+---
+
+<div class="slide hero active" id="slide-1">
+<div class="hero-content">
+<h1 class="hero-title reveal">Voice-to-Code with Claude</h1>
+<h3 class="reveal reveal-delay-1">Building R Projects Through Conversation</h3>
+<p class="reveal reveal-delay-2">R Data Community | December 2024</p>
+</div>
+</div>
+
+<div class="slide inverse" id="slide-2">
+<h1 class="reveal">A Confession</h1>
+<div class="two-column">
+<div class="column reveal reveal-left">
+<h2>I'm a Python Person</h2>
+<ul>
+<li>Primary language: Python</li>
+<li>AI/ML engineering background</li>
+<li>Never written serious R code</li>
+<li><strong>Total R experience before this: ~0</strong></li>
+</ul>
+</div>
+<div class="column reveal reveal-right">
+<h2>The Challenge</h2>
+<blockquote>Can Claude and I build high-quality R applications using only voice commands?</blockquote>
+<p><em>Spoiler: Yes.</em></p>
+</div>
+</div>
+</div>
+
+<div class="slide" id="slide-3">
+<h1 class="reveal">What We Built in ~3 Days</h1>
+<div class="timeline">
+<div class="timeline-item">
+<h3>DAY 1</h3>
+<p><strong>Diabetes ML Dashboard</strong> (Shiny)</p>
+<ul>
+<li>253K records</li>
+<li>AUC 0.82</li>
+<li>Fairness Audit</li>
+</ul>
+</div>
+<div class="timeline-item">
+<h3>DAY 2</h3>
+<p><strong>RespiWatch Surveillance</strong> (Shiny)</p>
+<ul>
+<li>10+ APIs</li>
+<li>Real-time Rt</li>
+<li>Bayesian Forecasting</li>
+</ul>
+</div>
+<div class="timeline-item">
+<h3>DAY 3</h3>
+<p><strong>This Presentation</strong> + Quarto Report</p>
+<ul>
+<li>Custom theme</li>
+<li>Live deployment</li>
+</ul>
+</div>
+</div>
+<p class="footnote reveal">All code generated through voice-to-text conversation with Claude Code</p>
+</div>
+
+<div class="slide inverse section-header" id="slide-4">
+<h1 class="hero-title reveal text-fire">Part 1: The Setup</h1>
+<h2 class="reveal reveal-delay-1">Claude Code + R Data Science Skill</h2>
+</div>
+
+<div class="slide" id="slide-5">
+<h1 class="reveal">Why Claude Code?</h1>
+<div class="two-column">
+<div class="column reveal reveal-left">
+<h2>What We Didn't Want</h2>
+<ul>
+<li><strong>No IDE</strong> — not opening VS Code, RStudio, or Posit</li>
+<li><strong>No web tools</strong> — no Jupyter, no Colab, no notebooks</li>
+<li><strong>One agent</strong> — stick with a single coding assistant</li>
+</ul>
+<p style="margin-top: 1.5rem; color: var(--amber);">The constraint: <em>voice only</em></p>
+</div>
+<div class="column reveal reveal-right">
+<h2>Why Opus 4.5?</h2>
+<ul>
+<li>Best all-around coding agent (Chris's opinion)</li>
+<li>Handles complex multi-file changes</li>
+<li>Understands context across conversations</li>
+</ul>
+<p style="margin-top: 1.5rem;"><strong>The challenge:</strong> Never coded R before. R isn't a known AI specialty.</p>
+<p><strong>Solution:</strong> Custom skills + agents + /plan command</p>
+</div>
+</div>
+</div>
+
+<div class="slide" id="slide-6">
+<h1 class="reveal">What is a Skill?</h1>
+<div class="two-column">
+<div class="column reveal reveal-left">
+<h2>Claude Code Architecture</h2>
+<div class="architecture-diagram">
+<div class="arch-box main">Claude Code (Opus 4.5)</div>
+<div class="arch-arrow">↓ loads</div>
+<div class="arch-box skill">Skills (domain knowledge)</div>
+<div class="arch-arrow">↓ spawns</div>
+<div class="arch-box agent">Subagents (specialists)</div>
+</div>
+</div>
+<div class="column reveal reveal-right">
+<h2>Skill Config</h2>
+<pre><code>.claude/skills/r-data-science/
+├── skill.md          # Triggers & patterns
+└── agents/           # Specialist definitions
+    ├── data-wrangler/
+    ├── viz-builder/
+    └── ...</code></pre>
+<p style="margin-top: 1rem;">Skills inject <strong>domain knowledge</strong> into Claude's context — tidyverse patterns, ggplot2 idioms, Shiny architecture.</p>
+</div>
+</div>
+</div>
+
+<div class="slide" id="slide-7">
+<h1 class="reveal">What are Subagents?</h1>
+<div class="two-column">
+<div class="column reveal reveal-left">
+<h2>Main Agent → Specialists</h2>
+<div class="agent-flow">
+<div class="flow-item main-agent">
+<span>🎯</span>
+<p><strong>Main Agent</strong></p>
+<p>Orchestrates tasks</p>
+</div>
+<div class="flow-arrows">→ → →</div>
+<div class="flow-specialists">
+<div class="flow-item specialist">📊 Data Wrangler</div>
+<div class="flow-item specialist">📈 Viz Builder</div>
+<div class="flow-item specialist">🧮 Stats Analyst</div>
+</div>
+</div>
+<p>Subagents run <strong>in parallel</strong> with specialized context</p>
+</div>
+<div class="column reveal reveal-right">
+<h2>Agent Definition</h2>
+<pre><code># agents/viz-builder/agent.md
+name: r-viz-builder
+description: |
+  Create modern ggplot2
+  visualizations...
+
+tools: [Read, Write, Bash, Glob]
+
+system_prompt: |
+  You specialize in ggplot2...</code></pre>
+<p style="margin-top: 1rem;"><strong>Why not a plugin?</strong> Skills are lighter, easier to iterate. Plugins are for distribution.</p>
+</div>
+</div>
+</div>
+
+<div class="slide" id="slide-8">
+<h1 class="reveal">Our R Data Science Skill</h1>
+<div class="two-column">
+<div class="column reveal reveal-left">
+<pre><code>.claude/skills/r-data-science/
+├── skill.md        # Core R patterns
+└── agents/
+    ├── data-wrangler/
+    ├── viz-builder/
+    ├── stats-analyst/
+    ├── dashboard-builder/
+    ├── report-generator/
+    └── data-storyteller/</code></pre>
+</div>
+<div class="column reveal">
+<h2>What It Provides</h2>
+<ul>
+<li><strong>Tidyverse patterns</strong> baked in</li>
+<li><strong>ggplot2 best practices</strong></li>
+<li><strong>Shiny module architecture</strong></li>
+<li><strong>Statistical methods</strong></li>
+<li>Domain-specific knowledge</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="slide" id="slide-9">
+<h1 class="reveal">The 6 Specialized Agents</h1>
+<div class="agent-grid">
+<div class="agent-card">
+<h3>Data Wrangler</h3>
+<p>Clean & reshape</p>
+<p><em>tidyverse pipelines, joins</em></p>
+</div>
+<div class="agent-card">
+<h3>Viz Builder</h3>
+<p>Create visualizations</p>
+<p><em>ggplot2, publication-quality</em></p>
+</div>
+<div class="agent-card">
+<h3>Stats Analyst</h3>
+<p>Statistical analysis</p>
+<p><em>Hypothesis testing, regression</em></p>
+</div>
+<div class="agent-card">
+<h3>Dashboard Builder</h3>
+<p>Interactive apps</p>
+<p><em>Shiny, bslib, reactive patterns</em></p>
+</div>
+<div class="agent-card">
+<h3>Report Generator</h3>
+<p>Documents</p>
+<p><em>Quarto, R Markdown</em></p>
+</div>
+<div class="agent-card">
+<h3>Data Storyteller</h3>
+<p>Communication</p>
+<p><em>Narrative, audience adaptation</em></p>
+</div>
+</div>
+<p class="footnote reveal"><em>Each agent has deep context about R idioms and best practices</em></p>
+</div>
+
+<div class="slide" id="slide-10">
+<h1 class="reveal">The /plan Command</h1>
+<div class="two-column">
+<div class="column reveal reveal-left">
+<pre><code># In terminal, say:
+/plan Build a dashboard that
+shows diabetes risk factors
+with ML model comparison
+
+# Claude Code:
+1. Explores codebase
+2. Identifies patterns
+3. Creates implementation plan
+4. Asks clarifying questions
+5. Executes systematically</code></pre>
+</div>
+<div class="column reveal reveal-right">
+<h2>Why It Matters</h2>
+<ul>
+<li><strong>Structured approach</strong> to complex tasks</li>
+<li><strong>Parallel exploration</strong> with multiple agents</li>
+<li><strong>User approval</strong> before changes</li>
+<li><strong>Clear milestones</strong> tracked</li>
+</ul>
+<p><em>Not just "write code" — it's collaborative architecture</em></p>
+</div>
+</div>
+</div>
+
+<div class="slide" id="slide-11">
+<h1 class="reveal">Voice-to-Code Workflow</h1>
+<div class="workflow-pipeline reveal">
+<div class="pipeline-stage">
+<div class="stage-icon">🎤</div>
+<h3>Voice Input</h3>
+<p>User speaks intent</p>
+</div>
+<div class="pipeline-arrow">→</div>
+<div class="pipeline-stage">
+<div class="stage-icon">🎧</div>
+<h3>SuperWhisper</h3>
+<p>Proxy voice agent</p>
+</div>
+<div class="pipeline-arrow">→</div>
+<div class="pipeline-stage">
+<div class="stage-icon">🦜</div>
+<h3>Parakeet</h3>
+<p>NVIDIA transcription</p>
+</div>
+<div class="pipeline-arrow">→</div>
+<div class="pipeline-stage">
+<div class="stage-icon">✨</div>
+<h3>Claude Sonnet</h3>
+<p>Prompt refinement</p>
+</div>
+<div class="pipeline-arrow">→</div>
+<div class="pipeline-stage">
+<div class="stage-icon">⚡</div>
+<h3>Claude Code</h3>
+<p>Execution agent</p>
+</div>
+</div>
+<blockquote class="reveal" style="margin-top: 2rem;">Multi-agent pipeline: <strong>speak naturally</strong>, get <strong>production-quality code</strong></blockquote>
+<div class="reveal" style="margin-top: 2rem; text-align: center;">
+<img src="images/photos/chris_talking_computer.jpeg" alt="Voice-to-code in action" style="max-height: 35vh; border-radius: 12px; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);">
+</div>
+</div>
+
+<div class="slide inverse section-header" id="slide-12">
+<h1 class="hero-title reveal">Part 2: Diabetes Dashboard</h1>
+<h2 class="reveal reveal-delay-1">ML Pipeline + Interactive Analysis</h2>
+</div>
+
+<div class="slide" id="slide-13">
+<h1 class="reveal">Why This Demo?</h1>
+<div class="two-column">
+<div class="column reveal reveal-left">
+<h2>The Goal</h2>
+<p>Quick demo to get our footing with R.</p>
+<p>Could we execute a <strong>complete ML pipeline</strong>?</p>
+<ul>
+<li>Data acquisition</li>
+<li>Model training</li>
+<li>Evaluation & interpretation</li>
+<li>Results compilation</li>
+</ul>
+</div>
+<div class="column reveal reveal-right">
+<h2>The Constraints</h2>
+<div class="constraint-list">
+<div class="constraint">❌ No IDE</div>
+<div class="constraint">❌ No Jupyter notebooks</div>
+<div class="constraint">❌ No Posit/RStudio</div>
+<div class="constraint">✅ Voice + Claude Code only</div>
+</div>
+<p style="margin-top: 1.5rem;">Brief chat with the agent → decided on CDC BRFSS diabetes dataset</p>
+</div>
+</div>
+</div>
+
+<div class="slide" id="slide-14">
+<h1 class="reveal">The Data: CDC BRFSS 2015</h1>
+<div class="two-column">
+<div class="column reveal reveal-left">
+<h2>Dataset Overview</h2>
+<ul>
+<li><strong>253,680 survey responses</strong></li>
+<li><strong>21 health indicators</strong></li>
+<li>Binary outcome: Diabetes (0/1/2)</li>
+<li>Features: BMI, BP, cholesterol, smoking, etc.</li>
+</ul>
+</div>
+<div class="column reveal reveal-right">
+<h2>Data Pipeline</h2>
+<pre><code>scripts/
+├── 11_clean_diabetes.R
+├── 12_eda_diabetes.R
+├── 13_feature_engineering.R
+├── 14_modeling.R
+├── 15_model_evaluation.R
+├── 20_causal_inference.R
+├── 21_anomaly_detection.R
+├── 22_fairness_audit.R
+└── 23_external_data_fusion.R</code></pre>
+</div>
+</div>
+</div>
+
+<div class="slide" id="slide-15">
+<h1 class="reveal">The Result</h1>
+<div class="two-column">
+<div class="column reveal reveal-left">
+<h2>What We Got</h2>
+<div class="metrics-row compact">
+<div class="metric-card small" style="padding: 2rem;">
+<span class="metric-value" style="font-size: 4rem;">0.82</span>
+<p>AUC-ROC</p>
+</div>
+<div class="metric-card small" style="padding: 2rem;">
+<span class="metric-value" style="font-size: 4rem;">~1hr</span>
+<p>Total Time</p>
+</div>
+</div>
+<p style="margin-top: 1rem;">A working ML pipeline with interpretable results — built entirely through voice.</p>
+</div>
+<div class="column reveal reveal-right">
+<h2>What We Learned</h2>
+<p>The agent was able to:</p>
+<ul>
+<li><strong>Search the web</strong> for datasets across multiple sources</li>
+<li><strong>Acquire & download</strong> the data</li>
+<li><strong>Data preparation</strong> & wrangling</li>
+<li><strong>Feature engineering</strong></li>
+<li><strong>Build & run</strong> the model</li>
+<li><strong>Validate</strong> the model</li>
+<li><strong>Show results</strong> with interpretation</li>
+</ul>
+<p style="margin-top: 1rem;"><strong>Full ML pipeline in about an hour.</strong></p>
+</div>
+</div>
+</div>
+
+<div class="slide" id="slide-16">
+<h1 class="reveal">Could We Do a Fairness Audit?</h1>
+<div class="two-column">
+<div class="column reveal reveal-left">
+<h2>The Question</h2>
+<blockquote class="capability-question">Can the AI agent conduct a proper fairness audit of the model?</blockquote>
+<p style="margin-top: 1.5rem; font-size: 1.3em; color: var(--emerald);"><strong>Answer: Yes.</strong></p>
+</div>
+<div class="column reveal reveal-right">
+<h2>What It Found</h2>
+<div class="fairness-summary">
+<div class="fairness-item">Age Groups: <strong>8 disparities</strong></div>
+<div class="fairness-item">Income Levels: <strong>6 disparities</strong></div>
+<div class="fairness-item">Education: <strong>4 disparities</strong></div>
+<div class="fairness-item">Sex/Gender: <strong>2 disparities</strong></div>
+</div>
+<p style="margin-top: 1rem;">20+ disparity flags — capability demonstrated.</p>
+</div>
+</div>
+</div>
+
+<div class="slide" id="slide-17">
+<h1 class="reveal">We Added More Data</h1>
+<div class="two-column">
+<div class="column reveal reveal-left">
+<h2>External Data Sources</h2>
+<div class="data-source-card">
+<h3>CDC PLACES</h3>
+<p>County Health Data</p>
+<ul>
+<li>15 health indicators from 2,956 counties</li>
+<li>Diabetes prevalence, obesity, BP, cholesterol</li>
+</ul>
+</div>
+<div class="data-source-card">
+<h3>USDA Food Environment Atlas</h3>
+<p>Food access & socioeconomic indicators</p>
+<ul>
+<li>SNAP/WIC participation rates</li>
+<li>Food insecurity measures</li>
+</ul>
+</div>
+</div>
+<div class="column reveal reveal-right">
+<h2>What This Enabled</h2>
+<ul>
+<li><strong>Environmental context</strong> for individual risk</li>
+<li><strong>Multi-level modeling</strong> — 97% individual / 3% environmental variance</li>
+<li><strong>Geographic disparity analysis</strong></li>
+<li><strong>Cross-level interactions</strong> (e.g., BMI × county food access)</li>
+</ul>
+<p class="footnote" style="margin-top: 2rem;">Agent searched, downloaded, and fused data from multiple public APIs.</p>
+</div>
+</div>
+</div>
+
+<div class="slide" id="slide-18">
+<h1 class="reveal">The Quarto Report</h1>
+<div class="two-column">
+<div class="column reveal reveal-left">
+<h2>Comprehensive Documentation</h2>
+<p>We asked the agent to build a full analysis report.</p>
+<div class="report-highlights">
+<div class="report-item">Causal Analysis: <strong>42% preventable</strong> via BP control</div>
+<div class="report-item">Risk Prediction: <strong>0.82 AUC</strong></div>
+<div class="report-item">Fairness Audit: <strong>20+ disparity flags</strong></div>
+<div class="report-item">Multi-level Analysis: individual vs environmental factors</div>
+</div>
+</div>
+<div class="column reveal reveal-right">
+<h2>The Result</h2>
+<p>A complete Quarto document with executive summary, methodology, findings, and visualizations.</p>
+<p style="margin-top: 1.5rem;">This led to a new thought:</p>
+<blockquote>"What if we built a risk prediction tool?"</blockquote>
+<a href="https://crypticpy.github.io/Rdata/" class="dashboard-link" target="_blank" style="margin-top: 1rem;">
+View Quarto Report →
+</a>
+</div>
+</div>
+</div>
+
+<div class="slide" id="slide-19">
+<h1 class="reveal">Could We Go Further?</h1>
+<div class="narrative-text reveal">
+<p class="lead-text">The model didn't take long.</p>
+<p>So we asked a new question:</p>
+<blockquote class="big-question">Could we build a visual communication piece?<br>A dashboard to present the results?</blockquote>
+<p style="margin-top: 2rem;">Still voice-only. Still no IDE. Just the agent.</p>
+</div>
+</div>
+
+<div class="slide" id="slide-20">
+<h1 class="reveal">The Diabetes Dashboard</h1>
+<div class="two-column">
+<div class="column reveal reveal-left">
+<img src="images/diabetes/diabetes_dashbaord_mainpage.png" alt="Diabetes Dashboard" style="max-height: 55vh; border-radius: 12px; box-shadow: 0 15px 40px -15px rgba(0,0,0,0.5);">
+</div>
+<div class="column reveal reveal-right">
+<div class="dashboard-showcase">
+<h2>Built with Voice + Agent</h2>
+<p>ML model → Dashboard → Visual communication</p>
+<p><strong>All through voice commands.</strong> No traditional toolsets.</p>
+<a href="https://huggingface.co/spaces/BeyondEarth/diabetes-dashboard" class="dashboard-link" target="_blank">
+View Live Dashboard →
+</a>
+</div>
+</div>
+</div>
+</div>
+
+<div class="slide inverse section-header" id="slide-21">
+<h1 class="hero-title reveal">Part 3: RespiWatch</h1>
+<h2 class="reveal reveal-delay-1">Multi-Pathogen Surveillance Platform</h2>
+</div>
+
+<div class="slide" id="slide-22">
+<h1 class="reveal">What If We Could Track Everything?</h1>
+<div class="narrative-text reveal">
+<p class="lead-text">The diabetes dashboard came together faster than expected.</p>
+<p>So we asked: <em>what about live data?</em></p>
+<p>H3N2 was making headlines. Could we build something like those COVID dashboards we all remember — but for <strong>multiple pathogens</strong>?</p>
+<p>Without opening a browser, we asked our agents to discover what data sources existed.</p>
+<p class="reveal-delay-1" style="color: var(--amber); font-size: 1.3em; margin-top: 2rem;">What we found... was complicated.</p>
+<div class="reveal" style="margin-top: 2rem;">
+<img src="images/respiwatch/overview.png" alt="RespiWatch Dashboard" style="max-height: 40vh; border-radius: 12px; box-shadow: 0 15px 40px -15px rgba(0,0,0,0.5);">
+</div>
+</div>
+</div>
+
+<div class="slide" id="slide-23">
+<h1 class="reveal">We Started Searching for Data</h1>
+<div class="discovery-journey reveal">
+<div class="journey-step failed">
+<span class="step-icon">❌</span>
+<div class="step-content">
+<h3>First attempt: CDC COVID APIs</h3>
+<p>Ended May 2023</p>
+</div>
+</div>
+<div class="journey-step failed">
+<span class="step-icon">❌</span>
+<div class="step-content">
+<h3>Second attempt: Hospital Reporting</h3>
+<p>Voluntary, incomplete coverage</p>
+</div>
+</div>
+<div class="journey-step failed">
+<span class="step-icon">❌</span>
+<div class="step-content">
+<h3>Third attempt: RSV Tracking</h3>
+<p>Barely exists as a system</p>
+</div>
+</div>
+<div class="journey-step success">
+<span class="step-icon">💡</span>
+<div class="step-content">
+<h3>But then: Wastewater Surveillance</h3>
+<p>Doesn't depend on people getting tested</p>
+</div>
+</div>
+</div>
+<p class="reveal" style="font-size: 2.5rem; margin-top: 2rem; color: var(--gold); font-weight: 600; text-align: center;">This gave us an idea...</p>
+</div>
+
+<div class="slide" id="slide-24">
+<h1 class="reveal">The Fallback Revelation</h1>
+<div class="two-column">
+<div class="column reveal reveal-left">
+<h2>Beyond the Big 5</h2>
+<p>It wasn't just about wastewater. We realized there were sources beyond WHO, CDC, ECDC...</p>
+<ul>
+<li>🏛️ <strong>State & local sources</strong></li>
+<li>🚿 <strong>Wastewater surveillance</strong></li>
+<li>📊 <strong>Alternative data providers</strong></li>
+</ul>
+</div>
+<div class="column reveal">
+<h2>The New Question</h2>
+<blockquote>What if we could pull <em>all of them</em> together?<br><br>Could the AI agent aggregate and fallback automatically?</blockquote>
+<p>Not just "use wastewater" — but <strong>dynamically adapt</strong> when any source fails.</p>
+</div>
+</div>
+</div>
+
+<div class="slide" id="slide-25">
+<h1 class="reveal">Building the Fallback System</h1>
+<div class="fallback-flowchart reveal">
+<div class="fallback-row">
+<div class="fallback-source priority-1">
+<span class="source-icon">🏥</span>
+<div class="fallback-source-text">
+<h3>CDC Official</h3>
+<p>FluView, NREVSS, COVID-NET</p>
+</div>
+<span class="priority-badge">Priority 1</span>
+</div>
+<div class="fallback-arrow">↓</div>
+<div class="fallback-label">If unavailable</div>
+</div>
+<div class="fallback-row">
+<div class="fallback-source priority-2">
+<span class="source-icon">🌍</span>
+<div class="fallback-source-text">
+<h3>WHO Global</h3>
+<p>FluNet, Global surveillance</p>
+</div>
+<span class="priority-badge">Priority 2</span>
+</div>
+<div class="fallback-arrow">↓</div>
+<div class="fallback-label">If unavailable</div>
+</div>
+<div class="fallback-row">
+<div class="fallback-source priority-3">
+<span class="source-icon">🇪🇺</span>
+<div class="fallback-source-text">
+<h3>ECDC European</h3>
+<p>Regional surveillance data</p>
+</div>
+<span class="priority-badge">Priority 3</span>
+</div>
+<div class="fallback-arrow">↓</div>
+<div class="fallback-label">If unavailable</div>
+</div>
+<div class="fallback-row">
+<div class="fallback-source priority-4">
+<span class="source-icon">🚿</span>
+<div class="fallback-source-text">
+<h3>Wastewater (NWSS)</h3>
+<p>Most reliable baseline</p>
+</div>
+<span class="priority-badge">Fallback</span>
+</div>
+</div>
+</div>
+<p class="footnote reveal">Transparent to users — the dashboard just works</p>
+</div>
+
+<div class="slide" id="slide-26">
+<h1 class="reveal">10+ APIs Working Together</h1>
+<div class="api-showcase reveal">
+<div class="api-group">
+<h3>🇺🇸 CDC Sources</h3>
+<div class="api-tags">
+<span class="api-tag">FluView</span>
+<span class="api-tag">NREVSS</span>
+<span class="api-tag">COVID-NET</span>
+<span class="api-tag">RSV-NET</span>
+</div>
+</div>
+<div class="api-group">
+<h3>🌐 Global Sources</h3>
+<div class="api-tags">
+<span class="api-tag">WHO FluNet</span>
+<span class="api-tag">ECDC TESSy</span>
+<span class="api-tag">Our World in Data</span>
+</div>
+</div>
+<div class="api-group">
+<h3>🔬 Alternative Sources</h3>
+<div class="api-tags">
+<span class="api-tag">NWSS Wastewater</span>
+<span class="api-tag">Vaccination APIs</span>
+<span class="api-tag">Healthcare Capacity</span>
+</div>
+</div>
+</div>
+<blockquote class="reveal" style="margin-top: 2rem;">The result of organic discovery — not a predetermined list</blockquote>
+</div>
+
+<div class="slide" id="slide-27">
+<h1 class="reveal">Rt Estimation & Bayesian Forecasting</h1>
+<div class="two-column">
+<div class="column reveal reveal-left">
+<h2>Real-Time Analysis</h2>
+<pre><code class="r"># EpiEstim for Rt
+rt_result <- estimate_R(
+  incid = cases,
+  method = "parametric_si",
+  config = make_config(
+    mean_si = 4.7,
+    std_si = 2.9
+  )
+)
+
+# Bayesian forecasting
+forecast <- prophet(
+  df,
+  seasonality.mode = "multiplicative"
+)</code></pre>
+<p class="footnote reveal" style="margin-top: 1rem; font-size: 1.1rem; color: var(--emerald);">That's it. ~15 lines for real-time Rt estimation.</p>
+</div>
+<div class="column reveal">
+<h2>What This Enables</h2>
+<ul>
+<li>📈 <strong>Transmission dynamics</strong> — is it growing or shrinking?</li>
+<li>🔮 <strong>14-day forecasts</strong> with uncertainty bounds</li>
+<li>🌊 <strong>Wave detection</strong> — automatic peak identification</li>
+<li>⚠️ <strong>Anomaly alerts</strong> — unusual patterns flagged</li>
+</ul>
+<div class="reveal" style="margin-top: 1rem;">
+<img src="images/respiwatch/code-modal.png" alt="RespiWatch Code Modal" style="max-height: 30vh; border-radius: 8px; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);">
+</div>
+<p class="footnote">All built on established epidemiological methods</p>
+</div>
+</div>
+</div>
+
+<div class="slide" id="slide-28">
+<h1 class="reveal">Yes — All of This Was R</h1>
+<div class="two-column">
+<div class="column reveal reveal-left">
+<h2>What We Built</h2>
+<ul>
+<li>ML pipeline + fairness audit</li>
+<li>Two Shiny dashboards</li>
+<li>10+ API integrations</li>
+<li>Quarto reports</li>
+<li><strong>Even this presentation</strong> (Quarto + CSS)</li>
+</ul>
+</div>
+<div class="column reveal reveal-right">
+<h2>How We Built It</h2>
+<ul>
+<li>Claude Code + Opus 4.5</li>
+<li>Custom R skill + 6 agents</li>
+<li><strong>~99% voice commands</strong></li>
+<li>Zero IDE. Zero notebooks.</li>
+</ul>
+</div>
+</div>
+<div class="claude-note reveal" style="margin-top: 2rem; padding: 1.5rem; background: rgba(139, 92, 246, 0.15); border-left: 4px solid var(--violet); border-radius: 8px;">
+<p style="font-style: italic; color: var(--pearl); margin-bottom: 0.5rem;">"Thanks for welcoming an AI into your workflow. I hope I made the work a bit lighter — and maybe a bit more fun."</p>
+<p style="text-align: right; color: var(--violet); font-weight: 600; margin: 0;">— Claude</p>
+</div>
+</div>
+
+<div class="slide" id="slide-29">
+<h1 class="reveal">The Full R Workflow</h1>
+<div class="quarto-preview reveal">
+<div class="report-card">
+<div class="report-icon">📑</div>
+<h2>Quarto Report</h2>
+<p>Comprehensive analysis documentation</p>
+<a href="https://crypticpy.github.io/Rdata/" class="report-link" target="_blank">
+crypticpy.github.io/Rdata
+</a>
+</div>
+<div class="workflow-summary">
+<p>Data Pipeline → Analysis Scripts → Shiny Dashboard → Quarto Report</p>
+<p><em>All in R. All version-controlled. All reproducible.</em></p>
+</div>
+</div>
+</div>
+
+<div class="slide inverse section-header" id="slide-30">
+<h1 class="hero-title reveal">Part 4: Reflections</h1>
+<h2 class="reveal reveal-delay-1">AI as Team Members</h2>
+</div>
+
+<div class="slide" id="slide-31">
+<h1 class="reveal">Welcome to the Future</h1>
+<div class="big-quote reveal" style="text-align: left; margin-left: 8rem;">
+<blockquote style="border: none; padding-left: 0; color: var(--emerald); font-size: 1.8rem; font-weight: 600;">Master the conversation.</blockquote>
+<blockquote style="border: none; padding-left: 0; color: var(--emerald); font-size: 1.8rem; font-weight: 600;">Don't prompt — converse.</blockquote>
+<blockquote style="border: none; padding-left: 0; color: var(--emerald); font-size: 1.8rem; font-weight: 600;">Don't wait to be ready. Start building.</blockquote>
+</div>
+</div>
+
+<div class="slide" id="slide-32">
+<h1 class="reveal">Try It Yourself</h1>
+<div class="two-column">
+<div class="column reveal reveal-left">
+<h2>Resources</h2>
+<ul>
+<li><strong>Claude Code</strong>: claude.ai/code</li>
+<li><strong>R Data Science Skill</strong>: In this repo</li>
+<li><strong>Voice Input</strong>: <a href="https://superwhisper.com/" target="_blank">SuperWhisper</a></li>
+<li><strong>Quarto</strong>: <code>install.packages("quarto")</code></li>
+</ul>
+</div>
+<div class="column reveal">
+<h2>Links</h2>
+<ul>
+<li><a href="https://github.com/CrypticPy/Rdata" target="_blank">GitHub: Rdata Repository</a></li>
+<li><a href="https://crypticpy.github.io/Rdata/" target="_blank">Quarto Report</a></li>
+<li><a href="https://huggingface.co/spaces/BeyondEarth/diabetes-dashboard" target="_blank">Diabetes Dashboard</a></li>
+<li>RespiWatch: HF Space</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="slide hero final" id="slide-33">
+<h1 class="hero-title reveal">Questions?</h1>
+<h3 class="reveal reveal-delay-1">Built with R, Quarto, and voice</h3>
+<p class="reveal reveal-delay-2">github.com/CrypticPy/Rdata</p>
+</div>

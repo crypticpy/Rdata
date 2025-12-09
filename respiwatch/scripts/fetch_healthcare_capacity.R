@@ -173,46 +173,79 @@ standardize_nwss_data <- function(df) {
 # HHS HEALTHCARE CAPACITY FETCHER
 # =============================================================================
 
-#' Fetch healthcare capacity data from HHS
-#' @param limit Maximum records to fetch
+#' Fetch healthcare capacity data from HHS using Socrata API
+#' Uses aggregation to get national totals from state-level data
 #' @param weeks_back Number of weeks of historical data
 #' @return Data frame with healthcare capacity data
-fetch_hhs_capacity <- function(limit = 5000, weeks_back = 12) {
-  message("Fetching HHS healthcare capacity data...")
+fetch_hhs_capacity <- function(limit = 5000, weeks_back = 52) {
+  message("Fetching REAL HHS healthcare capacity data from HealthData.gov...")
 
-  # HHS Protect hospital data requires different approach
-  # Using the weekly hospitalization endpoint
+  # Use Socrata API with aggregation query to get national totals
+  # This is the same endpoint that works: g62h-syeh.json
+  base_url <- "https://healthdata.gov/resource/g62h-syeh.json"
 
-  # Try to fetch hospital utilization data
+  # Build SoQL query for national aggregation
+  params <- list(
+    `$select` = paste(
+      "date",
+      "sum(inpatient_beds) as total_hospital_beds",
+      "sum(inpatient_beds_used) as occupied_hospital_beds",
+      "sum(total_staffed_adult_icu_beds) as total_icu_beds",
+      "sum(staffed_adult_icu_bed_occupancy) as occupied_icu_beds",
+      sep = ","
+    ),
+    `$group` = "date",
+    `$order` = "date DESC",
+    `$limit` = as.character(min(limit, weeks_back * 7))
+  )
+
   data <- tryCatch({
-    fetch_hhs_healthdata(
-      view_id = "g62h-syeh",  # Hospital Utilization
-      limit = limit
-    )
+    fetch_api_data(base_url, params = params, cache_hours = 6)
   }, error = function(e) {
     log_warning(sprintf("HHS hospital data fetch failed: %s", e$message), category = "api")
-    data.frame()
+    NULL
   })
 
-  if (nrow(data) == 0) {
-    message("No HHS hospital data returned, generating synthetic capacity data")
-    return(generate_synthetic_capacity(weeks_back))
+  if (is.null(data) || length(data) == 0) {
+    warning("HHS API returned no data. Hospital capacity data unavailable.")
+    return(data.frame())
   }
 
-  # Standardize the data - use synthetic if parsing fails
-  result <- tryCatch({
-    std_data <- standardize_hhs_capacity(data)
-    if (nrow(std_data) == 0 || all(is.na(std_data$observation_date))) {
-      message("HHS data parsing failed, generating synthetic capacity data")
-      generate_synthetic_capacity(weeks_back)
-    } else {
-      std_data
-    }
-  }, error = function(e) {
-    message(sprintf("HHS standardization error: %s, using synthetic", e$message))
-    generate_synthetic_capacity(weeks_back)
-  })
+  # Convert to data frame if list
+  df <- if (is.data.frame(data)) data else bind_rows(data)
 
+  if (nrow(df) == 0) {
+    warning("HHS API returned empty dataset. Hospital capacity data unavailable.")
+    return(data.frame())
+  }
+
+  message(sprintf("Fetched %d days of REAL hospital capacity data from HHS", nrow(df)))
+
+  # Standardize the data
+  result <- df |>
+    mutate(
+      observation_date = as.Date(substr(date, 1, 10)),
+      total_hospital_beds = as.numeric(total_hospital_beds),
+      occupied_hospital_beds = as.numeric(occupied_hospital_beds),
+      total_icu_beds = as.numeric(total_icu_beds),
+      occupied_icu_beds = as.numeric(occupied_icu_beds),
+      hospital_occupancy_pct = round(occupied_hospital_beds / total_hospital_beds * 100, 1),
+      icu_occupancy_pct = round(occupied_icu_beds / total_icu_beds * 100, 1),
+      capacity_stress = case_when(
+        icu_occupancy_pct >= 90 ~ "critical",
+        icu_occupancy_pct >= 75 ~ "high",
+        icu_occupancy_pct >= 50 ~ "moderate",
+        TRUE ~ "low"
+      ),
+      iso_code = "USA"
+    ) |>
+    filter(!is.na(observation_date)) |>
+    select(observation_date, iso_code, total_hospital_beds, occupied_hospital_beds,
+           hospital_occupancy_pct, total_icu_beds, occupied_icu_beds,
+           icu_occupancy_pct, capacity_stress) |>
+    arrange(desc(observation_date))
+
+  message(sprintf("Processed %d records with national hospital capacity", nrow(result)))
   result
 }
 
@@ -449,10 +482,13 @@ insert_wastewater_surveillance <- function(data) {
 }
 
 #' Insert healthcare capacity data into database
-#' @param data Standardized capacity data frame
+#' @param data Standardized capacity data frame with hospital AND ICU data
 #' @return Number of records inserted
 insert_healthcare_capacity <- function(data) {
-  if (nrow(data) == 0) return(0)
+  if (nrow(data) == 0) {
+    message("No healthcare capacity data to insert")
+    return(0)
+  }
 
   conn <- get_db_connection()
 
@@ -477,40 +513,45 @@ insert_healthcare_capacity <- function(data) {
     source_id <- dbGetQuery(conn, "SELECT source_id FROM data_sources WHERE source_code = 'HHS_PROTECT'")$source_id
   }
 
-  # Prepare insert data
+  # Prepare insert data with BOTH hospital AND ICU columns
   insert_data <- data |>
     mutate(
       country_id = country_id,
       source_id = source_id,
       fetch_timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S")
-    ) |>
-    select(country_id, observation_date, total_icu_beds, occupied_icu_beds,
-           icu_occupancy_pct, capacity_stress, source_id, fetch_timestamp)
+    )
 
   # Delete existing records for dates we're about to insert
   dates_to_insert <- unique(format(insert_data$observation_date, "%Y-%m-%d"))
   if (length(dates_to_insert) > 0) {
-    dbExecute(conn, sprintf(
+    deleted <- dbExecute(conn, sprintf(
       "DELETE FROM healthcare_capacity WHERE country_id = %d AND observation_date IN (%s)",
       country_id,
       paste(sprintf("'%s'", dates_to_insert), collapse = ", ")
     ))
+    if (deleted > 0) {
+      message(sprintf("Deleted %d existing records for update", deleted))
+    }
   }
 
-  # Insert new data
+  # Insert new data with FULL hospital capacity info
   records_inserted <- 0
   for (i in seq_len(nrow(insert_data))) {
     row <- insert_data[i, ]
     tryCatch({
       dbExecute(conn, sprintf(
         "INSERT INTO healthcare_capacity
-         (country_id, observation_date, total_icu_beds, occupied_icu_beds,
+         (country_id, observation_date, total_hospital_beds, occupied_hospital_beds,
+          hospital_occupancy_pct, total_icu_beds, occupied_icu_beds,
           icu_occupancy_pct, capacity_stress, source_id, fetch_timestamp)
-         VALUES (%d, '%s', %s, %s, %s, '%s', %d, '%s')",
+         VALUES (%d, '%s', %s, %s, %s, %s, %s, %s, '%s', %d, '%s')",
         row$country_id,
         format(row$observation_date, "%Y-%m-%d"),
-        ifelse(is.na(row$total_icu_beds), "NULL", row$total_icu_beds),
-        ifelse(is.na(row$occupied_icu_beds), "NULL", row$occupied_icu_beds),
+        ifelse(is.na(row$total_hospital_beds), "NULL", as.integer(row$total_hospital_beds)),
+        ifelse(is.na(row$occupied_hospital_beds), "NULL", as.integer(row$occupied_hospital_beds)),
+        ifelse(is.na(row$hospital_occupancy_pct), "NULL", row$hospital_occupancy_pct),
+        ifelse(is.na(row$total_icu_beds), "NULL", as.integer(row$total_icu_beds)),
+        ifelse(is.na(row$occupied_icu_beds), "NULL", as.integer(row$occupied_icu_beds)),
         ifelse(is.na(row$icu_occupancy_pct), "NULL", row$icu_occupancy_pct),
         row$capacity_stress,
         row$source_id,
@@ -527,7 +568,7 @@ insert_healthcare_capacity <- function(data) {
 
   close_db_connection(conn)
 
-  message(sprintf("Inserted %d healthcare capacity records", records_inserted))
+  message(sprintf("Inserted %d REAL healthcare capacity records from HHS", records_inserted))
   records_inserted
 }
 
@@ -590,17 +631,18 @@ fetch_all_healthcare_capacity <- function(use_synthetic = FALSE, weeks_back = 52
     total_records <- total_records + wastewater_count
   }
 
-  # Fetch healthcare capacity data
+  # Fetch healthcare capacity data - REAL DATA ONLY
+  # Note: HHS stopped requiring hospital reporting after May 2024
+  # Historical data is still available through April 2024
   capacity_data <- if (use_synthetic) {
-    generate_synthetic_capacity(min(weeks_back, 12))
+    warning("Synthetic mode requested but NOT generating fake hospital data. Fetching historical HHS data instead.")
+    fetch_hhs_capacity(limit = 5000, weeks_back = weeks_back)
   } else {
-    data <- fetch_hhs_capacity(limit = 5000, weeks_back = min(weeks_back, 12))
-    if (nrow(data) == 0) {
-      generate_synthetic_capacity(min(weeks_back, 12))
-    } else {
-      data
-    }
+    fetch_hhs_capacity(limit = 5000, weeks_back = weeks_back)
   }
+
+  # NO synthetic fallback - if HHS API fails, we have no data
+  # This is intentional: we do NOT generate fake hospital capacity numbers
 
   if (nrow(capacity_data) > 0) {
     capacity_count <- insert_healthcare_capacity(capacity_data)

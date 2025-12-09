@@ -73,6 +73,12 @@ globalOverviewUI <- function(id, countries_df = NULL) {
         )
       ),
       
+      # Data Source Callout - Show data currency
+      div(
+        class = "row mb-3",
+        div(class = "col-12", uiOutput(ns("data_source_callout")))
+      ),
+
       # Dynamic KPI Cards
       uiOutput(ns("pathogen_kpis")),
       
@@ -85,7 +91,12 @@ globalOverviewUI <- function(id, countries_df = NULL) {
           class = "col-lg-8",
           div(
             class = "map-container",
-            h4(class = "section-header", "Global Outbreak Distribution"),
+            chart_header_with_code(
+              title = "Global Outbreak Distribution",
+              ns = ns,
+              chart_id = "global_map",
+              subtitle = "Geographic spread of respiratory pathogens"
+            ),
             leafletOutput(ns("global_map"), height = "500px"),
             
             # Animation Controls Panel
@@ -172,7 +183,12 @@ globalOverviewUI <- function(id, countries_df = NULL) {
           # Timeline Chart
           div(
             class = "chart-container mt-4",
-            h4(class = "section-header", "Outbreak Progression Timeline"),
+            chart_header_with_code(
+              title = "Outbreak Progression Timeline",
+              ns = ns,
+              chart_id = "timeline_chart",
+              subtitle = "Positivity rates over time with confidence intervals"
+            ),
             plotlyOutput(ns("timeline_chart"), height = "350px")
           ),
           
@@ -185,11 +201,15 @@ globalOverviewUI <- function(id, countries_df = NULL) {
             div(
               class = "d-flex justify-content-between align-items-center mb-3",
               h4(class = "section-header mb-0", icon("water"), " Wave Propagation Analysis"),
-              actionButton(
-                ns("run_wave_analysis"),
-                "Refresh",
-                icon = icon("arrows-rotate"),
-                class = "btn btn-outline-primary btn-sm"
+              div(
+                class = "d-flex gap-2 align-items-center",
+                code_transparency_buttons(ns, "wave_propagation"),
+                actionButton(
+                  ns("run_wave_analysis"),
+                  "Refresh",
+                  icon = icon("arrows-rotate"),
+                  class = "btn btn-outline-primary btn-sm"
+                )
               )
             ),
 
@@ -201,16 +221,10 @@ globalOverviewUI <- function(id, countries_df = NULL) {
               div(class = "col-md-4", disease_wave_card("COVID-19", "COVID19", "#7C3AED", ns)),
               div(class = "col-md-4", disease_wave_card("H5N1 (Avian)", "H5N1", "#DC2626", ns)),
               div(class = "col-md-4", disease_wave_card("H5N5 (Avian)", "H5N5", "#EA580C", ns))
-            ),
-
-            # Wave analysis details/status
-            div(
-              class = "wave-analysis-status mt-3",
-              uiOutput(ns("wave_analysis_output"))
             )
           )
         ),
-        
+
         # Right Column - Status & Alerts
         div(
           class = "col-lg-4",
@@ -242,6 +256,25 @@ globalOverviewServer <- function(id, timeline_data, world_countries, map_snapsho
     
     # Date range filter
     global_date_filter <- dateRangeControlServer("date_range", timeline_data)
+
+    # Data Source Callout - Show data sources and currency
+    output$data_source_callout <- renderUI({
+      tryCatch({
+        sources <- get_data_source_metadata()
+        data_source_callout(sources)
+      }, error = function(e) {
+        # Fallback if database query fails
+        div(
+          class = "data-source-callout",
+          tags$div(
+            class = "callout-header",
+            icon("database"),
+            tags$span("Data Sources", class = "ms-2 fw-semibold")
+          ),
+          tags$small(class = "text-muted", "Surveillance data from CDC, ECDC, and WHO")
+        )
+      })
+    })
     
     # Create reactive for world map data based on selected pathogen
     world_map_data_reactive <- reactive({
@@ -889,7 +922,7 @@ globalOverviewServer <- function(id, timeline_data, world_countries, map_snapsho
             !result$status %in% c("success", "velocity_only") ||
             is.null(result$velocity) ||
             is.na(result$velocity$velocity_km_day)) {
-          return(span("--", class = "text-muted"))
+          return(span("No data", class = "text-muted", style = "font-size: 0.75rem;"))
         }
         span(sprintf("%.0f", result$velocity$velocity_km_day))
       })
@@ -902,7 +935,7 @@ globalOverviewServer <- function(id, timeline_data, world_countries, map_snapsho
         if (is.null(result) ||
             !result$status %in% c("success", "velocity_only") ||
             is.null(result$velocity)) {
-          return(span("--", class = "text-muted"))
+          return(span("No data", class = "text-muted", style = "font-size: 0.75rem;"))
         }
         n_countries <- result$velocity$n_countries_affected %||%
                        result$velocity$n_countries %||% 0
@@ -917,7 +950,7 @@ globalOverviewServer <- function(id, timeline_data, world_countries, map_snapsho
         if (is.null(result) ||
             !result$status %in% c("success", "velocity_only") ||
             is.null(result$velocity)) {
-          return(span("--", class = "text-muted"))
+          return(span("No data", class = "text-muted", style = "font-size: 0.75rem;"))
         }
         conf <- result$velocity$confidence %||% "low"
         color <- switch(conf,
@@ -1366,6 +1399,49 @@ globalOverviewServer <- function(id, timeline_data, world_countries, map_snapsho
       )
     })
     
+    # =========================================================================
+    # CODE TRANSPARENCY MODAL HANDLERS
+    # =========================================================================
+
+    # Global Map Code Modal
+    observeEvent(input$show_code_global_map, {
+      snippet <- get_code_snippet("global_map")
+      show_code_modal(
+        session = session,
+        title = "Global Map Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Timeline Chart Code Modal
+    observeEvent(input$show_code_timeline_chart, {
+      snippet <- get_code_snippet("timeline_chart")
+      show_code_modal(
+        session = session,
+        title = "Timeline Chart Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Wave Propagation Code Modal
+    observeEvent(input$show_code_wave_propagation, {
+      snippet <- get_code_snippet("wave_propagation")
+      show_code_modal(
+        session = session,
+        title = "Wave Propagation Analysis Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
     # Return the selected pathogen for use by other modules
     reactive(input$selected_pathogen)
   })

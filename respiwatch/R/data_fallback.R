@@ -26,6 +26,8 @@ DATA_SOURCE_PRIORITY <- list(
   CDC_NREVSS = 1,       # CDC NREVSS - primary lab surveillance
   CDC_COVID = 1,        # CDC COVID Data Tracker - primary COVID
   RSV_NET = 1,          # RSV-NET - primary RSV surveillance
+  DELPHI_FLUVIEW = 1,   # Delphi FluView ILI - primary flu data
+  CDC_RESPIRATORY = 1,  # CDC Respiratory Surveillance - primary
   WHO_FLUMART = 2,      # WHO FluMart - international primary
   ECDC = 2,             # ECDC - European primary
   NWSS_WASTEWATER = 3,  # CDC NWSS Wastewater - first fallback
@@ -41,6 +43,8 @@ SOURCE_DISPLAY_NAMES <- list(
   CDC_NREVSS = "CDC NREVSS",
   CDC_COVID = "CDC COVID Tracker",
   RSV_NET = "RSV-NET",
+  DELPHI_FLUVIEW = "Delphi FluView",
+  CDC_RESPIRATORY = "CDC Respiratory",
   WHO_FLUMART = "WHO FluNet",
   ECDC = "ECDC Surveillance",
   NWSS_WASTEWATER = "Wastewater Surveillance",
@@ -56,6 +60,8 @@ SOURCE_RELIABILITY <- list(
   CDC_NREVSS = "high",
   CDC_COVID = "high",
   RSV_NET = "high",
+  DELPHI_FLUVIEW = "high",
+  CDC_RESPIRATORY = "high",
   WHO_FLUMART = "high",
   ECDC = "high",
   NWSS_WASTEWATER = "high",

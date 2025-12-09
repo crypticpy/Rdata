@@ -78,7 +78,12 @@ surveillanceGapsUI <- function(id, outbreak_data) {
           class = "col-md-6",
           div(
             class = "chart-container",
-            h4(class = "section-header", "Identified Data Gaps"),
+            chart_header_with_code(
+              title = "Identified Data Gaps",
+              ns = ns,
+              chart_id = "data_gaps_list",
+              subtitle = "Current gaps in surveillance coverage"
+            ),
             uiOutput(ns("data_gaps_list"))
           )
         ),
@@ -86,7 +91,12 @@ surveillanceGapsUI <- function(id, outbreak_data) {
           class = "col-md-6",
           div(
             class = "chart-container",
-            h4(class = "section-header", "Surveillance Gap Timeline"),
+            chart_header_with_code(
+              title = "Surveillance Gap Timeline",
+              ns = ns,
+              chart_id = "gaps_timeline",
+              subtitle = "Historical gaps by location and type"
+            ),
             DTOutput(ns("gaps_table"))
           )
         )
@@ -99,7 +109,12 @@ surveillanceGapsUI <- function(id, outbreak_data) {
           class = "col-12",
           div(
             class = "chart-container",
-            h4(class = "section-header", "Information Suppression Evidence"),
+            chart_header_with_code(
+              title = "Information Suppression Evidence",
+              ns = ns,
+              chart_id = "suppression_evidence",
+              subtitle = "Documented reporting anomalies"
+            ),
             uiOutput(ns("suppression_evidence"))
           )
         )
@@ -243,6 +258,49 @@ surveillanceGapsServer <- function(id, outbreak_data, timeline_data) {
 
       div(class = "row g-3", cards)
     })
+
+    # =========================================================================
+    # CODE TRANSPARENCY MODAL HANDLERS
+    # =========================================================================
+
+    # Data Gaps List Code Modal
+    observeEvent(input$show_code_data_gaps_list, {
+      snippet <- get_code_snippet("data_gaps_list")
+      show_code_modal(
+        session = session,
+        title = "Identified Data Gaps Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Gaps Timeline Code Modal
+    observeEvent(input$show_code_gaps_timeline, {
+      snippet <- get_code_snippet("gaps_timeline")
+      show_code_modal(
+        session = session,
+        title = "Surveillance Gap Timeline Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Suppression Evidence Code Modal
+    observeEvent(input$show_code_suppression_evidence, {
+      snippet <- get_code_snippet("suppression_evidence")
+      show_code_modal(
+        session = session,
+        title = "Information Suppression Evidence Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
 
     # Return date filter for potential use by parent
     return(date_filter)

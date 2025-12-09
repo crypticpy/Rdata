@@ -355,6 +355,32 @@ create_all_tables <- function(conn) {
   ")
 
   # -------------------------------------------------------------------------
+  # RT ESTIMATION RESULTS (Pre-computed)
+  # -------------------------------------------------------------------------
+
+  # Pre-computed Rt estimates for fast loading
+  dbExecute(conn, "
+    CREATE TABLE IF NOT EXISTS rt_estimates (
+      estimate_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pathogen_id INTEGER NOT NULL,
+      country_id INTEGER NOT NULL,
+      estimation_date TEXT NOT NULL,
+      rt_mean REAL NOT NULL,
+      rt_median REAL,
+      rt_lower REAL,
+      rt_upper REAL,
+      rt_sd REAL,
+      data_points INTEGER,
+      source_description TEXT,
+      has_fallback INTEGER DEFAULT 0,
+      computed_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (pathogen_id) REFERENCES pathogens(pathogen_id),
+      FOREIGN KEY (country_id) REFERENCES countries(country_id),
+      UNIQUE(pathogen_id, country_id, estimation_date)
+    );
+  ")
+
+  # -------------------------------------------------------------------------
   # METADATA TABLES
   # -------------------------------------------------------------------------
 
@@ -413,6 +439,10 @@ create_indexes <- function(conn) {
   # Healthcare capacity indexes
   dbExecute(conn, "CREATE INDEX IF NOT EXISTS idx_healthcare_date ON healthcare_capacity(observation_date);")
   dbExecute(conn, "CREATE INDEX IF NOT EXISTS idx_healthcare_country ON healthcare_capacity(country_id);")
+
+  # Rt estimates indexes
+  dbExecute(conn, "CREATE INDEX IF NOT EXISTS idx_rt_estimates_date ON rt_estimates(estimation_date);")
+  dbExecute(conn, "CREATE INDEX IF NOT EXISTS idx_rt_estimates_composite ON rt_estimates(pathogen_id, country_id, estimation_date);")
 
   message("Database indexes created successfully")
 }

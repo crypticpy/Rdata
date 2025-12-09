@@ -30,6 +30,12 @@ rtAnalysisUI <- function(id) {
         )
       ),
 
+      # Data Source Callout
+      div(
+        class = "row mb-3",
+        div(class = "col-12", uiOutput(ns("data_source_callout")))
+      ),
+
       # Controls Row
       div(
         class = "row mb-4",
@@ -79,7 +85,12 @@ rtAnalysisUI <- function(id) {
           class = "col-12",
           div(
             class = "chart-container",
-            h4(class = "section-header", "Rt Time Series with 95% Credible Interval"),
+            chart_header_with_code(
+              title = "Rt Time Series with 95% Credible Interval",
+              ns = ns,
+              chart_id = "rt_timeseries",
+              subtitle = "Effective reproduction number over time"
+            ),
             plotlyOutput(ns("rt_timeseries_plot"), height = "400px")
           )
         )
@@ -92,7 +103,12 @@ rtAnalysisUI <- function(id) {
           class = "col-md-6",
           div(
             class = "chart-container",
-            h4(class = "section-header", "4-Week Case Forecast"),
+            chart_header_with_code(
+              title = "4-Week Case Forecast",
+              ns = ns,
+              chart_id = "forecast",
+              subtitle = "Projected cases based on current Rt"
+            ),
             plotlyOutput(ns("forecast_plot"), height = "350px")
           )
         ),
@@ -167,22 +183,43 @@ rtAnalysisServer <- function(id, timeline_data) {
     # Date range filter
     date_filter <- dateRangeControlServer("date_range", timeline_data)
 
+    # Data Source Callout
+    output$data_source_callout <- renderUI({
+      tryCatch({
+        sources <- get_data_source_metadata()
+        # Add note about EpiEstim methodology
+        note <- "Rt estimated using EpiEstim package with surveillance data"
+        data_source_callout(sources, note = note)
+      }, error = function(e) {
+        div(
+          class = "data-source-callout",
+          tags$div(
+            class = "callout-header",
+            icon("database"),
+            tags$span("Data Sources", class = "ms-2 fw-semibold")
+          ),
+          tags$small(class = "text-muted", "Surveillance data + EpiEstim Rt estimation")
+        )
+      })
+    })
+
     # AI insights content storage
     ai_insights_content_val <- reactiveVal(NULL)
 
     # Reactive: Store fallback status for banner
     fallback_status <- reactiveVal(list(has_fallback = FALSE, source_description = NULL, fallback_pct = 0))
 
-    # Reactive: Get Rt estimates for selected pathogen (WITH FALLBACK)
+    # Reactive: Get Rt estimates for selected pathogen (PRE-COMPUTED)
     rt_data <- reactive({
       req(input$rt_pathogen)
       tryCatch({
-        result <- get_rt_for_pathogen_with_fallback(input$rt_pathogen)
+        # Load pre-computed Rt from database (fast!)
+        result <- load_precomputed_rt(input$rt_pathogen, country_code = "USA")
 
         # Update fallback status for banner display
         fallback_status(list(
           has_fallback = result$has_fallback %||% FALSE,
-          source_description = result$source_description %||% "Primary sources",
+          source_description = result$source_description %||% "Pre-computed estimates",
           fallback_pct = result$fallback_pct %||% 0,
           source_coverage = result$source_coverage %||% list()
         ))
@@ -382,6 +419,36 @@ rtAnalysisServer <- function(id, timeline_data) {
         HTML(content)
       }
     })
+
+    # =========================================================================
+    # CODE TRANSPARENCY MODAL HANDLERS
+    # =========================================================================
+
+    # Rt Time Series Code Modal
+    observeEvent(input$show_code_rt_timeseries, {
+      snippet <- get_code_snippet("rt_timeseries")
+      show_code_modal(
+        session = session,
+        title = "Rt Time Series Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Forecast Code Modal
+    observeEvent(input$show_code_forecast, {
+      snippet <- get_code_snippet("forecast")
+      show_code_modal(
+        session = session,
+        title = "Case Forecast Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
 
     # Return selected pathogen and date filter for potential parent use
     return(list(

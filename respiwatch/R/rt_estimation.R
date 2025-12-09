@@ -26,9 +26,9 @@ is_valid_pathogen_code <- function(code) {
   !is.null(code) && grepl("^[A-Za-z0-9_]+$", code)
 }
 
-#' Validate ISO country code format (2-letter)
+#' Validate ISO country code format (2 or 3 letter)
 is_valid_iso_code <- function(code) {
-  !is.null(code) && grepl("^[A-Z]{2}$", toupper(code))
+  !is.null(code) && grepl("^[A-Z]{2,3}$", toupper(code))
 }
 
 # =============================================================================
@@ -658,6 +658,111 @@ get_rt_all_pathogens <- function(conn = NULL) {
 
   names(results) <- pathogens
   results
+}
+
+# =============================================================================
+# PRE-COMPUTED RT LOADING
+# =============================================================================
+
+#' Load pre-computed Rt estimates from database
+#' This is the RECOMMENDED function for the Shiny app - loads fast from
+#' pre-computed rt_estimates table instead of computing on-the-fly.
+#'
+#' @param pathogen_code Pathogen code (H3N2, RSV, COVID19)
+#' @param country_code Country ISO code (default: "USA")
+#' @return List with rt_estimates, current_rt, and metadata (same format as get_rt_for_pathogen_with_fallback)
+#' @export
+load_precomputed_rt <- function(pathogen_code, country_code = "USA") {
+  conn <- get_db_connection()
+
+  # Get IDs
+  pathogen_id <- dbGetQuery(conn, sprintf(
+    "SELECT pathogen_id FROM pathogens WHERE pathogen_code = '%s'",
+    escape_sql(pathogen_code)
+  ))$pathogen_id
+
+  country_id <- dbGetQuery(conn, sprintf(
+    "SELECT country_id FROM countries WHERE iso_code = '%s'",
+    escape_sql(country_code)
+  ))$country_id
+
+  if (length(pathogen_id) == 0 || length(country_id) == 0) {
+    close_db_connection(conn)
+    return(list(
+      pathogen = pathogen_code,
+      country = country_code,
+      rt_estimates = NULL,
+      current_rt = get_current_rt(NULL),
+      has_fallback = FALSE,
+      source_description = "No data",
+      fallback_pct = 0,
+      error = "Pathogen or country not found"
+    ))
+  }
+
+  # Load estimates
+  estimates <- dbGetQuery(conn, sprintf("
+    SELECT
+      estimation_date as date,
+      rt_mean,
+      rt_median,
+      rt_lower,
+      rt_upper,
+      rt_sd,
+      data_points,
+      source_description,
+      has_fallback,
+      computed_at
+    FROM rt_estimates
+    WHERE pathogen_id = %d AND country_id = %d
+    ORDER BY estimation_date
+  ", pathogen_id, country_id))
+
+  close_db_connection(conn)
+
+  if (nrow(estimates) == 0) {
+    return(list(
+      pathogen = pathogen_code,
+      country = country_code,
+      rt_estimates = NULL,
+      current_rt = get_current_rt(NULL),
+      has_fallback = FALSE,
+      source_description = "No pre-computed data",
+      fallback_pct = 0,
+      error = "No pre-computed Rt estimates available. Run scripts/compute_rt_estimates.R"
+    ))
+  }
+
+  # Convert date
+  estimates$date <- as.Date(estimates$date)
+
+  # Get current (most recent) Rt
+  current <- estimates[nrow(estimates), ]
+
+  current_rt <- list(
+    value = current$rt_mean,
+    lower = current$rt_lower,
+    upper = current$rt_upper,
+    trend = if (nrow(estimates) >= 2) {
+      prev <- estimates[nrow(estimates) - 1, ]$rt_mean
+      if (current$rt_mean > prev * 1.05) "increasing"
+      else if (current$rt_mean < prev * 0.95) "decreasing"
+      else "stable"
+    } else "unknown",
+    phase = if (current$rt_mean > 1) "growing" else if (current$rt_mean < 1) "declining" else "stable"
+  )
+
+  list(
+    pathogen = pathogen_code,
+    country = country_code,
+    rt_estimates = estimates,
+    current_rt = current_rt,
+    data_points = current$data_points,
+    has_fallback = as.logical(current$has_fallback),
+    source_description = current$source_description %||% "Pre-computed",
+    fallback_pct = 0,
+    computed_at = current$computed_at
+  )
 }
 
 # =============================================================================

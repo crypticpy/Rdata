@@ -34,6 +34,12 @@ scenarioAnalysisUI <- function(id) {
         )
       ),
 
+      # Data Source Callout
+      div(
+        class = "row mb-3",
+        div(class = "col-12", uiOutput(ns("data_source_callout")))
+      ),
+
       # Fallback Banner (shows when using interpolated data)
       div(
         class = "row mb-2",
@@ -119,7 +125,12 @@ scenarioAnalysisUI <- function(id) {
           class = "col-12",
           div(
             class = "chart-container",
-            h4(class = "section-header", "Scenario Comparison: Projected Cases"),
+            chart_header_with_code(
+              title = "Scenario Comparison: Projected Cases",
+              ns = ns,
+              chart_id = "scenario_comparison",
+              subtitle = "What-if intervention modeling"
+            ),
             plotlyOutput(ns("comparison_plot"), height = "450px")
           )
         )
@@ -132,8 +143,12 @@ scenarioAnalysisUI <- function(id) {
           class = "col-md-8",
           div(
             class = "chart-container",
-            h4(class = "section-header", "Scenario Impact Summary"),
-            p(class = "text-muted small", "Cases averted compared to no-intervention baseline"),
+            chart_header_with_code(
+              title = "Scenario Impact Summary",
+              ns = ns,
+              chart_id = "scenario_impact",
+              subtitle = "Cases averted compared to no-intervention baseline"
+            ),
             DTOutput(ns("impact_table"))
           )
         ),
@@ -154,7 +169,12 @@ scenarioAnalysisUI <- function(id) {
           class = "col-12",
           div(
             class = "chart-container",
-            h4(class = "section-header", "Custom Scenario Builder"),
+            chart_header_with_code(
+              title = "Custom Scenario Builder",
+              ns = ns,
+              chart_id = "scenario_builder",
+              subtitle = "Create custom intervention scenarios"
+            ),
             div(
               class = "row",
               div(
@@ -196,7 +216,26 @@ scenarioAnalysisServer <- function(id, timeline_data) {
     
     # Date range filter
     date_filter <- dateRangeControlServer("date_range", timeline_data)
-    
+
+    # Data Source Callout
+    output$data_source_callout <- renderUI({
+      tryCatch({
+        sources <- get_data_source_metadata()
+        note <- "Scenarios model intervention effects on baseline Rt trajectories"
+        data_source_callout(sources, note = note)
+      }, error = function(e) {
+        div(
+          class = "data-source-callout",
+          tags$div(
+            class = "callout-header",
+            icon("database"),
+            tags$span("Data Sources", class = "ms-2 fw-semibold")
+          ),
+          tags$small(class = "text-muted", "Surveillance data + scenario modeling")
+        )
+      })
+    })
+
     # Reactive value to store scenario results
     scenario_results <- reactiveVal(NULL)
 
@@ -546,7 +585,7 @@ scenarioAnalysisServer <- function(id, timeline_data) {
     # Custom scenario handler
     observeEvent(input$add_custom, {
       req(input$custom_name, input$custom_rt_reduction)
-      
+
       custom <- create_custom_scenario(
         name = input$custom_name,
         rt_reduction = input$custom_rt_reduction,
@@ -554,7 +593,7 @@ scenarioAnalysisServer <- function(id, timeline_data) {
                               input$custom_name,
                               input$custom_rt_reduction)
       )
-      
+
       showNotification(
         sprintf("Custom scenario '%s' created. Re-run analysis to include it.",
                 input$custom_name),
@@ -562,5 +601,48 @@ scenarioAnalysisServer <- function(id, timeline_data) {
         duration = 3
       )
     })
+
+    # =========================================================================
+    # CODE TRANSPARENCY MODAL HANDLERS
+    # =========================================================================
+
+    # Scenario Comparison Code Modal
+    observeEvent(input$show_code_scenario_comparison, {
+      snippet <- get_code_snippet("scenario_comparison")
+      show_code_modal(
+        session = session,
+        title = "Scenario Comparison Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Scenario Impact Code Modal
+    observeEvent(input$show_code_scenario_impact, {
+      snippet <- get_code_snippet("scenario_impact")
+      show_code_modal(
+        session = session,
+        title = "Scenario Impact Summary Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Scenario Builder Code Modal
+    observeEvent(input$show_code_scenario_builder, {
+      snippet <- get_code_snippet("scenario_builder")
+      show_code_modal(
+        session = session,
+        title = "Custom Scenario Builder Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
   })
 }

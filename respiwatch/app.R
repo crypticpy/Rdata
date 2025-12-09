@@ -19,7 +19,8 @@ ui <- page_navbar(
       href = "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&family=IBM+Plex+Mono&display=swap",
       rel = "stylesheet"
     ),
-    tags$script(src = "epidemic-animation.js")
+    tags$script(src = "epidemic-animation.js"),
+    tags$script(src = "code-transparency.js")
   ),
 
   # Global Overview Tab (Module) -----------------------------------------------
@@ -107,6 +108,35 @@ server <- function(input, output, session) {
     anomalies_df,
     db_surveillance
   )
+
+  # ==========================================================================
+  # GLOBAL NAVIGATION OBSERVERS
+  # ==========================================================================
+
+  # Observer: Navigate to About tab's data section when clicking "Learn more about our data"
+  observeEvent(input$nav_to_about_data, {
+    # Navigate to the About tab using JavaScript (more reliable for bslib)
+    shinyjs::runjs("
+      // Find and click the About tab
+      var aboutTab = document.querySelector('a.nav-link[data-value=\"About\"]');
+      if (aboutTab) {
+        aboutTab.click();
+      } else {
+        // Fallback: try finding by text content
+        var tabs = document.querySelectorAll('.nav-link');
+        tabs.forEach(function(tab) {
+          if (tab.textContent.includes('About')) {
+            tab.click();
+          }
+        });
+      }
+    ")
+    # Scroll to the data section after a brief delay for tab transition
+    shinyjs::delay(500, shinyjs::runjs(
+      "var el = document.getElementById('about-data_architecture_section');
+       if (el) { el.scrollIntoView({behavior: 'smooth', block: 'start'}); }"
+    ))
+  }, ignoreInit = TRUE)
 
   # ==========================================================================
   # END MODULE SERVER CALLS

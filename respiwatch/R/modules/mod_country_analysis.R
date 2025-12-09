@@ -47,7 +47,12 @@ countryAnalysisUI <- function(id, countries_df) {
 
           div(
             class = "chart-container mt-4",
-            h4(class = "section-header", "Country Anomaly Flags"),
+            chart_header_with_code(
+              title = "Country Anomaly Flags",
+              ns = ns,
+              chart_id = "country_anomalies",
+              subtitle = "Detected surveillance anomalies"
+            ),
             uiOutput(ns("country_anomalies"))
           )
         ),
@@ -57,13 +62,23 @@ countryAnalysisUI <- function(id, countries_df) {
           class = "col-md-4",
           div(
             class = "sidebar",
-            h4(class = "section-header", "Healthcare Capacity"),
+            chart_header_with_code(
+              title = "Healthcare Capacity",
+              ns = ns,
+              chart_id = "country_healthcare",
+              subtitle = "Bed utilization and stress levels"
+            ),
             uiOutput(ns("country_healthcare"))
           ),
 
           div(
             class = "sidebar mt-4",
-            h4(class = "section-header", "Policy Responses"),
+            chart_header_with_code(
+              title = "Policy Responses",
+              ns = ns,
+              chart_id = "country_policies",
+              subtitle = "Active interventions"
+            ),
             uiOutput(ns("country_policies"))
           )
         )
@@ -304,6 +319,49 @@ countryAnalysisServer <- function(id, outbreak_data, timeline_data) {
 
       div(cards)
     })
+
+    # =========================================================================
+    # CODE TRANSPARENCY MODAL HANDLERS
+    # =========================================================================
+
+    # Country Anomalies Code Modal
+    observeEvent(input$show_code_country_anomalies, {
+      snippet <- get_code_snippet("country_anomalies")
+      show_code_modal(
+        session = session,
+        title = "Country Anomaly Flags Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Country Healthcare Code Modal
+    observeEvent(input$show_code_country_healthcare, {
+      snippet <- get_code_snippet("country_healthcare")
+      show_code_modal(
+        session = session,
+        title = "Healthcare Capacity Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
+
+    # Country Policies Code Modal
+    observeEvent(input$show_code_country_policies, {
+      snippet <- get_code_snippet("country_policies")
+      show_code_modal(
+        session = session,
+        title = "Policy Responses Code",
+        data_code = snippet$data_code,
+        viz_code = snippet$viz_code,
+        data_description = snippet$data_desc,
+        viz_description = snippet$viz_desc
+      )
+    }, ignoreInit = TRUE)
 
     # Return date filter and selected country for potential use by parent
     return(list(
