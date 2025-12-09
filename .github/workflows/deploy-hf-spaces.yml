@@ -1,0 +1,84 @@
+name: Deploy to Hugging Face Spaces
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'respiwatch/**'
+      - 'diabetes_dashboard.R'
+      - 'deploy/**'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Which app to deploy'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - respiwatch
+          - diabetes
+
+jobs:
+  deploy-respiwatch:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.target == 'both' || github.event.inputs.target == 'respiwatch') ||
+      github.event_name == 'push' && contains(join(github.event.commits.*.modified, ','), 'respiwatch/')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push RespiWatch to HF Spaces
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          cd respiwatch
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          
+          # Initialize git repo for this subfolder
+          rm -rf .git
+          git init
+          git add -A
+          git commit -m "Deploy from GitHub Actions - $(date +'%Y-%m-%d %H:%M:%S')"
+          
+          # Push to HF Spaces
+          git remote add hf https://user:${HF_TOKEN}@huggingface.co/spaces/BeyondEarth/respiwatch
+          git push hf main --force
+
+  deploy-diabetes:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.target == 'both' || github.event.inputs.target == 'diabetes') ||
+      github.event_name == 'push' && (contains(join(github.event.commits.*.modified, ','), 'diabetes_dashboard.R') || contains(join(github.event.commits.*.modified, ','), 'deploy/'))
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prepare Diabetes Dashboard
+        run: |
+          # Copy necessary files to deploy folder if not already there
+          cp -f diabetes_dashboard.R deploy/ 2>/dev/null || true
+
+      - name: Push Diabetes Dashboard to HF Spaces
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          cd deploy
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          
+          # Initialize git repo for this subfolder
+          rm -rf .git
+          git init
+          git add -A
+          git commit -m "Deploy from GitHub Actions - $(date +'%Y-%m-%d %H:%M:%S')"
+          
+          # Push to HF Spaces
+          git remote add hf https://user:${HF_TOKEN}@huggingface.co/spaces/BeyondEarth/diabetes-dashboard
+          git push hf main --force
