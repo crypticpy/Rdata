@@ -1,3 +1,12 @@
+---
+title: RespiWatch
+emoji: 🦠
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
+
 # RespiWatch: Global Respiratory Surveillance Platform
 
 A real-time surveillance dashboard for tracking respiratory pathogens including H3N2 Influenza, RSV, and COVID-19. Built with R Shiny for deployment on Hugging Face Spaces.
