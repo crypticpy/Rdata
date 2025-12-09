@@ -14,7 +14,10 @@ ui <- page_navbar(
   theme = clinical_premium_theme,
   header = tags$head(
     useShinyjs(),
+    # Mobile viewport meta tag for proper scaling
+    tags$meta(name = "viewport", content = "width=device-width, initial-scale=1, shrink-to-fit=no"),
     tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "mobile-responsive.css"),
     tags$link(
       href = "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&family=IBM+Plex+Mono&display=swap",
       rel = "stylesheet"
