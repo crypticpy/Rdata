@@ -5082,7 +5082,16 @@ server <- function(input, output, session) {
 
     ggplotly(p) |>
       apply_plotly_theme() |>
-      layout(legend = list(orientation = "h", y = -0.2)) |>
+      layout(
+        legend = list(
+          orientation = "h",
+          xanchor = "center",
+          x = 0.5,
+          y = -0.35,
+          font = list(size = 10)
+        ),
+        margin = list(b = 80)
+      ) |>
       config(displayModeBar = FALSE)
   })
 
