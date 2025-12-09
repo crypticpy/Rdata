@@ -1,6 +1,8 @@
-# Rdata - Voice-Driven R Data Science Platform
+# Rdata - Voice-Driven Data Science Demonstration
 
-A comprehensive R data analysis platform developed entirely through voice-to-code workflows with Claude Code. Features two production-ready Shiny dashboards, a CRAN-style visualization package, and a complete data science pipeline.
+A demonstration of voice-driven agentic development with Claude Code, showcasing what's possible when building R data science applications through natural language conversation.
+
+> **DISCLAIMER**: This project is for **demonstration purposes only** and should **not** be used for making healthcare decisions, predictions, evaluations, or forecasting. While the dashboards connect to real public health APIs (CDC, WHO, ECDC), the analyses, models, and visualizations are intended purely to demonstrate voice-to-code development capabilities—not to provide medical or epidemiological guidance.
 
 ## Live Demos
 
@@ -10,13 +12,14 @@ A comprehensive R data analysis platform developed entirely through voice-to-cod
 | **RespiWatch Surveillance Platform** | Hugging Face Spaces | [Launch App](https://huggingface.co/spaces/BeyondEarth/respiwatch) |
 | **Interactive Presentation** | GitHub Pages | [View Slides](https://beyondearth.github.io/Rdata/) |
 
-## Project Highlights
+## What This Demonstrates
 
 - **~30+ hours** of voice-driven development with Claude Code
-- **2 production dashboards** deployed to Hugging Face Spaces
-- **35+ interactive visualizations** across both applications
-- **10+ data sources** integrated (CDC, WHO, ECDC APIs)
-- **100% voice-to-code** workflow - no manual IDE coding
+- **2 interactive dashboards** deployed to Hugging Face Spaces
+- **35+ visualizations** built through natural language conversation
+- **Live API connections** to CDC, WHO, ECDC public health data
+- **100% voice-to-code** - no manual IDE coding required
+- **First R project** for a developer with Python/React background
 
 ---
 
