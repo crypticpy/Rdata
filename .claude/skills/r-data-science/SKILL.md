@@ -36,7 +36,6 @@ df <- df |> janitor::clean_names()
 ```r
 analysis_data <- raw_data |>
   # Clean and filter
-
   filter(!is.na(key_variable)) |>
   
   # Transform variables
@@ -46,7 +45,6 @@ analysis_data <- raw_data |>
                     labels = c("0-17", "18-44", "45-64", "65+"))
   ) |>
   
-
   # Summarize
   group_by(region, age_group) |>
   summarize(
