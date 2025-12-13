@@ -358,4 +358,4 @@ For detailed patterns, consult:
 
 ## Version History
 
-- v1.0.0 (2025-01-04): Initial release for PubHealthAI community
+- v1.0.0 (2025-12-04): Initial release for PubHealthAI community
