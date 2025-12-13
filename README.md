@@ -2,7 +2,70 @@
 
 A demonstration of voice-driven agentic development with Claude Code, showcasing what's possible when building R data science applications through natural language conversation.
 
-> **DISCLAIMER**: This project is for **demonstration purposes only** and should **not** be used for making healthcare decisions, predictions, evaluations, or forecasting. While the dashboards connect to real public health APIs (CDC, WHO, ECDC), the analyses, models, and visualizations are intended purely to demonstrate voice-to-code development capabilities—not to provide medical or epidemiological guidance.
+> **DISCLAIMER**: This project is for **demonstration purposes only** and should **not** be used for making healthcare decisions, predictions, evaluations, or forecasting. While the dashboards connect to real public health data sources, this is a learning/demonstration project.
+
+## 🚀 R Data Science Skill for Claude Code
+
+We've repackaged the R Data Science skill and subagents so they can be easily copied directly into your own projects! This skill provides comprehensive R programming assistance for data analysis, visualization, and statistical workflows.
+
+### Quick Start
+
+**Option 1: Download the ZIP (Easiest)**
+
+1. Download `rdata-science-skills.zip` from this repository
+2. Extract the contents
+3. Copy the `.claude/` folder to your project root or home directory
+
+**Option 2: Copy from Repository**
+
+```bash
+# Clone this repo
+git clone https://github.com/crypticpy/Rdata.git
+
+# Copy to your project (project-specific skill)
+cp -r Rdata/.claude/skills/r-data-science /path/to/your-project/.claude/skills/
+
+# OR copy to home directory (available in all projects)
+mkdir -p ~/.claude/skills
+cp -r Rdata/.claude/skills/r-data-science ~/.claude/skills/
+```
+
+**Option 3: Claude Code Plugin (Advanced)**
+
+```
+/plugin marketplace add crypticpy/Rdata
+```
+
+### What's Included
+
+```
+.claude/skills/r-data-science/
+├── SKILL.md              # Main skill file (core R data science instructions)
+├── CLAUDE_TEMPLATE.md    # Template for project CLAUDE.md files
+├── README.md             # Detailed documentation
+└── agents/               # Specialized subagent configurations
+    ├── data-wrangler.md    # Data cleaning & transformation
+    ├── viz-builder.md      # Modern, compelling visualizations
+    ├── stats-analyst.md    # Statistical analysis & epidemiology
+    ├── report-generator.md # Professional Quarto reports
+    ├── dashboard-builder.md # Shiny & Quarto dashboards
+    └── data-storyteller.md # Communication & narrative
+```
+
+### After Installation
+
+1. **Restart Claude Code** to load the new skill
+2. **Copy the template** (optional): `cp .claude/skills/r-data-science/CLAUDE_TEMPLATE.md ./CLAUDE.md`
+3. **Start coding!** Claude will automatically use the skill when working with R files
+
+### Example Prompts
+
+- "Clean this CSV file and create age groups"
+- "Create an epidemic curve showing weekly cases by region"
+- "Follow the viz-builder agent patterns to create this chart"
+- "Generate a Quarto report summarizing these surveillance data"
+
+---
 
 ## Live Demos
 
@@ -112,6 +175,12 @@ R -e 'devtools::document()'    # Generate docs
 
 ```
 Rdata/
+├── .claude/skills/r-data-science/  # 📦 Distributable skill package
+│   ├── SKILL.md                    # Main skill definition
+│   ├── CLAUDE_TEMPLATE.md          # Project template
+│   ├── README.md                   # Skill documentation
+│   └── agents/                     # Specialized subagents
+│
 ├── R/                          # rdataviz package source
 │   ├── theme-worldclass.R      # ggplot2 themes
 │   ├── palettes.R              # Color palettes
@@ -157,6 +226,7 @@ Rdata/
 │
 ├── tests/testthat/             # Unit tests for rdataviz
 │
+├── rdata-science-skills.zip    # 📦 Downloadable skill package
 ├── diabetes_dashboard.R        # Main diabetes Shiny app
 ├── DESCRIPTION                 # Package metadata
 ├── renv.lock                   # Reproducible dependencies
@@ -171,7 +241,7 @@ Rdata/
 
 ```bash
 # Install R
-brew install r
+brew install r SEQ
 
 # Install Quarto (for reports)
 brew install quarto
@@ -181,7 +251,7 @@ brew install quarto
 
 ```bash
 # Clone repository
-git clone https://github.com/BeyondEarth/Rdata.git
+git clone https://github.com/crypticpy/Rdata.git
 cd Rdata
 
 # Restore dependencies
