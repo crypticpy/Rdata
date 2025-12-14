@@ -73,7 +73,8 @@ cp -r Rdata/.claude/skills/r-data-science ~/.claude/skills/
 |-------------|----------|------|
 | **Diabetes Risk Analysis Dashboard** | Hugging Face Spaces | [Launch App](https://huggingface.co/spaces/BeyondEarth/diabetes-dashboard) |
 | **RespiWatch Surveillance Platform** | Hugging Face Spaces | [Launch App](https://huggingface.co/spaces/BeyondEarth/respiwatch) |
-| **Interactive Presentation** | GitHub Pages | [View Slides](https://beyondearth.github.io/Rdata/) |
+| **Interactive Presentation** | GitHub Pages | [View Slides](https://crypticpy.github.io/Rdata/) |
+| **Quarto Report** | GitHub Pages | [View Report (https://crypticpy.github.io/Rdata/diabetes/) |
 
 ## What This Demonstrates
 
